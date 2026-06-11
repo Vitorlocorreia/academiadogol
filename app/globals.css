@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Academia do Gol — Sistema de Temas (Light/Dark)
+   Paleta oficial conforme Manual de Identidade Visual 2025
+   ============================================================ */
+
+/* Modo Claro (padrão) */
+:root {
+  --bg:           #FFFFFF;
+  --bg-subtle:    #F5F5F5;
+  --bg-card:      #FFFFFF;
+  --bg-card-alt:  #F5F5F5;
+  --border:       #E5E7EB;
+  --border-subtle: rgba(26,107,46,0.15);
+
+  --text-primary:   #1C1C1C;
+  --text-secondary: #4B5563;
+  --text-muted:     #9CA3AF;
+  --text-inverse:   #FFFFFF;
+
+  --brand:          #1A6B2E;
+  --brand-dark:     #0D4A1C;
+  --brand-light:    #C8E6C9;
+  --brand-subtle:   rgba(26,107,46,0.08);
+  --brand-ring:     rgba(26,107,46,0.25);
+
+  --header-bg:      rgba(255,255,255,0.4);
+  --header-border:  rgba(229,231,235,0.3);
+  --shadow:         0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg:      0 10px 40px rgba(0,0,0,0.08);
+}
+
+/* Modo Escuro */
+.dark {
+  --bg:           #09090b;
+  --bg-subtle:    #111113;
+  --bg-card:      #18181b;
+  --bg-card-alt:  #1c1c1f;
+  --border:       #27272a;
+  --border-subtle: rgba(26,107,46,0.2);
+
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-muted:     #52525B;
+  --text-inverse:   #FFFFFF;
+
+  --brand:          #2e9e4e;
+  --brand-dark:     #1A6B2E;
+  --brand-light:    rgba(26,107,46,0.15);
+  --brand-subtle:   rgba(26,107,46,0.12);
+  --brand-ring:     rgba(46,158,78,0.3);
+
+  --header-bg:      rgba(9,9,11,0.4);
+  --header-border:  rgba(39,39,42,0.3);
+  --shadow:         0 1px 3px rgba(0,0,0,0.4);
+  --shadow-lg:      0 10px 40px rgba(0,0,0,0.4);
+}
+
+@theme inline {
+  --font-sans: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scrollbar elegante */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* Focus ring — cor da marca */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Utilitários de tema */
+.theme-bg        { background: var(--bg); }
+.theme-bg-subtle { background: var(--bg-subtle); }
+.theme-card      { background: var(--bg-card); border-color: var(--border); }
+.theme-text      { color: var(--text-primary); }
+.theme-text-2    { color: var(--text-secondary); }
+.theme-text-muted{ color: var(--text-muted); }
+.theme-border    { border-color: var(--border); }
+.theme-brand     { color: var(--brand); }
+.theme-brand-bg  { background: var(--brand); }
