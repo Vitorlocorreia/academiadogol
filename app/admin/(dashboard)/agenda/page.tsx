@@ -22,7 +22,7 @@ export default async function AdminAgendaPage({ searchParams }: Props) {
   const { settings, fields, bookings, blockedSlots } = await getAgendaData(todayStr)
 
   return (
-    <div className="p-6 sm:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto">
       {/* Título */}
       <div>
         <h1 

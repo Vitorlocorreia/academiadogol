@@ -171,10 +171,38 @@ export function BookingList({ initialBookings }: BookingListProps) {
                 {/* Linha principal — clicável para expandir */}
                 <button
                   onClick={() => setExpandedRow(isExpanded ? null : b.id)}
-                  className="w-full text-left px-5 py-4 grid grid-cols-[1fr_1fr_auto_auto_auto] sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-4 items-center cursor-pointer"
+                  className="w-full text-left p-4 sm:px-5 sm:py-4 flex flex-col sm:grid sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-3 sm:gap-4 items-stretch sm:items-center cursor-pointer"
                 >
+                  {/* Mobile Row Layout (Visible below sm) */}
+                  <div className="flex sm:hidden items-center justify-between">
+                    <div className="font-bold text-white text-sm">{b.customer?.name}</div>
+                    <div>{getStatusBadge(b.status)}</div>
+                  </div>
+                  
+                  <div className="flex sm:hidden items-center justify-between text-xs text-zinc-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      {new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {b.start_time.slice(0,5)}
+                    </div>
+                    <div className="font-medium text-zinc-350">
+                      {b.field?.name ?? 'Campo'}
+                    </div>
+                  </div>
+                  
+                  <div className="flex sm:hidden items-center justify-between text-xs pt-2 border-t border-zinc-800/40">
+                    <div>
+                      <span className="text-zinc-500 font-medium">Total:</span>{' '}
+                      <span className="font-bold text-white">R$ {Number(b.total_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[var(--brand)] font-semibold">
+                      <span>Detalhes</span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </div>
+                  </div>
+
+                  {/* Desktop Row Layout (Hidden below sm) */}
                   {/* Partida */}
-                  <div>
+                  <div className="hidden sm:block">
                     <div className="flex items-center gap-1.5 text-white font-semibold text-sm">
                       <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       {new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')}
@@ -191,22 +219,22 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   </div>
 
                   {/* Cliente — resumo */}
-                  <div>
+                  <div className="hidden sm:block">
                     <div className="font-bold text-white text-sm">{b.customer?.name}</div>
                     <div className="text-zinc-500 text-xs mt-0.5">{b.customer?.phone}</div>
                   </div>
 
                   {/* Valores */}
-                  <div className="text-right">
+                  <div className="text-right hidden sm:block">
                     <div className="font-bold text-white text-sm">R$ {Number(b.total_amount).toFixed(2)}</div>
                     <div className="text-zinc-500 text-xs mt-0.5">Sinal: R$ {Number(b.deposit_amount).toFixed(2)}</div>
                   </div>
 
                   {/* Status */}
-                  <div>{getStatusBadge(b.status)}</div>
+                  <div className="hidden sm:block">{getStatusBadge(b.status)}</div>
 
                   {/* Chevron */}
-                  <div className="text-zinc-500">
+                  <div className="text-zinc-500 hidden sm:block">
                     {isExpanded
                       ? <ChevronUp className="w-4 h-4" />
                       : <ChevronDown className="w-4 h-4" />

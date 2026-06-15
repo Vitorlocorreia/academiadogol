@@ -14,8 +14,8 @@ export default async function ConfiguracoesPage() {
   const settings = await getSettings()
 
   return (
-    <div className="p-8 max-w-2xl">
-      <div className="mb-8">
+    <div className="p-4 sm:p-6 md:p-8 max-w-2xl mx-auto space-y-6">
+      <div>
         <h1 
           className="text-3xl font-black text-white uppercase tracking-wider leading-none"
           style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}

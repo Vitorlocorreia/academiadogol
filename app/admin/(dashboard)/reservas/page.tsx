@@ -14,7 +14,7 @@ export default async function AdminReservasPage({ searchParams }: Props) {
   const bookings = await getBookingsData(params.search, params.status)
 
   return (
-    <div className="p-6 sm:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-[4px] bg-[var(--brand-subtle)] border border-[var(--brand-ring)] flex items-center justify-center shrink-0">

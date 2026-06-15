@@ -317,23 +317,108 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
           )}
         </div>
 
-        <div className="overflow-x-auto pt-2">
+        <div className="pt-2">
           {payments.length === 0 ? (
             <div className="text-center py-10 text-zinc-500 text-sm">
               Nenhuma mensalidade gerada.
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider">
-                  <th className="pb-3">Mês de Referência</th>
-                  <th className="pb-3">Valor</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Pagamento / Método</th>
-                  <th className="pb-3 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50 text-sm">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider">
+                      <th className="pb-3">Mês de Referência</th>
+                      <th className="pb-3">Valor</th>
+                      <th className="pb-3">Status</th>
+                      <th className="pb-3">Pagamento / Método</th>
+                      <th className="pb-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50 text-sm">
+                    {payments.map((p) => {
+                      const amtFormatted = new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      }).format(p.amount)
+
+                      const selectedMethod = selectedMethods[p.id] || 'PIX'
+
+                      return (
+                        <tr key={p.id} className="hover:bg-zinc-800/10">
+                          <td className="py-4 font-semibold text-zinc-205">
+                            {formatReferenceMonth(p.reference_month)}
+                          </td>
+                          <td className="py-4 font-bold text-white font-mono">{amtFormatted}</td>
+                          <td className="py-4">
+                            {p.status === 'paid' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                                Pago
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">
+                                Pendente
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 text-xs text-zinc-400">
+                            {p.status === 'paid' ? (
+                              <div className="space-y-0.5">
+                                <div className="font-semibold text-zinc-200 flex items-center gap-1">
+                                  <CreditCard className="w-3.5 h-3.5 text-zinc-500" />
+                                  {p.payment_method}
+                                </div>
+                                {p.paid_at && (
+                                  <div className="text-zinc-500 font-mono">
+                                    {new Date(p.paid_at).toLocaleString('pt-BR')}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-zinc-600">—</span>
+                            )}
+                          </td>
+                          <td className="py-4 text-right">
+                            {p.status === 'pending' && (
+                              <div className="inline-flex items-center gap-2">
+                                <label htmlFor={`method-select-${p.id}`} className="sr-only">Método de Pagamento</label>
+                                <select
+                                  id={`method-select-${p.id}`}
+                                  value={selectedMethod}
+                                  onChange={(e) =>
+                                    setSelectedMethods((prev) => ({
+                                      ...prev,
+                                      [p.id]: e.target.value,
+                                    }))
+                                  }
+                                  className="px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-[2px] text-xs text-zinc-300 focus:outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                                >
+                                  <option value="PIX">PIX</option>
+                                  <option value="Dinheiro">Dinheiro</option>
+                                  <option value="Cartão">Cartão</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  id={`btn-receber-${p.id}`}
+                                  onClick={() => handleMarkPaid(p.id)}
+                                  disabled={isPending}
+                                  className="btn-admin-primary px-3 py-1 bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white text-xs font-bold rounded-[2px] transition-all cursor-pointer"
+                                >
+                                  Confirmar
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className="md:hidden divide-y divide-zinc-800/50 bg-zinc-900/50 rounded-[4px] border border-zinc-800/60 overflow-hidden">
                 {payments.map((p) => {
                   const amtFormatted = new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
@@ -343,45 +428,49 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                   const selectedMethod = selectedMethods[p.id] || 'PIX'
 
                   return (
-                    <tr key={p.id} className="hover:bg-zinc-800/10">
-                      <td className="py-4 font-semibold text-zinc-205">
-                        {formatReferenceMonth(p.reference_month)}
-                      </td>
-                      <td className="py-4 font-bold text-white font-mono">{amtFormatted}</td>
-                      <td className="py-4">
+                    <div key={p.id} className="p-4 space-y-3">
+                      {/* Reference Month + Status */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-white">
+                          {formatReferenceMonth(p.reference_month)}
+                        </span>
                         {p.status === 'paid' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
                             Pago
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">
                             Pendente
                           </span>
                         )}
-                      </td>
-                      <td className="py-4 text-xs text-zinc-400">
-                        {p.status === 'paid' ? (
-                          <div className="space-y-0.5">
-                            <div className="font-semibold text-zinc-200 flex items-center gap-1">
-                              <CreditCard className="w-3.5 h-3.5 text-zinc-500" />
-                              {p.payment_method}
-                            </div>
+                      </div>
+
+                      {/* Value + Payment details */}
+                      <div className="flex items-center justify-between text-xs bg-zinc-950/40 p-2.5 rounded-[2px] border border-zinc-800/60">
+                        <div>
+                          <span className="text-zinc-500 block">Valor</span>
+                          <span className="text-sm font-bold text-white font-mono">{amtFormatted}</span>
+                        </div>
+                        {p.status === 'paid' && (
+                          <div className="text-right">
+                            <span className="text-zinc-500 block">Método / Data</span>
+                            <span className="text-zinc-250 font-semibold">{p.payment_method}</span>
                             {p.paid_at && (
-                              <div className="text-zinc-500 font-mono">
-                                {new Date(p.paid_at).toLocaleString('pt-BR')}
-                              </div>
+                              <span className="text-zinc-500 font-mono block text-[9px]">
+                                {new Date(p.paid_at).toLocaleDateString('pt-BR')}
+                              </span>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-zinc-600">—</span>
                         )}
-                      </td>
-                      <td className="py-4 text-right">
-                        {p.status === 'pending' && (
-                          <div className="inline-flex items-center gap-2">
-                            <label htmlFor={`method-select-${p.id}`} className="sr-only">Método de Pagamento</label>
+                      </div>
+
+                      {/* Actions if pending */}
+                      {p.status === 'pending' && (
+                        <div className="flex items-center justify-between gap-3 pt-1">
+                          <div className="flex-1 flex items-center gap-1.5">
+                            <label htmlFor={`mobile-method-select-${p.id}`} className="sr-only">Método</label>
                             <select
-                              id={`method-select-${p.id}`}
+                              id={`mobile-method-select-${p.id}`}
                               value={selectedMethod}
                               onChange={(e) =>
                                 setSelectedMethods((prev) => ({
@@ -389,29 +478,29 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                   [p.id]: e.target.value,
                                 }))
                               }
-                              className="px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-[2px] text-xs text-zinc-300 focus:outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                              className="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-[2px] text-xs text-zinc-300 focus:outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
                             >
                               <option value="PIX">PIX</option>
                               <option value="Dinheiro">Dinheiro</option>
                               <option value="Cartão">Cartão</option>
                             </select>
-                            <button
-                              type="button"
-                              id={`btn-receber-${p.id}`}
-                              onClick={() => handleMarkPaid(p.id)}
-                              disabled={isPending}
-                              className="btn-admin-primary px-3 py-1 bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white text-xs font-bold rounded-[2px] transition-all cursor-pointer"
-                            >
-                              Confirmar
-                            </button>
                           </div>
-                        )}
-                      </td>
-                    </tr>
+                          <button
+                            type="button"
+                            id={`btn-mobile-receber-${p.id}`}
+                            onClick={() => handleMarkPaid(p.id)}
+                            disabled={isPending}
+                            className="btn-admin-primary px-4 py-1.5 bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white text-xs font-bold rounded-[2px] transition-all cursor-pointer flex-1 text-center justify-center"
+                          >
+                            Confirmar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
       </div>

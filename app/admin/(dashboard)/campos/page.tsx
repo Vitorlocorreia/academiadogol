@@ -12,9 +12,9 @@ export default async function CamposPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 max-w-[1600px] mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 
             className="text-3xl font-black text-white uppercase tracking-wider leading-none"
@@ -27,7 +27,7 @@ export default async function CamposPage() {
         <Link
           href="/admin/campos/novo"
           id="btn-novo-campo"
-          className="btn-admin-primary"
+          className="btn-admin-primary w-full sm:w-auto text-center justify-center"
         >
           <Plus className="w-4 h-4" />
           Novo Campo
