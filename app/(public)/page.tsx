@@ -4,6 +4,25 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getActiveFields } from './actions'
 import { CampoCard } from '@/components/public/campo-card'
+import { MessageSquare } from 'lucide-react'
+
+function Instagram({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
 
 const WHATSAPP_LINK = 'https://wa.me/5581999096142'
 const INSTAGRAM_LINK = 'https://www.instagram.com/academia_do_gol/'
@@ -341,55 +360,66 @@ export default async function HomePage() {
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                className="flex items-center gap-4 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-500/10 group"
                 style={{
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '4px',
                 }}
               >
                 <div
-                  className="w-12 h-12 flex items-center justify-center shrink-0 text-2xl"
-                  style={{ background: '#25D366', borderRadius: '4px' }}
+                  className="w-12 h-12 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                  style={{ 
+                    background: 'rgba(37,211,102,0.1)', 
+                    border: '1px solid rgba(37,211,102,0.25)', 
+                    borderRadius: '2px' 
+                  }}
                 >
-                  📱
+                  <MessageSquare className="w-5 h-5 text-[#25D366]" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    WhatsApp
-                  </p>
-                  <p className="text-white font-bold text-lg">{PHONE_DISPLAY}</p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      WhatsApp
+                    </p>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] animate-pulse" />
+                    <span className="text-[9px] uppercase tracking-wider text-[#25D366] font-bold">Online</span>
+                  </div>
+                  <p className="text-white font-bold text-base tracking-tight leading-tight">Chamar no WhatsApp</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Para reservas, dúvidas e eventos</p>
                 </div>
-                <span className="ml-auto text-white opacity-40">→</span>
+                <span className="ml-auto text-white opacity-40 transition-transform duration-300 group-hover:translate-x-1">→</span>
               </a>
 
               <a
                 href={INSTAGRAM_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                className="flex items-center gap-4 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-pink-500/10 group"
                 style={{
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: '4px',
                 }}
               >
                 <div
-                  className="w-12 h-12 flex items-center justify-center shrink-0 text-2xl"
+                  className="w-12 h-12 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
                   style={{
-                    background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
-                    borderRadius: '4px',
+                    background: 'rgba(220,39,67,0.1)',
+                    border: '1px solid rgba(220,39,67,0.25)',
+                    borderRadius: '2px',
                   }}
                 >
-                  📷
+                  <Instagram className="w-5 h-5 text-[#ff4b7a]" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  <p className="text-[10px] font-black uppercase tracking-wider mb-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
                     Instagram
                   </p>
-                  <p className="text-white font-bold text-lg">@academia_do_gol</p>
+                  <p className="text-white font-bold text-base tracking-tight leading-tight">Seguir @academia_do_gol</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Acompanhe fotos, campeonatos e novidades</p>
                 </div>
-                <span className="ml-auto text-white opacity-40">→</span>
+                <span className="ml-auto text-white opacity-40 transition-transform duration-300 group-hover:translate-x-1">→</span>
               </a>
             </div>
           </div>

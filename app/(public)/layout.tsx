@@ -3,6 +3,25 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { PublicHeader } from '@/components/public/public-header'
+import { MessageSquare } from 'lucide-react'
+
+function Instagram({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,7 +49,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </div>
 
             {/* Links de contato */}
-            <div className="flex flex-col gap-2 text-sm">
+            <div className="flex flex-col gap-2.5 text-sm">
               <a
                 href="https://wa.me/5581999096142"
                 target="_blank"
@@ -38,7 +57,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 className="transition-opacity hover:opacity-70 font-medium flex items-center gap-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                📱 WhatsApp
+                <MessageSquare className="w-4 h-4 text-[#25D366] shrink-0" />
+                <span>WhatsApp</span>
               </a>
               <a
                 href="https://www.instagram.com/academia_do_gol/"
@@ -47,7 +67,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 className="transition-opacity hover:opacity-70 font-medium flex items-center gap-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                📷 Instagram
+                <Instagram className="w-4 h-4 text-[#ff4b7a] shrink-0" />
+                <span>Instagram</span>
               </a>
               <Link
                 href="/reserva/consultar"

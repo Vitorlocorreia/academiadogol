@@ -4,7 +4,25 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, X, Ticket } from 'lucide-react'
+import { Sun, Moon, X, Ticket, MessageSquare } from 'lucide-react'
+
+function Instagram({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
 
 const NAV_LINKS = [
   { href: '/#campos', label: 'Campos' },
@@ -13,8 +31,8 @@ const NAV_LINKS = [
 ]
 
 const CONTACT_LINKS = [
-  { href: 'https://wa.me/5581999096142', label: '(81) 99909-6142', icon: '📱', external: true },
-  { href: 'https://www.instagram.com/academia_do_gol/', label: '@academia_do_gol', icon: '📷', external: true },
+  { href: 'https://wa.me/5581999096142', label: 'WhatsApp', detail: '(81) 99909-6142', icon: MessageSquare, iconColor: 'text-[#25D366]', external: true },
+  { href: 'https://www.instagram.com/academia_do_gol/', label: 'Instagram', detail: '@academia_do_gol', icon: Instagram, iconColor: 'text-[#ff4b7a]', external: true },
 ]
 
 // ── Hamburguer Icon ──────────────────────────────────────────
@@ -66,7 +84,7 @@ export function PublicHeader() {
           <button
             onClick={() => setDrawerOpen(true)}
             aria-label="Abrir menu"
-            className="w-10 h-10 flex items-center justify-center rounded-lg transition-colors hover:opacity-70"
+            className="w-10 h-10 flex items-center justify-center rounded-[2px] transition-colors hover:opacity-70"
             style={{ color: 'var(--text-primary)' }}
           >
             <HamburgerIcon />
@@ -89,7 +107,7 @@ export function PublicHeader() {
           <Link
             href="/reserva/consultar"
             aria-label="Consultar reserva"
-            className="w-10 h-10 flex items-center justify-center rounded-lg transition-colors hover:opacity-70"
+            className="w-10 h-10 flex items-center justify-center rounded-[2px] transition-colors hover:opacity-70"
             style={{ color: 'var(--text-primary)' }}
           >
             <Ticket className="w-5 h-5" />
@@ -140,7 +158,7 @@ export function PublicHeader() {
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
                 aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-                className="w-9 h-9 rounded-lg flex items-center justify-center border transition-all duration-200 hover:scale-105"
+                className="w-9 h-9 rounded-[2px] flex items-center justify-center border transition-all duration-200 hover:scale-105"
                 style={{
                   background: isDark ? 'rgba(26,107,46,0.15)' : 'rgba(26,107,46,0.08)',
                   borderColor: isDark ? 'rgba(46,158,78,0.3)' : 'rgba(26,107,46,0.2)',
@@ -203,7 +221,7 @@ export function PublicHeader() {
           <button
             onClick={() => setDrawerOpen(false)}
             aria-label="Fechar menu"
-            className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:opacity-70"
+            className="w-8 h-8 flex items-center justify-center rounded-[2px] transition-colors hover:opacity-70"
             style={{ color: 'var(--text-muted)' }}
           >
             <X className="w-4 h-4" />
@@ -223,7 +241,7 @@ export function PublicHeader() {
               key={link.href}
               href={link.href}
               onClick={() => setDrawerOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg font-medium text-sm transition-all hover:opacity-80"
+              className="flex items-center gap-3 px-3 py-3 rounded-[2px] font-medium text-sm transition-all hover:opacity-80"
               style={{ color: 'var(--text-primary)' }}
             >
               <span
@@ -245,20 +263,26 @@ export function PublicHeader() {
           >
             Contato
           </p>
-          {CONTACT_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setDrawerOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all hover:opacity-80"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <span>{link.icon}</span>
-              {link.label}
-            </a>
-          ))}
+          {CONTACT_LINKS.map((link) => {
+            const Icon = link.icon
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-[2px] text-sm transition-all hover:opacity-80"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <Icon className={`w-4 h-4 ${link.iconColor} shrink-0`} />
+                <div className="flex flex-col">
+                  <span className="font-semibold text-xs leading-none text-white">{link.label}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono mt-0.5">{link.detail}</span>
+                </div>
+              </a>
+            )
+          })}
         </nav>
 
         {/* Tema toggle na base */}
@@ -269,7 +293,7 @@ export function PublicHeader() {
           {mounted && (
             <button
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              className="flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-[2px] text-sm font-medium transition-all hover:opacity-80"
               style={{
                 background: 'var(--bg-subtle)',
                 border: '1px solid var(--border)',
