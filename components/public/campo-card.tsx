@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import type { Field } from '@/lib/supabase/types'
+import { getFieldPrice } from '@/lib/pricing'
 
 interface Props {
   field: Field
@@ -163,10 +164,10 @@ export function CampoCard({ field, index }: Props) {
                 fontFamily: "'Bebas Neue', Arial Black, sans-serif",
               }}
             >
-              R$ {Number(field.hourly_rate).toFixed(0)}
+              R$ {getFieldPrice(field.name, field.duration_options?.[0] ?? 90, field.hourly_rate).toFixed(0)}
             </span>
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-              /hora
+              /{field.duration_options?.[0] ?? 90}min
             </span>
           </div>
           <span

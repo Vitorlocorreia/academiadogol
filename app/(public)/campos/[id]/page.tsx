@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getFieldById } from '../../actions'
 import { AvailabilityCalendar } from '@/components/public/availability-calendar'
 import { createClient } from '@/lib/supabase/server'
+import { getFieldPrice } from '@/lib/pricing'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -152,14 +153,21 @@ export default async function CampoDetailPage({ params }: Props) {
             </h2>
             <div className="space-y-3">
               {(field.duration_options ?? [60]).map((min) => {
-                const total = (field.hourly_rate * min) / 60
+                const total = getFieldPrice(field.name, min, field.hourly_rate)
                 const deposit =
                   field.deposit_type === 'fixed'
                     ? field.deposit_value
                     : (total * field.deposit_value) / 100
+                const label =
+                  min === 60 ? 'Avulso 1h' :
+                  min === 90 ? 'Avulso 1h30' :
+                  min === 120 ? 'Avulso 2h' :
+                  min === 180 ? 'Festa de Aniversário 3h' :
+                  min === 240 ? 'Festa de Aniversário 4h' :
+                  `${min} minutos`
                 return (
                   <div key={min} className="flex items-center justify-between pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                    <span className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{min} minutos</span>
+                    <span className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
                     <div className="text-right">
                       <span
                         className="font-black"
@@ -209,6 +217,7 @@ export default async function CampoDetailPage({ params }: Props) {
             </h2>
             <AvailabilityCalendar
               fieldId={field.id}
+              fieldName={field.name}
               openTime={openTime}
               closeTime={closeTime}
               durationOptions={field.duration_options ?? [60]}

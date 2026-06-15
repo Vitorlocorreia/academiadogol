@@ -6,9 +6,11 @@
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getOccupiedSlots } from '@/app/(public)/actions'
+import { getFieldPrice } from '@/lib/pricing'
 
 interface Props {
   fieldId: string
+  fieldName: string
   openTime: string   // ex: '08:00'
   closeTime: string  // ex: '23:00'
   durationOptions: number[]  // não mais usado para seleção, mas mantido para compatibilidade
@@ -80,6 +82,7 @@ function toISO(date: Date): string {
 
 export function AvailabilityCalendar({
   fieldId,
+  fieldName,
   openTime,
   closeTime,
   hourlyRate,
@@ -134,7 +137,7 @@ export function AvailabilityCalendar({
   const duration = startSlot && endSlot
     ? toMins(endSlot) - toMins(startSlot)
     : 0
-  const total = (hourlyRate * duration) / 60
+  const total = getFieldPrice(fieldName, duration, hourlyRate)
   const deposit = depositType === 'fixed' ? depositValue : (total * depositValue) / 100
   const selectionValid = startSlot && endSlot && duration >= 30
 

@@ -40,10 +40,10 @@ export default async function HomePage() {
         {/* Linhas decorativas de campo (SVG) */}
         <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden opacity-[0.06]">
           <svg className="absolute right-0 top-0 h-full" viewBox="0 0 400 600" fill="none" stroke="white" strokeWidth="1">
-            <circle cx="400" cy="300" r="180"/>
-            <line x1="400" y1="0" x2="400" y2="600"/>
-            <rect x="230" y="160" width="170" height="280"/>
-            <rect x="300" y="220" width="100" height="160"/>
+            <circle cx="400" cy="300" r="180" />
+            <line x1="400" y1="0" x2="400" y2="600" />
+            <rect x="230" y="160" width="170" height="280" />
+            <rect x="300" y="220" width="100" height="160" />
           </svg>
         </div>
 
@@ -182,7 +182,7 @@ export default async function HomePage() {
                 }}
               >
                 Escolha <span style={{ color: 'var(--brand)' }}>seu</span>
-                <br />arena
+                <br />campo
               </h2>
             </div>
             <p
@@ -304,10 +304,10 @@ export default async function HomePage() {
         {/* Linhas decorativas */}
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <svg className="w-full h-full" viewBox="0 0 1200 400" fill="none" stroke="white" strokeWidth="0.5">
-            <circle cx="1100" cy="200" r="300"/>
-            <circle cx="1100" cy="200" r="200"/>
-            <line x1="800" y1="0" x2="800" y2="400"/>
-            <rect x="800" y="80" width="200" height="240"/>
+            <circle cx="1100" cy="200" r="300" />
+            <circle cx="1100" cy="200" r="200" />
+            <line x1="800" y1="0" x2="800" y2="400" />
+            <rect x="800" y="80" width="200" height="240" />
           </svg>
         </div>
 

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import type { Field, BlockedSlot } from '@/lib/supabase/types'
+import { getFieldPrice } from '@/lib/pricing'
 
 // ─── Campos ─────────────────────────────────────────────────────────────────
 
@@ -137,7 +138,7 @@ export async function createBookingAction(
   // Busca dados do campo para calcular valores
   const { data: field, error: fieldError } = await supabase
     .from('fields')
-    .select('hourly_rate, deposit_type, deposit_value')
+    .select('name, hourly_rate, deposit_type, deposit_value')
     .eq('id', field_id)
     .single()
 
@@ -149,7 +150,7 @@ export async function createBookingAction(
   const [hh, mm] = start_time.split(':').map(Number)
   const endMinutes = hh * 60 + mm + duration_minutes
   const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-  const total_amount = (field.hourly_rate * duration_minutes) / 60
+  const total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
   const deposit_amount =
     field.deposit_type === 'fixed'
       ? field.deposit_value

@@ -4,6 +4,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { createBookingAction } from '@/app/(public)/actions'
+import { getFieldPrice } from '@/lib/pricing'
 
 interface Props {
   fieldId: string
@@ -36,7 +37,7 @@ export function BookingForm({
     INIT
   )
 
-  const total = (hourlyRate * duration) / 60
+  const total = getFieldPrice(fieldName, duration, hourlyRate)
   const deposit =
     depositType === 'fixed' ? depositValue : (total * depositValue) / 100
 
