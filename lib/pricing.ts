@@ -54,3 +54,50 @@ export function getFieldPrice(fieldName: string, durationMinutes: number, hourly
   // Fallback para cálculo linear baseado no hourly_rate caso seja outra duração ou campo
   return (hourlyRateFallback * durationMinutes) / 60;
 }
+
+export interface Price1HourInfo {
+  price: number;
+  isDerived: boolean;
+}
+
+export function getField1HourPriceInfo(
+  fieldName: string,
+  durationOptions: number[],
+  hourlyRate: number
+): Price1HourInfo {
+  const options = durationOptions ?? [];
+
+  // 1. Se o campo tiver um valor cadastrado especificamente para 1h (60 min), usar esse valor diretamente.
+  if (options.includes(60)) {
+    return {
+      price: getFieldPrice(fieldName, 60, hourlyRate),
+      isDerived: false,
+    };
+  }
+
+  // 2. Se o campo não tiver pacote de 1h, calcular o valor proporcional de 60 min a partir do valor de 1h30 cadastrado (valor_1h30 ÷ 1,5), arredondando para valor inteiro/cheio se necessário.
+  if (options.includes(90)) {
+    const price90 = getFieldPrice(fieldName, 90, hourlyRate);
+    return {
+      price: Math.round(price90 / 1.5),
+      isDerived: true,
+    };
+  }
+
+  // 3. Fallback genérico: se não tiver nem 60 nem 90, pegar a primeira opção disponível e calcular proporcionalmente
+  if (options.length > 0) {
+    const firstDuration = options[0];
+    const firstPrice = getFieldPrice(fieldName, firstDuration, hourlyRate);
+    return {
+      price: Math.round((firstPrice * 60) / firstDuration),
+      isDerived: true,
+    };
+  }
+
+  // Fallback absoluto se a lista de durações estiver vazia
+  return {
+    price: Math.round(hourlyRate),
+    isDerived: true,
+  };
+}
+

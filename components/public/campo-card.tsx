@@ -3,7 +3,8 @@
 
 import Link from 'next/link'
 import type { Field } from '@/lib/supabase/types'
-import { getFieldPrice } from '@/lib/pricing'
+import { getFieldPrice, getField1HourPriceInfo } from '@/lib/pricing'
+
 
 interface Props {
   field: Field
@@ -12,6 +13,7 @@ interface Props {
 
 export function CampoCard({ field, index }: Props) {
   const num = String(index + 1).padStart(2, '0')
+  const { price, isDerived } = getField1HourPriceInfo(field.name, field.duration_options, field.hourly_rate)
 
   return (
     <Link
@@ -154,7 +156,12 @@ export function CampoCard({ field, index }: Props) {
           className="flex items-center justify-between mt-5 pt-4"
           style={{ borderTop: '1px solid var(--border)' }}
         >
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-1 flex-wrap">
+            {isDerived && (
+              <span className="text-xs font-medium mr-1" style={{ color: 'var(--text-muted)' }}>
+                a partir de
+              </span>
+            )}
             <span
               className="font-black"
               style={{
@@ -164,10 +171,10 @@ export function CampoCard({ field, index }: Props) {
                 fontFamily: "'Bebas Neue', Arial Black, sans-serif",
               }}
             >
-              R$ {getFieldPrice(field.name, field.duration_options?.[0] ?? 90, field.hourly_rate).toFixed(0)}
+              R$ {price.toFixed(0)},00
             </span>
-            <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-              /{field.duration_options?.[0] ?? 90}min
+            <span className="text-xs font-medium ml-1" style={{ color: 'var(--text-muted)' }}>
+              / hora
             </span>
           </div>
           <span
