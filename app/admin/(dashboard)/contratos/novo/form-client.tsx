@@ -38,7 +38,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {state?.error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-[4px] text-sm font-medium">
           {state.error}
         </div>
       )}
@@ -58,7 +58,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               id="customer_name"
               name="customer_name"
               required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-all"
+              className="input-admin"
               placeholder="Ex: João da Silva"
             />
           </div>
@@ -68,12 +68,12 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               Telefone / WhatsApp
             </label>
             <input
-              type="tel"
+              type="text"
               id="customer_phone"
               name="customer_phone"
               required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-all"
-              placeholder="Ex: 11999999999"
+              className="input-admin font-mono"
+              placeholder="Ex: (81) 9 9999-9999"
             />
           </div>
 
@@ -85,7 +85,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               type="email"
               id="customer_email"
               name="customer_email"
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-all"
+              className="input-admin"
               placeholder="Ex: mensalista@email.com"
             />
           </div>
@@ -108,11 +108,11 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               id="field_id"
               name="field_id"
               required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+              className="input-admin"
             >
               <option value="">Selecione um campo...</option>
               {fields.map((f) => (
-                <option key={f.id} value={f.id}>
+                <option key={f.id} value={f.id} className="bg-zinc-900">
                   {f.name}
                 </option>
               ))}
@@ -127,10 +127,10 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               id="day_of_week"
               name="day_of_week"
               required
-              className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+              className="input-admin"
             >
               {DAYS_OF_WEEK.map((d) => (
-                <option key={d.value} value={d.value}>
+                <option key={d.value} value={d.value} className="bg-zinc-900">
                   {d.label}
                 </option>
               ))}
@@ -150,7 +150,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 id="start_time"
                 name="start_time"
                 required
-                className="w-full pl-12 pr-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+                className="input-admin pl-12 font-mono"
               />
             </div>
           </div>
@@ -168,7 +168,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 id="end_time"
                 name="end_time"
                 required
-                className="w-full pl-12 pr-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+                className="input-admin pl-12 font-mono"
               />
             </div>
           </div>
@@ -188,7 +188,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 required
                 min="1"
                 step="0.01"
-                className="w-full pl-12 pr-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none transition-all"
+                className="input-admin pl-12 font-mono"
                 placeholder="Ex: 450.00"
               />
             </div>
@@ -207,7 +207,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 id="starts_at"
                 name="starts_at"
                 required
-                className="w-full pl-12 pr-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+                className="input-admin pl-12 font-mono"
               />
             </div>
           </div>
@@ -224,7 +224,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 type="date"
                 id="ends_at"
                 name="ends_at"
-                className="w-full pl-12 pr-4 py-3 bg-zinc-950 border border-zinc-800 focus:border-emerald-500 rounded-xl text-sm text-white focus:outline-none transition-all"
+                className="input-admin pl-12 font-mono"
               />
             </div>
             <p className="text-[11px] text-zinc-500 mt-1.5">
@@ -238,7 +238,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
         <Link
           href="/admin/contratos"
-          className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-semibold rounded-xl transition-all"
+          className="btn-admin-secondary px-5 py-2.5 text-sm font-semibold rounded-[2px]"
         >
           Cancelar
         </Link>
@@ -246,7 +246,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           type="submit"
           id="btn-confirmar-contrato"
           disabled={isPending}
-          className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-800 disabled:text-zinc-400 text-white text-sm font-semibold rounded-xl transition-all"
+          className="btn-admin-primary flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-[2px] disabled:bg-zinc-800 disabled:text-zinc-500 cursor-pointer"
         >
           {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
           Criar Contrato Fixo

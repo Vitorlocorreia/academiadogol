@@ -23,11 +23,16 @@ export default async function AdminFinanceiroPage({ searchParams }: Props) {
     <div className="p-6 sm:p-8 space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-          <BarChart3 className="w-5 h-5 text-emerald-400" />
+        <div className="w-10 h-10 rounded-[4px] bg-[var(--brand-subtle)] border border-[var(--brand-ring)] flex items-center justify-center shrink-0">
+          <BarChart3 className="w-5 h-5 text-[var(--brand)]" />
         </div>
         <div>
-          <h1 className="text-2xl font-black text-white sm:text-3xl">Financeiro</h1>
+          <h1 
+            className="text-3xl font-black text-white uppercase tracking-wider leading-none"
+            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+          >
+            Financeiro
+          </h1>
           <p className="text-sm text-zinc-400 mt-1">
             Acompanhe a receita, pagamentos recebidos e pendências do complexo por período.
           </p>

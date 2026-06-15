@@ -40,11 +40,16 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
             alt="Academia do Gol"
             width={36}
             height={36}
-            className="rounded-lg shrink-0"
+            className="rounded-[4px] shrink-0"
           />
           <div>
-            <p className="text-white font-bold text-sm leading-tight">Academia do Gol</p>
-            <p className="text-zinc-500 text-xs">Painel Admin</p>
+            <p 
+              className="text-white font-black text-base leading-none uppercase tracking-wider"
+              style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            >
+              Academia do Gol
+            </p>
+            <p className="text-zinc-500 text-xs mt-0.5">Painel Admin</p>
           </div>
         </div>
       </div>
@@ -57,13 +62,13 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-[4px] text-sm font-medium transition-all duration-150 group ${
                 isActive
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800 border border-transparent'
               }`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[var(--brand)]' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
               {label}
             </Link>
           )
@@ -79,7 +84,7 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
           <button
             type="submit"
             id="btn-logout"
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-150"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-[4px] text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-150"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             Sair

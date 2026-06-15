@@ -19,14 +19,19 @@ export default async function NovoContratoPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-white sm:text-3xl">Registrar Contrato Fixo</h1>
+        <h1 
+          className="text-3xl font-black text-white uppercase tracking-wider leading-none"
+          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+        >
+          Registrar Contrato Fixo
+        </h1>
         <p className="text-zinc-400 text-sm mt-1">
           Cadastre um mensalista. O sistema gerará bloqueios automáticos na agenda e a mensalidade do mês atual.
         </p>
       </div>
 
       {/* Form Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 sm:p-8">
         <CreateContractForm fields={fields} />
       </div>
     </div>

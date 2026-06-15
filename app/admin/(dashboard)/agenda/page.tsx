@@ -25,7 +25,12 @@ export default async function AdminAgendaPage({ searchParams }: Props) {
     <div className="p-6 sm:p-8 space-y-6 max-w-[1600px] mx-auto">
       {/* Título */}
       <div>
-        <h1 className="text-2xl font-black text-white sm:text-3xl">Agenda do Complexo</h1>
+        <h1 
+          className="text-3xl font-black text-white uppercase tracking-wider leading-none"
+          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+        >
+          Agenda do Complexo
+        </h1>
         <p className="text-sm text-zinc-400 mt-1">
           Gerencie as reservas dos 7 campos, crie agendamentos manuais e gerencie bloqueios pontuais ou recorrentes.
         </p>

@@ -39,13 +39,13 @@ export function SaveSettingsForm({ settings }: Props) {
 
       {/* Feedback */}
       {state?.error && (
-        <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+        <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-[4px] text-red-400 text-sm">
           {state.error}
         </div>
       )}
       {state?.success && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm">
-          <CheckCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-3 bg-[var(--brand-subtle)] border border-[var(--brand-ring)] rounded-[4px] text-[var(--brand)] text-sm font-semibold">
+          <CheckCircle className="w-4 h-4 shrink-0 text-[var(--brand)]" />
           Configurações salvas com sucesso!
         </div>
       )}
@@ -66,7 +66,7 @@ export function SaveSettingsForm({ settings }: Props) {
               type="text"
               required
               defaultValue={settings?.business_name ?? 'Academia do Gol'}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
           <div>
@@ -79,7 +79,7 @@ export function SaveSettingsForm({ settings }: Props) {
               type="tel"
               defaultValue={settings?.business_phone ?? ''}
               placeholder="(81) 9 9999-9999"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
         </div>
@@ -103,7 +103,7 @@ export function SaveSettingsForm({ settings }: Props) {
               type="time"
               required
               defaultValue={settings?.open_time ?? '08:00'}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
           <div>
@@ -116,7 +116,7 @@ export function SaveSettingsForm({ settings }: Props) {
               type="time"
               required
               defaultValue={settings?.close_time ?? '23:00'}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
         </div>
@@ -136,9 +136,9 @@ export function SaveSettingsForm({ settings }: Props) {
                   defaultChecked={activeDays.includes(value)}
                   className="sr-only peer"
                 />
-                <span className="flex items-center justify-center w-12 h-10 rounded-xl text-sm font-medium border transition-all
-                  peer-checked:bg-emerald-500/10 peer-checked:border-emerald-500/40 peer-checked:text-emerald-400
-                  border-zinc-700 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300">
+                <span className="flex items-center justify-center w-12 h-10 rounded-[2px] text-sm font-bold border transition-all
+                  peer-checked:bg-[var(--brand)] peer-checked:border-[var(--brand)] peer-checked:text-white
+                  border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300">
                   {label}
                 </span>
               </label>
@@ -166,7 +166,7 @@ export function SaveSettingsForm({ settings }: Props) {
               min="1"
               max="365"
               defaultValue={settings?.advance_booking_days ?? 30}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
           <div>
@@ -180,7 +180,7 @@ export function SaveSettingsForm({ settings }: Props) {
               min="0"
               max="72"
               defaultValue={settings?.min_advance_hours ?? 2}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
           <div>
@@ -194,7 +194,7 @@ export function SaveSettingsForm({ settings }: Props) {
               min="0"
               max="168"
               defaultValue={settings?.cancellation_hours ?? 24}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="input-admin"
             />
           </div>
         </div>
@@ -206,7 +206,7 @@ export function SaveSettingsForm({ settings }: Props) {
           type="submit"
           id="btn-salvar-configuracoes"
           disabled={isPending}
-          className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-white font-semibold rounded-xl text-sm transition-all"
+          className="btn-admin-primary w-full py-2.5 px-4 text-sm font-semibold rounded-[2px] transition-all cursor-pointer"
         >
           {isPending ? 'Salvando...' : 'Salvar Configurações'}
         </button>

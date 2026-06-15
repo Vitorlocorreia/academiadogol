@@ -17,12 +17,12 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
     <form action={formAction} className="space-y-6">
       {/* Informações básicas */}
       <section>
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
           Informações do Campo
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Nome do Campo <span className="text-red-400">*</span>
             </label>
             <input
@@ -32,12 +32,12 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               required
               defaultValue={field?.name ?? ''}
               placeholder="Ex: Campo Society 1"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              className="input-admin"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="description" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Descrição
             </label>
             <textarea
@@ -46,14 +46,14 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               rows={3}
               defaultValue={field?.description ?? ''}
               placeholder="Descreva o campo, grama sintética, dimensões..."
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+              className="input-admin resize-none"
             />
           </div>
 
           <div>
-            <label htmlFor="amenities" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="amenities" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Comodidades
-              <span className="text-zinc-500 font-normal ml-1">(separadas por vírgula)</span>
+              <span className="text-zinc-550 font-normal normal-case ml-1">(separadas por vírgula)</span>
             </label>
             <input
               id="amenities"
@@ -61,12 +61,12 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               type="text"
               defaultValue={amenitiesDefault}
               placeholder="Ex: Vestiário, Iluminação, Estacionamento"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              className="input-admin"
             />
           </div>
 
           <div>
-            <label htmlFor="maps_url" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="maps_url" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
               Link de Localização (Google Maps / Waze)
             </label>
             <input
@@ -75,7 +75,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               type="text"
               defaultValue={field?.maps_url ?? ''}
               placeholder="Ex: https://maps.app.goo.gl/... ou link do Waze"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              className="input-admin"
             />
           </div>
         </div>
@@ -85,13 +85,13 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
       {/* Preços */}
       <section>
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
           Preços e Duração
         </h3>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="hourly_rate" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="hourly_rate" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Valor por Hora (R$) <span className="text-red-400">*</span>
               </label>
               <input
@@ -103,14 +103,14 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                 required
                 defaultValue={field?.hourly_rate ?? ''}
                 placeholder="0,00"
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="input-admin"
               />
             </div>
 
             <div>
-              <label htmlFor="duration_options" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="duration_options" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Durações (min)
-                <span className="text-zinc-500 font-normal ml-1">(por vírgula)</span>
+                <span className="text-zinc-550 font-normal normal-case ml-1">(por vírgula)</span>
               </label>
               <input
                 id="duration_options"
@@ -118,7 +118,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                 type="text"
                 defaultValue={durationDefault}
                 placeholder="60, 90, 120"
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="input-admin"
               />
             </div>
           </div>
@@ -126,22 +126,29 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           {/* Sinal */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="deposit_type" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="deposit_type" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Tipo de Sinal <span className="text-red-400">*</span>
               </label>
-              <select
-                id="deposit_type"
-                name="deposit_type"
-                defaultValue={field?.deposit_type ?? 'fixed'}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
-              >
-                <option value="fixed">Valor fixo (R$)</option>
-                <option value="percentage">Percentual (%)</option>
-              </select>
+              <div className="relative">
+                <select
+                  id="deposit_type"
+                  name="deposit_type"
+                  defaultValue={field?.deposit_type ?? 'fixed'}
+                  className="input-admin appearance-none pr-8 cursor-pointer"
+                >
+                  <option value="fixed" className="bg-zinc-900">Valor fixo (R$)</option>
+                  <option value="percentage" className="bg-zinc-900">Percentual (%)</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div>
-              <label htmlFor="deposit_value" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="deposit_value" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Valor do Sinal <span className="text-red-400">*</span>
               </label>
               <input
@@ -153,7 +160,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                 required
                 defaultValue={field?.deposit_value ?? ''}
                 placeholder="0"
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="input-admin"
               />
             </div>
           </div>
@@ -161,18 +168,25 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           {/* Status (somente na edição) */}
           {field && (
             <div>
-              <label htmlFor="is_active" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              <label htmlFor="is_active" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Status
               </label>
-              <select
-                id="is_active"
-                name="is_active"
-                defaultValue={String(field.is_active)}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all appearance-none"
-              >
-                <option value="true">Ativo</option>
-                <option value="false">Inativo</option>
-              </select>
+              <div className="relative">
+                <select
+                  id="is_active"
+                  name="is_active"
+                  defaultValue={String(field.is_active)}
+                  className="input-admin appearance-none pr-8 cursor-pointer"
+                >
+                  <option value="true" className="bg-zinc-900">Ativo</option>
+                  <option value="false" className="bg-zinc-900">Inativo</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -182,7 +196,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
       <div className="flex gap-3 pt-2">
         <Link
           href="/admin/campos"
-          className="flex-1 py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-sm transition-all text-center"
+          className="btn-admin-secondary flex-1 text-center justify-center"
         >
           Cancelar
         </Link>
@@ -190,9 +204,8 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           type="submit"
           id="btn-salvar-campo"
           disabled={isPending}
-          className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-white font-semibold rounded-xl text-sm transition-all"
+          className="btn-admin-primary flex-1 text-center justify-center"
         >
-          {isPending ? 'Salvando...' : field ? 'Salvar Alterações' : 'Criar Campo'}
         </button>
       </div>
     </form>

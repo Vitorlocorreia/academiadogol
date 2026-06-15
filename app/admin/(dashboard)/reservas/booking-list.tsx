@@ -79,13 +79,13 @@ export function BookingList({ initialBookings }: BookingListProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>
       case 'confirmed':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Confirmado</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">Confirmado</span>
       case 'completed':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Concluído</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">Concluído</span>
       case 'cancelled':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">Cancelado</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">Cancelado</span>
       default:
         return null
     }
@@ -109,15 +109,15 @@ export function BookingList({ initialBookings }: BookingListProps) {
   return (
     <div className="space-y-5">
       {/* Barra de busca + filtros */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
+      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-[4px]">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-zinc-500" />
           <input
             type="text"
             placeholder="Nome, celular, e-mail ou campo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            className="input-admin py-2 pl-10"
           />
         </div>
 
@@ -132,9 +132,9 @@ export function BookingList({ initialBookings }: BookingListProps) {
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-xl border transition-all ${
+              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-[2px] border transition-all cursor-pointer ${
                 statusFilter === opt.value
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border-[var(--brand-ring)]'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -152,7 +152,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
       {/* Lista de reservas */}
       <div className="space-y-2">
         {filteredBookings.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl py-14 text-center text-zinc-500">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] py-14 text-center text-zinc-500">
             Nenhuma reserva encontrada.
           </div>
         ) : (
@@ -164,14 +164,14 @@ export function BookingList({ initialBookings }: BookingListProps) {
             return (
               <div
                 key={b.id}
-                className={`bg-zinc-900 border rounded-2xl overflow-hidden transition-all duration-200 ${
-                  isExpanded ? 'border-emerald-500/30' : 'border-zinc-800 hover:border-zinc-700'
+                className={`bg-zinc-900 border rounded-[4px] overflow-hidden transition-all duration-200 ${
+                  isExpanded ? 'border-[var(--brand-ring)]' : 'border-zinc-800 hover:border-zinc-700'
                 }`}
               >
                 {/* Linha principal — clicável para expandir */}
                 <button
                   onClick={() => setExpandedRow(isExpanded ? null : b.id)}
-                  className="w-full text-left px-5 py-4 grid grid-cols-[1fr_1fr_auto_auto_auto] sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-4 items-center"
+                  className="w-full text-left px-5 py-4 grid grid-cols-[1fr_1fr_auto_auto_auto] sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-4 items-center cursor-pointer"
                 >
                   {/* Partida */}
                   <div>
@@ -235,7 +235,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                            className="text-[var(--brand)] hover:underline transition-colors"
                           >
                             {b.customer?.phone ?? '—'}
                           </a>
@@ -257,7 +257,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                           Total de reservas: <span className="text-zinc-300 font-semibold ml-1">{b.customer?.total_bookings ?? 1}</span>
                         </div>
                         {b.notes && (
-                          <div className="mt-2 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/50 rounded-lg px-3 py-2">
+                          <div className="mt-2 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/50 rounded-[2px] px-3 py-2">
                             <span className="font-semibold text-zinc-300">Obs:</span> {b.notes}
                           </div>
                         )}
@@ -276,13 +276,13 @@ export function BookingList({ initialBookings }: BookingListProps) {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-400">Sinal (entrada)</span>
-                          <span className={b.deposit_status === 'paid' ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                          <span className={b.deposit_status === 'paid' ? 'text-[var(--brand)] font-semibold' : 'text-amber-400 font-semibold'}>
                             R$ {Number(b.deposit_amount).toFixed(2)} — {b.deposit_status === 'paid' ? '✓ Pago' : '⏳ Pendente'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-zinc-400">Restante (balcão)</span>
-                          <span className={b.remaining_status === 'paid' ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                          <span className={b.remaining_status === 'paid' ? 'text-[var(--brand)] font-semibold' : 'text-amber-400 font-semibold'}>
                             R$ {Number(b.remaining_amount).toFixed(2)} — {b.remaining_status === 'paid' 
                               ? `✓ ${displayPaymentMethod(b.remaining_payment_method)}` 
                               : '⏳ Pendente'}
@@ -296,7 +296,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                           {isPendingPayment && (
                             <button
                               onClick={() => setSelectedBookingForPayment(b.id)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-semibold"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-[var(--brand-subtle)] border border-[var(--brand-ring)] text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                               <DollarSign className="w-3.5 h-3.5" />
                               Dar Baixa no Restante
@@ -304,14 +304,14 @@ export function BookingList({ initialBookings }: BookingListProps) {
                           )}
                           <button
                             onClick={() => handleCompletePartida(b.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs font-semibold"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                           >
                             <CheckSquare className="w-3.5 h-3.5" />
                             Concluir Partida
                           </button>
                           <button
                             onClick={() => handleCancelReserva(b.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all text-xs font-semibold"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             Cancelar
@@ -330,9 +330,14 @@ export function BookingList({ initialBookings }: BookingListProps) {
       {/* Modal de confirmação de pagamento */}
       {selectedBookingForPayment && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full space-y-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 max-w-sm w-full space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-white">Registrar Pagamento</h3>
+              <h3 
+                className="text-2xl font-black text-white uppercase tracking-wider"
+                style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+              >
+                Registrar Pagamento
+              </h3>
               <p className="text-zinc-400 text-xs mt-1">Como o cliente pagou o restante do valor?</p>
             </div>
 
@@ -344,10 +349,10 @@ export function BookingList({ initialBookings }: BookingListProps) {
               ].map(opt => (
                 <label
                   key={opt.value}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 p-3 rounded-[2px] border cursor-pointer transition-all ${
                     paymentMethod === opt.value
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-white font-semibold'
-                      : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300'
+                      ? 'bg-[var(--brand-subtle)] border-[var(--brand-ring)] text-white font-semibold'
+                      : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:bg-zinc-850 hover:text-zinc-300'
                   }`}
                 >
                   <input
@@ -359,7 +364,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                     className="sr-only"
                   />
                   <span className="text-xl">{opt.icon}</span>
-                  <span>{opt.label}</span>
+                  <span className="text-sm">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -367,14 +372,14 @@ export function BookingList({ initialBookings }: BookingListProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedBookingForPayment(null)}
-                className="flex-1 py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold rounded-xl text-sm transition-all"
+                className="btn-admin-secondary flex-1 text-center justify-center rounded-[2px]"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleConfirmPayment(selectedBookingForPayment)}
                 disabled={isPending}
-                className="flex-1 py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-white font-bold rounded-xl text-sm transition-all"
+                className="btn-admin-primary flex-1 text-center justify-center rounded-[2px]"
               >
                 {isPending ? 'Salvando...' : 'Confirmar'}
               </button>

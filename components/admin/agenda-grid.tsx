@@ -115,17 +115,17 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
   return (
     <div className="space-y-6">
       {/* Controles de Data */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-4 rounded-[4px]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleNavigateDate(-1)}
-            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all font-bold"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider"
           >
             ← Dia Anterior
           </button>
           
-          <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950 rounded-xl border border-zinc-800">
-            <Calendar className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950 rounded-[2px] border border-zinc-800">
+            <Calendar className="w-4 h-4 text-[var(--brand)]" />
             <span className="text-sm font-bold text-white uppercase">
               {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', {
                 weekday: 'long',
@@ -137,7 +137,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
 
           <button
             onClick={() => handleNavigateDate(1)}
-            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all font-bold"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider"
           >
             Próximo Dia →
           </button>
@@ -149,9 +149,9 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
             <button
               key={f.id}
               onClick={() => setActiveFieldId(f.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition-all ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-bold shrink-0 transition-all ${
                 activeFieldId === f.id
-                  ? 'bg-emerald-500 text-white shadow-md'
+                  ? 'bg-[var(--brand)] text-white shadow-md'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
             >
@@ -162,7 +162,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
       </div>
 
       {/* Grid Grande - Desktop (Visualização Unificada de 7 Quadras) */}
-      <div className="hidden lg:block overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-3xl shadow-xl">
+      <div className="hidden lg:block overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-[4px] shadow-xl">
         <table className="w-full border-collapse text-left min-w-[900px]">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-950">
@@ -196,10 +196,10 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                       {occupant ? (
                         occupant.type === 'booking' ? (
                           /* Reserva ativa */
-                          <div className={`w-full h-full rounded-xl p-2 text-xs flex flex-col justify-between border transition-all ${
+                          <div className={`w-full h-full rounded-[2px] p-2 text-xs flex flex-col justify-between border transition-all ${
                             occupant.data.status === 'pending'
                               ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                              : 'bg-[var(--brand-subtle)] border-[var(--brand-ring)] text-[var(--brand)]'
                           }`}>
                             <div className="flex items-center justify-between font-bold">
                               <span className="truncate max-w-[80px]">
@@ -207,7 +207,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                               </span>
                               <button
                                 onClick={() => handleCancelBooking(occupant.data.id)}
-                                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-0.5"
+                                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-0.5 cursor-pointer"
                                 title="Cancelar Reserva"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -219,14 +219,14 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                           </div>
                         ) : (
                           /* Bloqueio de horário */
-                          <div className="w-full h-full rounded-xl p-2 text-xs bg-zinc-800/60 border border-zinc-700/60 text-zinc-400 flex flex-col justify-between">
+                          <div className="w-full h-full rounded-[2px] p-2 text-xs bg-zinc-800/60 border border-zinc-700/60 text-zinc-400 flex flex-col justify-between">
                             <div className="flex items-center justify-between font-semibold text-zinc-300">
                               <span className="truncate max-w-[80px]">
                                 {occupant.data.reason || 'Bloqueado'}
                               </span>
                               <button
                                 onClick={() => handleRemoveBlock(occupant.data.id)}
-                                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-0.5"
+                                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-0.5 cursor-pointer"
                                 title="Remover Bloqueio"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -241,7 +241,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                         /* Botão para criar */
                         <button
                           onClick={() => openModal(f.id, slotTime)}
-                          className="w-full h-full rounded-xl border border-dashed border-zinc-800 hover:border-emerald-500/30 hover:bg-emerald-500/5 text-transparent hover:text-emerald-400 transition-all flex items-center justify-center"
+                          className="w-full h-full rounded-[2px] border border-dashed border-zinc-800 hover:border-[var(--brand-ring)] hover:bg-[var(--brand-subtle)] text-transparent hover:text-[var(--brand)] transition-all flex items-center justify-center cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
@@ -256,8 +256,11 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
       </div>
 
       {/* Grid Mobile - Apenas o Campo Selecionado */}
-      <div className="lg:hidden bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-        <div className="p-4 bg-zinc-950 border-b border-zinc-800 font-black text-white text-sm text-center">
+      <div className="lg:hidden bg-zinc-900 border border-zinc-800 rounded-[4px] overflow-hidden">
+        <div 
+          className="p-4 bg-zinc-950 border-b border-zinc-800 font-black text-white text-base text-center uppercase tracking-wider"
+          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+        >
           {fields.find((f) => f.id === activeFieldId)?.name}
         </div>
         
@@ -274,18 +277,18 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                 <div className="flex-1">
                   {occupant ? (
                     occupant.type === 'booking' ? (
-                      <div className={`rounded-xl p-3 text-xs flex items-center justify-between border ${
+                      <div className={`rounded-[2px] p-3 text-xs flex items-center justify-between border ${
                         occupant.data.status === 'pending'
                           ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                          : 'bg-[var(--brand-subtle)] border-[var(--brand-ring)] text-[var(--brand)]'
                       }`}>
                         <div className="space-y-0.5">
                           <div className="font-bold flex items-center gap-1.5">
                             {occupant.data.customer?.name}
                             {occupant.data.status === 'pending' ? (
-                              <span className="text-[9px] bg-amber-500/20 px-1 py-0.5 rounded text-amber-400 border border-amber-500/20">Pend.</span>
+                              <span className="text-[9px] bg-amber-500/20 px-1 py-0.5 rounded-[2px] text-amber-400 border border-amber-500/20">Pend.</span>
                             ) : (
-                              <span className="text-[9px] bg-emerald-500/20 px-1 py-0.5 rounded text-emerald-400 border border-emerald-500/20">Conf.</span>
+                              <span className="text-[9px] bg-[var(--brand-subtle)] px-1 py-0.5 rounded-[2px] text-[var(--brand)] border border-[var(--brand-ring)]">Conf.</span>
                             )}
                           </div>
                           <div className="text-[10px] text-zinc-500 font-medium">
@@ -295,13 +298,13 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
 
                         <button
                           onClick={() => handleCancelBooking(occupant.data.id)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 bg-zinc-950 rounded-lg border border-zinc-800 transition-colors"
+                          className="text-zinc-500 hover:text-red-400 p-1.5 bg-zinc-950 rounded-[2px] border border-zinc-800 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <div className="rounded-xl p-3 text-xs bg-zinc-800/60 border border-zinc-700/60 text-zinc-300 flex items-center justify-between">
+                      <div className="rounded-[2px] p-3 text-xs bg-zinc-800/60 border border-zinc-700/60 text-zinc-300 flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="font-semibold text-zinc-200">
                             {occupant.data.reason || 'Bloqueado'}
@@ -313,7 +316,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
 
                         <button
                           onClick={() => handleRemoveBlock(occupant.data.id)}
-                          className="text-zinc-500 hover:text-red-400 p-1.5 bg-zinc-950 rounded-lg border border-zinc-800 transition-colors"
+                          className="text-zinc-500 hover:text-red-400 p-1.5 bg-zinc-950 rounded-[2px] border border-zinc-800 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -322,7 +325,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                   ) : (
                     <button
                       onClick={() => openModal(activeFieldId, slotTime)}
-                      className="w-full py-2.5 border border-dashed border-zinc-800 hover:border-emerald-500/30 hover:bg-emerald-500/5 rounded-xl text-xs font-bold text-zinc-500 hover:text-emerald-400 transition-all flex items-center justify-center gap-1.5"
+                      className="w-full py-2.5 border border-dashed border-zinc-800 hover:border-[var(--brand-ring)] hover:bg-[var(--brand-subtle)] rounded-[2px] text-xs font-bold text-zinc-500 hover:text-[var(--brand)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" /> Reservar ou Bloquear
                     </button>

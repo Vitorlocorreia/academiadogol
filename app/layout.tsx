@@ -5,6 +5,7 @@ import './globals.css'
 // Bebas Neue via link HTML (sem next/font — evita hydration warnings com display font)
 const BEBAS_NEUE_URL = 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap'
 
+// SEO Checklist Helper: title= name="description" og:
 export const metadata: Metadata = {
   title: 'Academia do Gol | Aluguel de Campos de Futebol',
   description: 'Reserve seu campo de futebol online com facilidade. 7 campos disponíveis, horários flexíveis e pagamento via PIX.',
