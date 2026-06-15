@@ -50,7 +50,7 @@ export default async function HomePage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 w-full py-24">
           {/* Pré-título */}
           <div
-            className="inline-flex items-center gap-2 mb-8 px-3 py-1"
+            className="inline-flex items-center gap-2 mb-4 px-3 py-1"
             style={{
               border: '1px solid rgba(255,255,255,0.2)',
               background: 'rgba(255,255,255,0.06)',
@@ -71,26 +71,24 @@ export default async function HomePage() {
 
           {/* Título principal */}
           <h1
-            className="uppercase leading-none mb-6"
+            className="uppercase leading-[0.95] mb-4"
             style={{
               fontFamily: "'Bebas Neue', 'Arial Black', sans-serif",
-              fontSize: 'clamp(56px, 9vw, 128px)',
-              letterSpacing: '-0.01em',
+              fontSize: 'clamp(52px, 8.5vw, 110px)',
+              letterSpacing: '-0.02em',
               color: 'white',
             }}
           >
-            Seu campo.
+            Seu campo. <span style={{ color: '#4ade80' }}>Sua hora.</span>
             <br />
-            <span style={{ color: '#4ade80' }}>Sua hora.</span>
-            <br />
-            <span style={{ fontSize: '60%', color: 'rgba(255,255,255,0.6)' }}>
+            <span style={{ fontSize: '70%', color: 'rgba(255,255,255,0.6)' }}>
               Seu jogo.
             </span>
           </h1>
 
           <p
-            className="max-w-lg text-base leading-relaxed mb-10"
-            style={{ color: 'rgba(255,255,255,0.65)', lineHeight: '1.7' }}
+            className="max-w-md text-base leading-relaxed mb-8"
+            style={{ color: 'rgba(255,255,255,0.65)', lineHeight: '1.6' }}
           >
             {fields.length} campos disponíveis no complexo Academia do Gol.
             Escolha seu campo, reserve o horário e pague o sinal via PIX — em menos de 2 minutos.
@@ -128,7 +126,7 @@ export default async function HomePage() {
 
           {/* Stats */}
           <div
-            className="flex gap-8 mt-16 pt-8"
+            className="flex gap-8 mt-12 pt-6"
             style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
           >
             {[
