@@ -39,9 +39,35 @@ export default async function CampoDetailPage({ params }: Props) {
         {/* Coluna esquerda — info do campo */}
         <div className="lg:col-span-3 space-y-8">
           {/* Galeria de fotos */}
-          <div className="grid grid-cols-2 gap-3">
+          {field.photo_urls && field.photo_urls.length > 1 ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className="col-span-2 sm:col-span-1 aspect-video overflow-hidden bg-zinc-800"
+                style={{ border: '1px solid var(--border)', borderRadius: '4px' }}
+              >
+                <img
+                  src={field.photo_urls[0]}
+                  alt={field.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="grid grid-rows-2 gap-3">
+                {[1, 2].map((i) =>
+                  field.photo_urls?.[i] ? (
+                    <div
+                      key={i}
+                      className="overflow-hidden bg-zinc-800"
+                      style={{ border: '1px solid var(--border)', borderRadius: '4px' }}
+                    >
+                      <img src={field.photo_urls[i]} alt={`${field.name} - Foto ${i + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ) : null
+                )}
+              </div>
+            </div>
+          ) : (
             <div
-              className="col-span-2 sm:col-span-1 aspect-video overflow-hidden bg-zinc-800"
+              className="w-full aspect-video overflow-hidden bg-zinc-800"
               style={{ border: '1px solid var(--border)', borderRadius: '4px' }}
             >
               {field.photo_urls?.[0] ? (
@@ -54,28 +80,7 @@ export default async function CampoDetailPage({ params }: Props) {
                 <div className="w-full h-full flex items-center justify-center text-6xl">⚽</div>
               )}
             </div>
-            <div className="grid grid-rows-2 gap-3">
-              {[1, 2].map((i) =>
-                field.photo_urls?.[i] ? (
-                  <div
-                    key={i}
-                    className="overflow-hidden bg-zinc-800"
-                    style={{ border: '1px solid var(--border)', borderRadius: '4px' }}
-                  >
-                    <img src={field.photo_urls[i]} alt={`${field.name} - Foto ${i + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div
-                    key={i}
-                    className="flex items-center justify-center text-zinc-700 text-2xl"
-                    style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: '4px' }}
-                  >
-                    ⚽
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Nome e descrição */}
           <div>
