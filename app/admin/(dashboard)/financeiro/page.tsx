@@ -6,6 +6,7 @@ interface Props {
   searchParams: Promise<{
     month?: string
     year?: string
+    fieldId?: string
   }>
 }
 
@@ -16,8 +17,9 @@ export default async function AdminFinanceiroPage({ searchParams }: Props) {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
   const month = params.month ?? String(now.getMonth() + 1)
   const year = params.year ?? String(now.getFullYear())
+  const fieldId = params.fieldId ?? 'all'
 
-  const data = await getFinanceiroData(month, year)
+  const data = await getFinanceiroData(month, year, fieldId)
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -34,12 +36,17 @@ export default async function AdminFinanceiroPage({ searchParams }: Props) {
             Financeiro
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Acompanhe a receita, pagamentos recebidos e pendências do complexo por período.
+            Acompanhe o faturamento, pagamentos recebidos e pendências por quadra e período.
           </p>
         </div>
       </div>
 
-      <FinanceiroDashboard data={data} currentMonth={month} currentYear={year} />
+      <FinanceiroDashboard
+        data={data}
+        currentMonth={month}
+        currentYear={year}
+        currentFieldId={fieldId}
+      />
     </div>
   )
 }
