@@ -64,14 +64,17 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Erro interno ao salvar no banco' }, { status: 500 })
       }
 
-      // 4. Envia e-mail de confirmação ao cliente e alerta ao administrador
+      // 4. Envia e-mail de confirmação ao cliente, alerta ao administrador e Web Push
       try {
         booking.status = 'confirmed'
         booking.deposit_status = 'paid'
         await sendConfirmationEmail(booking)
         await sendAdminNewBookingEmail(booking)
+        
+        const { sendBookingConfirmedPush } = await import('@/lib/web-push/push')
+        await sendBookingConfirmedPush(booking)
       } catch (emailErr) {
-        console.error('[Asaas Webhook] Falha ao enviar e-mails de confirmação e alerta:', emailErr)
+        console.error('[Asaas Webhook] Falha ao enviar notificações de confirmação (e-mail/push):', emailErr)
       }
 
       console.log(`[Asaas Webhook] Reserva ${booking.id} confirmada com sucesso via PIX automático.`)

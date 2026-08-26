@@ -46,11 +46,19 @@ export const expireBookingFunction = inngest.createFunction(
           return
         }
 
-        // Notifica o cliente
+        // Notifica o cliente por e-mail
         await sendExpirationEmail(booking)
 
-        // Notifica o administrador que o horário foi reaberto
+        // Notifica o administrador por e-mail que o horário foi reaberto
         await sendAdminCancelledBookingEmail(booking, 'Expiração automática (não pagamento do sinal PIX em 15min)')
+
+        // Notifica o administrador via Web Push no celular/PC
+        try {
+          const { sendBookingCancelledPush } = await import('@/lib/web-push/push')
+          await sendBookingCancelledPush(booking, 'Expiração por falta de pagamento PIX')
+        } catch (pushErr) {
+          console.error('Erro ao enviar push de expiração:', pushErr)
+        }
       })
     }
   }
@@ -85,7 +93,16 @@ export const dailyDigestFunction = inngest.createFunction(
         return
       }
 
+      // 1. Envia e-mail de resumo matinal ao administrador
       await sendAdminDailyDigestEmail(bookings ?? [], todayStr)
+
+      // 2. Envia notificação Web Push de resumo matinal ao administrador
+      try {
+        const { sendDailyDigestPush } = await import('@/lib/web-push/push')
+        await sendDailyDigestPush(bookings ?? [], todayStr)
+      } catch (pushErr) {
+        console.error('Erro ao enviar push de resumo diário:', pushErr)
+      }
     })
   }
 )

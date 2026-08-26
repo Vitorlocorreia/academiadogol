@@ -263,13 +263,20 @@ export async function cancelBookingAction(id: string) {
     return { error: error.message }
   }
 
-  // Notifica por e-mail que o horário foi liberado
+  // Notifica por e-mail e Web Push que o horário foi liberado
   if (booking) {
     try {
       const { sendAdminCancelledBookingEmail } = await import('@/lib/resend/emails')
       await sendAdminCancelledBookingEmail(booking, 'Cancelamento efetuado pela grade da agenda')
     } catch (emailErr) {
       console.error('Erro ao enviar e-mail de cancelamento ao admin:', emailErr)
+    }
+
+    try {
+      const { sendBookingCancelledPush } = await import('@/lib/web-push/push')
+      await sendBookingCancelledPush(booking, 'Cancelamento efetuado na grade')
+    } catch (pushErr) {
+      console.error('Erro ao enviar push de cancelamento:', pushErr)
     }
   }
 
