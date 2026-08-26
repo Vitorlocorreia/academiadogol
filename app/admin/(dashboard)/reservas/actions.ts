@@ -92,6 +92,13 @@ export async function completeBookingAction(bookingId: string, method?: string) 
 export async function adminCancelBookingAction(bookingId: string) {
   const supabase = await createClient()
 
+  // Busca os dados da reserva antes de cancelar
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('*, field:fields(*), customer:customers(*)')
+    .eq('id', bookingId)
+    .single()
+
   const { error } = await supabase
     .from('bookings')
     .update({
@@ -102,6 +109,16 @@ export async function adminCancelBookingAction(bookingId: string) {
 
   if (error) {
     return { error: 'Erro ao cancelar reserva: ' + error.message }
+  }
+
+  // Notifica por e-mail que o horário foi liberado
+  if (booking) {
+    try {
+      const { sendAdminCancelledBookingEmail } = await import('@/lib/resend/emails')
+      await sendAdminCancelledBookingEmail(booking, 'Cancelamento manual pelo painel administrativo')
+    } catch (emailErr) {
+      console.error('Erro ao enviar e-mail de cancelamento ao admin:', emailErr)
+    }
   }
 
   revalidatePath('/admin/reservas')

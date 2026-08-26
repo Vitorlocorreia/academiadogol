@@ -304,15 +304,20 @@ export async function confirmSimulatedPixPayment(bookingId: string) {
     return { error: error.message }
   }
 
-  // Dispara o e-mail de confirmação em background
+  // Dispara o e-mail de confirmação para o cliente e alerta para o administrador em background
   try {
-    const { sendConfirmationEmail } = await import('@/lib/resend/emails')
+    const { sendConfirmationEmail, sendAdminNewBookingEmail } = await import('@/lib/resend/emails')
     // Atualiza o objeto em memória com o status correto para o e-mail
     booking.status = 'confirmed'
     booking.deposit_status = 'paid'
+    
+    // Envia ao cliente
     await sendConfirmationEmail(booking)
+    
+    // Envia ao administrador imediatamente
+    await sendAdminNewBookingEmail(booking)
   } catch (emailErr) {
-    console.error('Erro ao enviar e-mail de confirmação:', emailErr)
+    console.error('Erro ao enviar e-mails de confirmação e alerta:', emailErr)
   }
 
   revalidatePath(`/reserva/pagamento/${bookingId}`)

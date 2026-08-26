@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendConfirmationEmail } from '@/lib/resend/emails'
+import { sendConfirmationEmail, sendAdminNewBookingEmail } from '@/lib/resend/emails'
 
 /**
  * Route Handler para receber webhooks do Asaas.
@@ -64,13 +64,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Erro interno ao salvar no banco' }, { status: 500 })
       }
 
-      // 4. Envia e-mail de confirmação ao cliente
+      // 4. Envia e-mail de confirmação ao cliente e alerta ao administrador
       try {
         booking.status = 'confirmed'
         booking.deposit_status = 'paid'
         await sendConfirmationEmail(booking)
+        await sendAdminNewBookingEmail(booking)
       } catch (emailErr) {
-        console.error('[Asaas Webhook] Falha ao enviar e-mail de confirmação:', emailErr)
+        console.error('[Asaas Webhook] Falha ao enviar e-mails de confirmação e alerta:', emailErr)
       }
 
       console.log(`[Asaas Webhook] Reserva ${booking.id} confirmada com sucesso via PIX automático.`)

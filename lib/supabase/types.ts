@@ -115,6 +115,7 @@ export interface Settings {
   id: string
   business_name: string
   business_phone: string | null
+  admin_notification_email?: string | null
   open_time: string
   close_time: string
   days_of_week: number[]

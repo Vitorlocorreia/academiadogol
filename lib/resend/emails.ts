@@ -5,10 +5,42 @@ const resendApiKey = process.env.RESEND_API_KEY
 const resend = resendApiKey ? new Resend(resendApiKey) : null
 
 // Remetente padrão. Resend gratuito exige onboarding@resend.dev para domínios não verificados
-const EMAIL_SENDER = 'Academia do Gol <onboarding@resend.dev>'
+const EMAIL_SENDER = process.env.RESEND_FROM_EMAIL || 'Academia do Gol <onboarding@resend.dev>'
 
 /**
- * Envia o e-mail de confirmação após pagamento do sinal
+ * Obtém o e-mail do administrador configurado no ambiente, nas configurações do banco ou fallback
+ */
+export async function resolveAdminNotificationEmail(): Promise<string> {
+  // 1. Variável de ambiente tem prioridade
+  if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+    return process.env.ADMIN_NOTIFICATION_EMAIL
+  }
+  if (process.env.ADMIN_EMAIL) {
+    return process.env.ADMIN_EMAIL
+  }
+
+  // 2. Busca do banco de dados (tabela settings)
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('settings')
+      .select('admin_notification_email')
+      .single()
+
+    if (data?.admin_notification_email) {
+      return data.admin_notification_email
+    }
+  } catch {
+    // Ignora erro se Supabase não estiver acessível no momento
+  }
+
+  // 3. Fallback padrão
+  return 'contato@academiadogol.com.br'
+}
+
+/**
+ * 1. Envia o e-mail de confirmação ao CLIENTE após pagamento do sinal
  */
 export async function sendConfirmationEmail(booking: any) {
   const customerEmail = booking.customer?.email
@@ -31,20 +63,20 @@ export async function sendConfirmationEmail(booking: any) {
 
   const subject = `✓ Reserva Confirmada - Academia do Gol`
   const html = `
-    <div style="font-family: sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 24px; border: 1px solid #27272a;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <span style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #10b981; padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: bold; text-transform: uppercase; tracking-wider: 0.05em;">
+        <span style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #10b981; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
           Confirmada
         </span>
       </div>
 
-      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 8px; text-align: center;">Horário Reservado com Sucesso!</h2>
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 8px; text-align: center; letter-spacing: -0.02em;">Horário Reservado com Sucesso!</h2>
       <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; line-height: 1.5;">
         Olá, <strong>${booking.customer?.name}</strong>. O pagamento do sinal foi compensado e sua vaga está garantida. Nos vemos em campo!
       </p>
       
-      <div style="background-color: #18181b; padding: 20px; border-radius: 16px; margin: 24px 0; border: 1px solid #27272a;">
-        <h3 style="color: #ffffff; font-size: 15px; margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-weight: 700;">Detalhes do Aluguel</h3>
+      <div style="background-color: #18181b; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #27272a;">
+        <h3 style="color: #ffffff; font-size: 14px; margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Detalhes do Aluguel</h3>
         <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
           <tr style="height: 32px;">
             <td style="color: #71717a;">Campo:</td>
@@ -78,12 +110,12 @@ export async function sendConfirmationEmail(booking: any) {
       </div>
 
       <div style="text-align: center; margin-top: 32px; margin-bottom: 16px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reserva/confirmacao/${booking.id}" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reserva/confirmacao/${booking.id}" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 14px; display: inline-block;">
           Ver Comprovante
         </a>
       </div>
 
-      <div style="background-color: #09090b; padding: 12px; border-radius: 12px; border: 1px dashed rgba(245, 158, 11, 0.2); margin-top: 24px;">
+      <div style="background-color: #09090b; padding: 12px; border-radius: 8px; border: 1px dashed rgba(245, 158, 11, 0.25); margin-top: 24px;">
         <p style="margin: 0; font-size: 12px; color: #f59e0b; line-height: 1.4; text-align: center;">
           ⚠️ <strong>Importante:</strong> Chegue com 10 minutos de antecedência. Em caso de cancelamento, o aviso deve ser feito com no mínimo 24h de antecedência.
         </p>
@@ -98,7 +130,7 @@ export async function sendConfirmationEmail(booking: any) {
   if (!resend) {
     console.log(`
 =========================================
-[MOCK EMAIL] CONFIRMAÇÃO DE RESERVA
+[MOCK EMAIL CLIENTE] CONFIRMAÇÃO DE RESERVA
 =========================================
 Para: ${customerEmail}
 Assunto: ${subject}
@@ -120,13 +152,271 @@ Corpo (Resumo):
     })
     return { success: true, response }
   } catch (error: any) {
-    console.error('Erro ao enviar e-mail via Resend:', error)
+    console.error('[Resend] Erro ao enviar e-mail ao cliente:', error)
     return { success: false, error: error.message }
   }
 }
 
 /**
- * Envia o e-mail de expiração por falta de pagamento
+ * 2. Envia e-mail instantâneo ao ADMINISTRADOR quando uma nova reserva for confirmada
+ */
+export async function sendAdminNewBookingEmail(booking: any) {
+  const adminEmail = await resolveAdminNotificationEmail()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  
+  const dateDisplay = new Date(booking.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const [hh, mm] = (booking.start_time || '00:00').split(':').map(Number)
+  const duration = booking.duration_minutes || 60
+  const endMin = hh * 60 + mm + duration
+  const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
+
+  const phoneClean = (booking.customer?.phone || '').replace(/\D/g, '')
+  const waUrl = phoneClean ? `https://wa.me/55${phoneClean}?text=${encodeURIComponent(`Olá ${booking.customer?.name}, confirmamos seu horário na Academia do Gol para ${booking.date} às ${booking.start_time?.slice(0, 5)}!`)}` : '#'
+
+  const subject = `🚨 [Nova Reserva] ${booking.customer?.name || 'Cliente'} - ${booking.field?.name || 'Campo'} (${dateDisplay.split(',')[0]} às ${booking.start_time?.slice(0, 5)})`
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
+          ⚡ Nova Reserva Confirmada (Sinal Pago)
+        </span>
+      </div>
+
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 8px; text-align: center; letter-spacing: -0.02em;">
+        Nova Partida Agendada!
+      </h2>
+      <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; line-height: 1.5;">
+        O cliente <strong>${booking.customer?.name}</strong> acabou de pagar o sinal PIX de <strong>R$ ${Number(booking.deposit_amount).toFixed(2)}</strong>.
+      </p>
+
+      <!-- Detalhes do Horário -->
+      <div style="background-color: #18181b; padding: 18px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #10b981; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
+          ⚽ Dados do Jogo
+        </h3>
+        <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Quadra / Campo:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 700;">${booking.field?.name}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Data:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600; text-transform: capitalize;">${dateDisplay}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Horário:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 700;">${booking.start_time?.substring(0, 5)} às ${endTime} (${duration} min)</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Dados do Cliente -->
+      <div style="background-color: #18181b; padding: 18px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #60a5fa; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
+          👤 Dados do Cliente
+        </h3>
+        <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Nome:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600;">${booking.customer?.name}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Telefone / WhatsApp:</td>
+            <td style="text-align: right; color: #10b981; font-weight: 600;">
+              ${phoneClean ? `<a href="${waUrl}" style="color: #10b981; text-decoration: underline;">${booking.customer?.phone} 💬</a>` : booking.customer?.phone || '—'}
+            </td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">E-mail:</td>
+            <td style="text-align: right; color: #a1a1aa;">${booking.customer?.email || 'Não informado'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Financeiro -->
+      <div style="background-color: #18181b; padding: 18px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #f59e0b; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
+          💰 Resumo Financeiro
+        </h3>
+        <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Valor Total:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600;">R$ ${Number(booking.total_amount).toFixed(2)}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #10b981; font-weight: 600;">Sinal Pago (PIX):</td>
+            <td style="text-align: right; color: #10b981; font-weight: 700;">✓ R$ ${Number(booking.deposit_amount).toFixed(2)}</td>
+          </tr>
+          <tr style="height: 28px; border-top: 1px dashed #27272a;">
+            <td style="color: #f59e0b; font-weight: 700; padding-top: 6px;">Receber no Balcão:</td>
+            <td style="text-align: right; color: #f59e0b; font-weight: 800; font-size: 15px; padding-top: 6px;">R$ ${Number(booking.remaining_amount).toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Botões de Ação Rápida -->
+      <div style="text-align: center; margin-top: 28px; margin-bottom: 12px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="${appUrl}/admin/reservas" style="background-color: #10b981; color: #ffffff; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block;">
+          Ver no Painel Admin
+        </a>
+        ${phoneClean ? `
+        <a href="${waUrl}" style="background-color: #27272a; color: #fafafa; border: 1px solid #3f3f46; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block;">
+          Abrir WhatsApp do Cliente
+        </a>` : ''}
+      </div>
+
+      <p style="color: #71717a; font-size: 11px; text-align: center; margin-top: 36px; border-top: 1px solid #27272a; padding-top: 16px;">
+        Notificação Automática do Sistema &bull; Academia do Gol
+      </p>
+    </div>
+  `
+
+  if (!resend) {
+    console.log(`
+=========================================
+[MOCK EMAIL ADMIN] 🚨 NOVA RESERVA CONFIRMADA
+=========================================
+Para (Admin): ${adminEmail}
+Assunto: ${subject}
+- Cliente: ${booking.customer?.name} (${booking.customer?.phone})
+- Campo: ${booking.field?.name}
+- Data: ${booking.date} (${booking.start_time?.slice(0, 5)} - ${endTime})
+- Sinal Pago: R$ ${Number(booking.deposit_amount).toFixed(2)}
+- A Cobrar no Balcão: R$ ${Number(booking.remaining_amount).toFixed(2)}
+=========================================
+`)
+    return { success: true, mock: true }
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: EMAIL_SENDER,
+      to: adminEmail,
+      subject,
+      html,
+    })
+    return { success: true, response }
+  } catch (error: any) {
+    console.error('[Resend] Erro ao enviar alerta de nova reserva ao admin:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 3. Envia e-mail ao ADMINISTRADOR informando que uma reserva foi cancelada ou expirou
+ */
+export async function sendAdminCancelledBookingEmail(booking: any, reason?: string) {
+  const adminEmail = await resolveAdminNotificationEmail()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  
+  const dateDisplay = new Date(booking.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const [hh, mm] = (booking.start_time || '00:00').split(':').map(Number)
+  const duration = booking.duration_minutes || 60
+  const endMin = hh * 60 + mm + duration
+  const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
+
+  const subject = `❌ [Horário Liberado] ${booking.field?.name || 'Campo'} - ${booking.date} às ${booking.start_time?.slice(0, 5)}`
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
+          ❌ Horário Liberado / Reserva Cancelada
+        </span>
+      </div>
+
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 8px; text-align: center; letter-spacing: -0.02em;">
+        Horário Disponível na Grade
+      </h2>
+      <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; line-height: 1.5;">
+        A reserva para <strong>${booking.field?.name}</strong> foi cancelada e o slot de tempo foi liberado para novos clientes.
+      </p>
+
+      <div style="background-color: #18181b; padding: 18px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #ef4444; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
+          Detalhes do Horário Cancelado
+        </h3>
+        <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Quadra / Campo:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 700;">${booking.field?.name}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Data:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600; text-transform: capitalize;">${dateDisplay}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Horário Liberado:</td>
+            <td style="text-align: right; color: #ef4444; font-weight: 700;">${booking.start_time?.substring(0, 5)} às ${endTime}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Cliente:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600;">${booking.customer?.name || '—'} (${booking.customer?.phone || '—'})</td>
+          </tr>
+          <tr style="height: 28px; border-top: 1px dashed #27272a;">
+            <td style="color: #71717a; padding-top: 6px;">Motivo:</td>
+            <td style="text-align: right; color: #f59e0b; font-weight: 600; padding-top: 6px;">${reason || 'Cancelamento de agendamento'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin-top: 28px; margin-bottom: 12px;">
+        <a href="${appUrl}/admin/agenda?date=${booking.date}" style="background-color: #27272a; color: #ffffff; border: 1px solid #3f3f46; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block;">
+          Ver Grade do Dia na Agenda
+        </a>
+      </div>
+
+      <p style="color: #71717a; font-size: 11px; text-align: center; margin-top: 36px; border-top: 1px solid #27272a; padding-top: 16px;">
+        Notificação Automática do Sistema &bull; Academia do Gol
+      </p>
+    </div>
+  `
+
+  if (!resend) {
+    console.log(`
+=========================================
+[MOCK EMAIL ADMIN] ❌ RESERVA CANCELADA / LIBERADA
+=========================================
+Para (Admin): ${adminEmail}
+Assunto: ${subject}
+- Campo: ${booking.field?.name}
+- Data: ${booking.date} (${booking.start_time?.slice(0, 5)} - ${endTime})
+- Motivo: ${reason || 'Cancelamento'}
+- Cliente: ${booking.customer?.name} (${booking.customer?.phone})
+=========================================
+`)
+    return { success: true, mock: true }
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: EMAIL_SENDER,
+      to: adminEmail,
+      subject,
+      html,
+    })
+    return { success: true, response }
+  } catch (error: any) {
+    console.error('[Resend] Erro ao enviar alerta de cancelamento ao admin:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 4. Envia o e-mail de expiração ao CLIENTE
  */
 export async function sendExpirationEmail(booking: any) {
   const customerEmail = booking.customer?.email
@@ -142,16 +432,15 @@ export async function sendExpirationEmail(booking: any) {
     year: 'numeric',
   })
 
-  // Calcula horário de fim
   const [hh, mm] = booking.start_time.split(':').map(Number)
   const endMin = hh * 60 + mm + booking.duration_minutes
   const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
 
   const subject = `⏰ Reserva Expirada - Academia do Gol`
   const html = `
-    <div style="font-family: sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 24px; border: 1px solid #27272a;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <span style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: bold; text-transform: uppercase; tracking-wider: 0.05em;">
+        <span style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: bold; text-transform: uppercase;">
           Expirada
         </span>
       </div>
@@ -161,8 +450,8 @@ export async function sendExpirationEmail(booking: any) {
         Olá, <strong>${booking.customer?.name}</strong>. O tempo limite de 15 minutos para o pagamento do sinal PIX da sua reserva expirou. O slot de tempo foi liberado para outros clientes.
       </p>
       
-      <div style="background-color: #18181b; padding: 20px; border-radius: 16px; margin: 24px 0; border: 1px solid #27272a;">
-        <h3 style="color: #ffffff; font-size: 15px; margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-weight: 700;">Detalhes da Solicitação Expirada</h3>
+      <div style="background-color: #18181b; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #27272a;">
+        <h3 style="color: #ffffff; font-size: 14px; margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid #27272a; padding-bottom: 8px; font-weight: 700;">Detalhes da Solicitação Expirada</h3>
         <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
           <tr style="height: 32px;">
             <td style="color: #71717a;">Campo:</td>
@@ -183,12 +472,8 @@ export async function sendExpirationEmail(booking: any) {
         </table>
       </div>
 
-      <p style="color: #a1a1aa; font-size: 13px; text-align: center; line-height: 1.5;">
-        Se você ainda deseja jogar, faça uma nova reserva pelo nosso site escolhendo um horário disponível.
-      </p>
-
       <div style="text-align: center; margin-top: 32px; margin-bottom: 16px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/campos" style="background-color: #27272a; color: #ffffff; padding: 12px 24px; border-radius: 12px; font-weight: 700; text-decoration: none; font-size: 14px; display: inline-block; border: 1px solid #3f3f46;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/campos" style="background-color: #27272a; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 14px; display: inline-block; border: 1px solid #3f3f46;">
           Ver Quadras Disponíveis
         </a>
       </div>
@@ -202,14 +487,10 @@ export async function sendExpirationEmail(booking: any) {
   if (!resend) {
     console.log(`
 =========================================
-[MOCK EMAIL] EXPIRAÇÃO DE RESERVA
+[MOCK EMAIL CLIENTE] EXPIRAÇÃO DE RESERVA
 =========================================
 Para: ${customerEmail}
 Assunto: ${subject}
-Corpo (Resumo):
-- Campo: ${booking.field?.name}
-- Data: ${booking.date} (${booking.start_time} - ${endTime})
-- Motivo: Não pagamento do sinal PIX em 15min.
 =========================================
 `)
     return { success: true, mock: true }
@@ -224,7 +505,141 @@ Corpo (Resumo):
     })
     return { success: true, response }
   } catch (error: any) {
-    console.error('Erro ao enviar e-mail de expiração via Resend:', error)
+    console.error('[Resend] Erro ao enviar e-mail de expiração ao cliente:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 5. Envia o Resumo Diário Matinal (Daily Digest) ao ADMINISTRADOR
+ */
+export async function sendAdminDailyDigestEmail(bookings: any[], dateStr: string) {
+  const adminEmail = await resolveAdminNotificationEmail()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const dateDisplay = new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const totalDeposit = bookings.reduce((sum, b) => sum + Number(b.deposit_amount || 0), 0)
+  const totalRemaining = bookings.reduce((sum, b) => sum + Number(b.remaining_amount || 0), 0)
+  const totalExpected = bookings.reduce((sum, b) => sum + Number(b.total_amount || 0), 0)
+
+  const subject = `☀️ [Resumo do Dia] ${bookings.length} ${bookings.length === 1 ? 'partida agendada' : 'partidas agendadas'} para hoje (${dateDisplay.split(',')[0]})`
+
+  // Linhas da tabela de jogos
+  const rowsHtml = bookings.length === 0
+    ? `<tr><td colspan="4" style="text-align: center; padding: 24px; color: #71717a;">Nenhuma partida agendada para hoje até o momento.</td></tr>`
+    : bookings.map((b) => {
+        const phoneClean = (b.customer?.phone || '').replace(/\D/g, '')
+        const waUrl = phoneClean ? `https://wa.me/55${phoneClean}` : '#'
+        return `
+          <tr style="border-bottom: 1px solid #27272a; height: 44px;">
+            <td style="padding: 8px 4px; font-weight: 700; color: #10b981;">${b.start_time?.slice(0, 5)}</td>
+            <td style="padding: 8px 4px; color: #ffffff; font-weight: 600;">${b.field?.name || 'Campo'}</td>
+            <td style="padding: 8px 4px; color: #d4d4d8;">
+              ${b.customer?.name || '—'}
+              ${phoneClean ? `<br/><a href="${waUrl}" style="color: #71717a; font-size: 11px; text-decoration: underline;">${b.customer?.phone}</a>` : ''}
+            </td>
+            <td style="padding: 8px 4px; text-align: right; color: #f59e0b; font-weight: 700;">
+              R$ ${Number(b.remaining_amount || 0).toFixed(2)}
+            </td>
+          </tr>
+        `
+      }).join('')
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
+          ☀️ Resumo Matinal dos Jogos
+        </span>
+      </div>
+
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 4px; text-align: center; letter-spacing: -0.02em;">
+        Escala de Jogos de Hoje
+      </h2>
+      <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; text-transform: capitalize;">
+        ${dateDisplay}
+      </p>
+
+      <!-- Métricas / Cards Rápidos -->
+      <div style="display: flex; gap: 8px; margin: 20px 0;">
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #71717a; font-size: 11px; text-transform: uppercase; font-weight: 700;">Jogos</div>
+          <div style="color: #ffffff; font-size: 20px; font-weight: 900; margin-top: 4px;">${bookings.length}</div>
+        </div>
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: 700;">Sinais (PIX)</div>
+          <div style="color: #10b981; font-size: 18px; font-weight: 900; margin-top: 4px;">R$ ${totalDeposit.toFixed(0)}</div>
+        </div>
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #f59e0b; font-size: 11px; text-transform: uppercase; font-weight: 700;">No Balcão</div>
+          <div style="color: #f59e0b; font-size: 18px; font-weight: 900; margin-top: 4px;">R$ ${totalRemaining.toFixed(0)}</div>
+        </div>
+      </div>
+
+      <!-- Tabela da Grade -->
+      <div style="background-color: #18181b; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #ffffff; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; border-bottom: 1px solid #27272a; padding-bottom: 8px;">
+          Grade de Partidas
+        </h3>
+        <table style="width: 100%; font-size: 13px; color: #d4d4d8; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid #27272a; color: #71717a; text-align: left; font-size: 11px; text-transform: uppercase;">
+              <th style="padding-bottom: 6px;">Hora</th>
+              <th style="padding-bottom: 6px;">Campo</th>
+              <th style="padding-bottom: 6px;">Cliente</th>
+              <th style="padding-bottom: 6px; text-align: right;">A Cobrar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Botão CTA -->
+      <div style="text-align: center; margin-top: 28px; margin-bottom: 12px;">
+        <a href="${appUrl}/admin/agenda?date=${dateStr}" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block;">
+          Abrir Agenda Completa no Painel
+        </a>
+      </div>
+
+      <p style="color: #71717a; font-size: 11px; text-align: center; margin-top: 36px; border-top: 1px solid #27272a; padding-top: 16px;">
+        Resumo Automático Matinal &bull; Academia do Gol
+      </p>
+    </div>
+  `
+
+  if (!resend) {
+    console.log(`
+=========================================
+[MOCK EMAIL ADMIN] ☀️ RESUMO DIÁRIO MATINAL
+=========================================
+Para (Admin): ${adminEmail}
+Assunto: ${subject}
+Total de Jogos: ${bookings.length}
+Sinais Arrecadados: R$ ${totalDeposit.toFixed(2)}
+A Receber no Balcão: R$ ${totalRemaining.toFixed(2)}
+=========================================
+`)
+    return { success: true, mock: true }
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: EMAIL_SENDER,
+      to: adminEmail,
+      subject,
+      html,
+    })
+    return { success: true, response }
+  } catch (error: any) {
+    console.error('[Resend] Erro ao enviar resumo diário ao admin:', error)
     return { success: false, error: error.message }
   }
 }

@@ -246,6 +246,14 @@ export async function deleteBlockedSlotAction(id: string) {
 // Cancelar reserva pelo admin
 export async function cancelBookingAction(id: string) {
   const supabase = await createClient()
+
+  // Busca os dados da reserva antes de cancelar
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('*, field:fields(*), customer:customers(*)')
+    .eq('id', id)
+    .single()
+
   const { error } = await supabase
     .from('bookings')
     .update({ status: 'cancelled' })
@@ -253,6 +261,16 @@ export async function cancelBookingAction(id: string) {
 
   if (error) {
     return { error: error.message }
+  }
+
+  // Notifica por e-mail que o horário foi liberado
+  if (booking) {
+    try {
+      const { sendAdminCancelledBookingEmail } = await import('@/lib/resend/emails')
+      await sendAdminCancelledBookingEmail(booking, 'Cancelamento efetuado pela grade da agenda')
+    } catch (emailErr) {
+      console.error('Erro ao enviar e-mail de cancelamento ao admin:', emailErr)
+    }
   }
 
   revalidatePath('/admin/agenda')

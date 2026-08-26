@@ -7,6 +7,7 @@ import { z } from 'zod'
 const settingsSchema = z.object({
   business_name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
   business_phone: z.string().optional(),
+  admin_notification_email: z.string().email('E-mail de notificação inválido').optional().or(z.literal('')),
   open_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
   close_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
   advance_booking_days: z.coerce.number().min(1).max(365),
@@ -22,6 +23,7 @@ export async function saveSettingsAction(formData: FormData) {
   const raw = {
     business_name: formData.get('business_name'),
     business_phone: formData.get('business_phone') || undefined,
+    admin_notification_email: formData.get('admin_notification_email') || undefined,
     open_time: formData.get('open_time'),
     close_time: formData.get('close_time'),
     advance_booking_days: formData.get('advance_booking_days'),
@@ -38,10 +40,20 @@ export async function saveSettingsAction(formData: FormData) {
   const supabase = await createClient()
 
   // Sempre atualiza o único registro de configurações
-  const { error } = await supabase
+  let { error } = await supabase
     .from('settings')
     .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .not('id', 'is', null)
+
+  // Se a coluna admin_notification_email ainda não existir na tabela, tenta salvar o restante
+  if (error && error.message?.includes('admin_notification_email')) {
+    const { admin_notification_email: _, ...dataWithoutEmail } = parsed.data
+    const retry = await supabase
+      .from('settings')
+      .update({ ...dataWithoutEmail, updated_at: new Date().toISOString() })
+      .not('id', 'is', null)
+    error = retry.error
+  }
 
   if (error) {
     return { error: `Erro ao salvar: ${error.message}`, success: false }

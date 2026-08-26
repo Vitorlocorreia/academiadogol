@@ -71,7 +71,7 @@ export function SaveSettingsForm({ settings }: Props) {
           </div>
           <div>
             <label htmlFor="business_phone" className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Telefone do Negócio
+              Telefone do Negócio (WhatsApp)
             </label>
             <input
               id="business_phone"
@@ -81,6 +81,69 @@ export function SaveSettingsForm({ settings }: Props) {
               placeholder="(81) 9 9999-9999"
               className="input-admin"
             />
+          </div>
+        </div>
+      </section>
+
+      <div className="border-t border-zinc-800" />
+
+      {/* Notificações do Administrador */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
+            Notificações por E-mail (Admin)
+          </h3>
+          <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+            Ativo
+          </span>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="admin_notification_email" className="block text-sm font-medium text-zinc-300 mb-1.5">
+              E-mail de Notificações
+            </label>
+            <input
+              id="admin_notification_email"
+              name="admin_notification_email"
+              type="email"
+              defaultValue={settings?.admin_notification_email ?? ''}
+              placeholder="admin@academiadogol.com.br"
+              className="input-admin"
+            />
+            <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed">
+              Você receberá avisos automáticos instantâneos sempre que uma reserva for paga via PIX, cancelada ou quando o resumo matinal for gerado.
+            </p>
+          </div>
+
+          {/* Cards informativos dos alertas configurados */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
+              <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <span>⚡</span> Nova Reserva
+              </div>
+              <p className="text-[11px] text-zinc-400 leading-tight">
+                Alerta no mesmo segundo em que o sinal PIX é compensado.
+              </p>
+            </div>
+
+            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
+              <div className="text-xs font-bold text-red-400 flex items-center gap-1.5">
+                <span>❌</span> Horário Liberado
+              </div>
+              <p className="text-[11px] text-zinc-400 leading-tight">
+                Aviso imediato quando expirar o PIX de 15min ou houver cancelamento.
+              </p>
+            </div>
+
+            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
+              <div className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                <span>☀️</span> Resumo Diário
+              </div>
+              <p className="text-[11px] text-zinc-400 leading-tight">
+                Escala completa de partidas todo dia às 07:00 da manhã.
+              </p>
+            </div>
           </div>
         </div>
       </section>
