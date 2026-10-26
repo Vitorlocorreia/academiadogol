@@ -1,6 +1,6 @@
 import { inngest } from "./client"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { sendExpirationEmail, sendAdminCancelledBookingEmail, sendAdminDailyDigestEmail } from "@/lib/resend/emails"
+import { sendExpirationEmail, sendAdminCancelledBookingEmail, sendAdminDailyDigestEmail, sendDailyClosingReportEmail } from "@/lib/resend/emails"
 
 /**
  * Job de background do Inngest para expirar reservas pendentes.
@@ -107,3 +107,40 @@ export const dailyDigestFunction = inngest.createFunction(
   }
 )
 
+
+
+/**
+ * Job agendado (Cron) para envio do fechamento diário às 23:30 (Brasília) aos diretores
+ */
+export const dailyClosingFunction = inngest.createFunction(
+  { id: "daily-closing-email", triggers: [{ cron: "30 2 * * *" }] }, // 02:30 UTC = 23:30 BRT (UTC-3)
+  async ({ step }) => {
+    await step.run("send-daily-closing-report", async () => {
+      const supabase = createAdminClient()
+
+      // Data de hoje no fuso de Brasília (YYYY-MM-DD)
+      const now = new Date()
+      const brTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }))
+      const year = brTime.getFullYear()
+      const month = String(brTime.getMonth() + 1).padStart(2, '0')
+      const day = String(brTime.getDate()).padStart(2, '0')
+      const todayStr = `${year}-${month}-${day}`
+
+      const { data: bookings, error } = await supabase
+        .from("bookings")
+        .select("*, field:fields(name), customer:customers(name, phone, email)")
+        .eq("date", todayStr)
+        .order("start_time", { ascending: true })
+
+      if (error) {
+        console.error("Erro ao buscar reservas para o fechamento diário:", error)
+        return
+      }
+
+      await sendDailyClosingReportEmail(bookings ?? [], todayStr, {
+        closedBy: "Fechamento Noturno Automático",
+        notes: "Fechamento consolidado das reservas do dia.",
+      })
+    })
+  }
+)

@@ -52,6 +52,8 @@ export interface Booking {
   remaining_status: RemainingStatus
   remaining_payment_method: RemainingPaymentMethod | null
   asaas_charge_id: string | null
+  pix_qr_code?: string | null
+  pix_copy_paste?: string | null
   notes: string | null
   created_at: string
   updated_at: string

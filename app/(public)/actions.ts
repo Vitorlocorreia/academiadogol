@@ -329,3 +329,24 @@ export async function confirmSimulatedPixPayment(bookingId: string) {
   return { success: true }
 }
 
+// Verifica o status em tempo real de uma reserva (usado para auto-redirect após PIX)
+export async function checkBookingStatusAction(bookingId: string) {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('id, status, deposit_status')
+    .eq('id', bookingId)
+    .single()
+
+  if (error || !data) {
+    return { isConfirmed: false, status: 'pending' }
+  }
+
+  const isConfirmed = data.status === 'confirmed' || data.status === 'completed'
+  return {
+    isConfirmed,
+    status: data.status,
+    depositStatus: data.deposit_status,
+  }
+}
+

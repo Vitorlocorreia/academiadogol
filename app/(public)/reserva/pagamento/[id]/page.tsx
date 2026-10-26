@@ -2,6 +2,7 @@
 
 import { notFound, redirect } from 'next/navigation'
 import { getBookingById } from '@/app/(public)/actions'
+import { getOrGenerateBookingPix } from '@/lib/asaas/client'
 import { PixCheckoutClient } from './checkout-client'
 
 interface Props {
@@ -21,9 +22,12 @@ export default async function PagamentoPage({ params }: Props) {
     redirect(`/reserva/confirmacao/${id}`)
   }
 
+  // Obtém ou gera o PIX via Asaas
+  const pixData = await getOrGenerateBookingPix(booking)
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
-      <PixCheckoutClient booking={booking} />
+      <PixCheckoutClient booking={booking} pixData={pixData} />
     </div>
   )
 }

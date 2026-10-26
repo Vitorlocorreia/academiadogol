@@ -511,10 +511,20 @@ Assunto: ${subject}
 }
 
 /**
- * 5. Envia o Resumo Diário Matinal (Daily Digest) ao ADMINISTRADOR
+ * Lista oficial de diretores e administradores para recebimento de fechamentos e resumos diários
+ */
+export const DAILY_CLOSING_RECIPIENTS = [
+  'willanekarlaa@gmail.com',
+  'ricardoelihimas@hotmail.com',
+  'franciscobrennand@hotmail.com',
+]
+
+/**
+ * 5. Envia o Resumo Diário Matinal (Daily Digest) aos ADMINISTRADORES
  */
 export async function sendAdminDailyDigestEmail(bookings: any[], dateStr: string) {
   const adminEmail = await resolveAdminNotificationEmail()
+  const recipients = Array.from(new Set([adminEmail, ...DAILY_CLOSING_RECIPIENTS])).filter(Boolean)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   const dateDisplay = new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -610,7 +620,8 @@ export async function sendAdminDailyDigestEmail(bookings: any[], dateStr: string
       </div>
 
       <p style="color: #71717a; font-size: 11px; text-align: center; margin-top: 36px; border-top: 1px solid #27272a; padding-top: 16px;">
-        Resumo Automático Matinal &bull; Academia do Gol
+        Resumo Automático Matinal &bull; Academia do Gol<br/>
+        Destinatários: ${recipients.join(', ')}
       </p>
     </div>
   `
@@ -620,26 +631,197 @@ export async function sendAdminDailyDigestEmail(bookings: any[], dateStr: string
 =========================================
 [MOCK EMAIL ADMIN] ☀️ RESUMO DIÁRIO MATINAL
 =========================================
-Para (Admin): ${adminEmail}
+Para: ${recipients.join(', ')}
 Assunto: ${subject}
 Total de Jogos: ${bookings.length}
 Sinais Arrecadados: R$ ${totalDeposit.toFixed(2)}
 A Receber no Balcão: R$ ${totalRemaining.toFixed(2)}
 =========================================
 `)
-    return { success: true, mock: true }
+    return { success: true, mock: true, recipients }
   }
 
   try {
     const response = await resend.emails.send({
       from: EMAIL_SENDER,
-      to: adminEmail,
+      to: recipients,
       subject,
       html,
     })
-    return { success: true, response }
+    return { success: true, response, recipients }
   } catch (error: any) {
     console.error('[Resend] Erro ao enviar resumo diário ao admin:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 6. Envia o Relatório Oficial de Fechamento Diário Noturno aos Sócios e Administradores
+ */
+export async function sendDailyClosingReportEmail(
+  bookings: any[],
+  dateStr: string,
+  extraData?: { closedBy?: string; notes?: string }
+) {
+  const adminEmail = await resolveAdminNotificationEmail()
+  const recipients = Array.from(new Set([adminEmail, ...DAILY_CLOSING_RECIPIENTS])).filter(Boolean)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const dateDisplay = new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const activeBookings = bookings.filter((b) => b.status !== 'cancelled')
+  const completedBookings = activeBookings.filter((b) => b.status === 'completed' || b.status === 'confirmed')
+  const cancelledBookings = bookings.filter((b) => b.status === 'cancelled')
+
+  const totalRevenue = activeBookings.reduce((sum, b) => sum + Number(b.total_amount || 0), 0)
+  const totalDeposit = activeBookings.reduce((sum, b) => {
+    return sum + (b.deposit_status === 'paid' ? Number(b.deposit_amount || 0) : 0)
+  }, 0)
+  const totalRemainingCollected = activeBookings.reduce((sum, b) => {
+    return sum + (b.remaining_status === 'paid' ? Number(b.remaining_amount || 0) : 0)
+  }, 0)
+  const totalCollected = totalDeposit + totalRemainingCollected
+  const totalPending = totalRevenue - totalCollected
+
+  const subject = `🌙 [Fechamento Diário] Relatório de Jogos & Caixa - ${dateDisplay.split(',')[0]} (R$ ${totalCollected.toFixed(2)})`
+
+  const rowsHtml = bookings.length === 0
+    ? `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #71717a;">Nenhuma partida agendada para este dia.</td></tr>`
+    : bookings.map((b) => {
+        const isCancelled = b.status === 'cancelled'
+        const depositPaid = b.deposit_status === 'paid'
+        const remainingPaid = b.remaining_status === 'paid'
+
+        const statusBadge = isCancelled
+          ? `<span style="background-color: #ef444420; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">CANCELADO</span>`
+          : remainingPaid
+          ? `<span style="background-color: #10b98120; color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">100% PAGO</span>`
+          : depositPaid
+          ? `<span style="background-color: #f59e0b20; color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">SINAL PAGO</span>`
+          : `<span style="background-color: #71717a20; color: #a1a1aa; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">PENDENTE</span>`
+
+        return `
+          <tr style="border-bottom: 1px solid #27272a; height: 44px; opacity: ${isCancelled ? 0.6 : 1};">
+            <td style="padding: 8px 4px; font-weight: 700; color: #10b981;">${b.start_time?.slice(0, 5)}</td>
+            <td style="padding: 8px 4px; color: #ffffff; font-weight: 600;">${b.field?.name || 'Campo'}</td>
+            <td style="padding: 8px 4px; color: #d4d4d8;">${b.customer?.name || '—'}</td>
+            <td style="padding: 8px 4px; text-align: center;">${statusBadge}</td>
+            <td style="padding: 8px 4px; text-align: right; color: #ffffff; font-weight: 700;">
+              R$ ${Number(b.total_amount || 0).toFixed(2)}
+            </td>
+          </tr>
+        `
+      }).join('')
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 640px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
+          🌙 Fechamento Diário de Caixa &amp; Jogos
+        </span>
+      </div>
+
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 4px; text-align: center; letter-spacing: -0.02em;">
+        Relatório Oficial de Fechamento do Dia
+      </h2>
+      <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; text-transform: capitalize;">
+        ${dateDisplay} ${extraData?.closedBy ? `&bull; Feito por: <strong>${extraData.closedBy}</strong>` : ''}
+      </p>
+
+      <!-- Aviso aos destinatários -->
+      <div style="background-color: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 10px 14px; margin: 16px 0; font-size: 12px; color: #a1a1aa;">
+        <strong style="color: #ffffff;">Envio Automático aos Diretores:</strong><br/>
+        <span style="font-family: monospace; font-size: 11px; color: #60a5fa;">${recipients.join(' &bull; ')}</span>
+      </div>
+
+      <!-- Métricas / Cards Rápidos -->
+      <div style="display: flex; gap: 8px; margin: 20px 0;">
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #71717a; font-size: 10px; text-transform: uppercase; font-weight: 700;">Partidas Ativas</div>
+          <div style="color: #ffffff; font-size: 20px; font-weight: 900; margin-top: 4px;">${activeBookings.length}</div>
+          <div style="font-size: 10px; color: #71717a;">${cancelledBookings.length} canc.</div>
+        </div>
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #10b981; font-size: 10px; text-transform: uppercase; font-weight: 700;">Arrecadado</div>
+          <div style="color: #10b981; font-size: 20px; font-weight: 900; margin-top: 4px;">R$ ${totalCollected.toFixed(2)}</div>
+          <div style="font-size: 10px; color: #10b981;">PIX + Balcão</div>
+        </div>
+        <div style="flex: 1; background-color: #18181b; border: 1px solid #27272a; padding: 12px; border-radius: 10px; text-align: center;">
+          <div style="color: #f59e0b; font-size: 10px; text-transform: uppercase; font-weight: 700;">Pendente</div>
+          <div style="color: #f59e0b; font-size: 20px; font-weight: 900; margin-top: 4px;">R$ ${totalPending.toFixed(2)}</div>
+          <div style="font-size: 10px; color: #f59e0b;">A acertar</div>
+        </div>
+      </div>
+
+      ${extraData?.notes ? `
+      <div style="background-color: #18181b; border-left: 3px solid #10b981; padding: 10px 14px; margin: 16px 0; border-radius: 0 6px 6px 0; font-size: 12px; color: #d4d4d8;">
+        <strong>Observações do Fechamento:</strong> ${extraData.notes}
+      </div>` : ''}
+
+      <!-- Tabela da Grade -->
+      <div style="background-color: #18181b; padding: 16px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #ffffff; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; border-bottom: 1px solid #27272a; padding-bottom: 8px;">
+          Detalhamento de Reservas do Dia
+        </h3>
+        <table style="width: 100%; font-size: 12px; color: #d4d4d8; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid #27272a; color: #71717a; text-align: left; font-size: 10px; text-transform: uppercase;">
+              <th style="padding-bottom: 6px;">Hora</th>
+              <th style="padding-bottom: 6px;">Campo</th>
+              <th style="padding-bottom: 6px;">Cliente</th>
+              <th style="padding-bottom: 6px; text-align: center;">Status</th>
+              <th style="padding-bottom: 6px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Botão CTA -->
+      <div style="text-align: center; margin-top: 28px; margin-bottom: 12px;">
+        <a href="${appUrl}/admin/financeiro" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; display: inline-block;">
+          Ver Painel Financeiro Completo
+        </a>
+      </div>
+
+      <p style="color: #71717a; font-size: 11px; text-align: center; margin-top: 36px; border-top: 1px solid #27272a; padding-top: 16px;">
+        Fechamento Diário Automático &bull; Academia do Gol
+      </p>
+    </div>
+  `
+
+  if (!resend) {
+    console.log(`
+=========================================
+[MOCK EMAIL ADMIN] 🌙 FECHAMENTO DIÁRIO DE CAIXA
+=========================================
+Para: ${recipients.join(', ')}
+Assunto: ${subject}
+Total de Partidas: ${bookings.length}
+Arrecadado: R$ ${totalCollected.toFixed(2)}
+Pendente: R$ ${totalPending.toFixed(2)}
+=========================================
+`)
+    return { success: true, mock: true, recipients }
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: EMAIL_SENDER,
+      to: recipients,
+      subject,
+      html,
+    })
+    return { success: true, response, recipients }
+  } catch (error: any) {
+    console.error('[Resend] Erro ao enviar fechamento diário por email:', error)
     return { success: false, error: error.message }
   }
 }

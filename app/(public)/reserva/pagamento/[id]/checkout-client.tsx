@@ -1,17 +1,27 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { confirmSimulatedPixPayment } from '@/app/(public)/actions'
+import { confirmSimulatedPixPayment, checkBookingStatusAction } from '@/app/(public)/actions'
+
+interface PixData {
+  chargeId: string | null
+  pixQrCode: string | null
+  pixCopyPaste: string
+  isReal: boolean
+  error?: string
+}
 
 interface Props {
   booking: any // booking com relations
+  pixData?: PixData
 }
 
-export function PixCheckoutClient({ booking }: Props) {
+export function PixCheckoutClient({ booking, pixData }: Props) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [isChecking, setIsChecking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isConfirmed = booking.status === 'confirmed' || booking.status === 'completed'
@@ -28,7 +38,45 @@ export function PixCheckoutClient({ booking }: Props) {
   const endMin = hh * 60 + mm + booking.duration_minutes
   const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
 
-  const pixKey = `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/${booking.id}5204000053039865405${booking.deposit_amount.toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
+  // Chave copia e cola real do Asaas ou mock de fallback
+  const pixKey = pixData?.pixCopyPaste || `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/${booking.id}5204000053039865405${booking.deposit_amount.toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
+  const isReal = !!pixData?.isReal
+
+  // Auto-polling: verifica a cada 4 segundos se o Webhook do Asaas confirmou o pagamento
+  useEffect(() => {
+    if (isConfirmed && isPaid) return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkBookingStatusAction(booking.id)
+        if (res.isConfirmed) {
+          clearInterval(interval)
+          router.push(`/reserva/confirmacao/${booking.id}`)
+        }
+      } catch (err) {
+        // Silencioso em caso de falha de conexão transitória
+      }
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [booking.id, isConfirmed, isPaid, router])
+
+  const handleManualCheck = async () => {
+    setIsChecking(true)
+    setError(null)
+    try {
+      const res = await checkBookingStatusAction(booking.id)
+      if (res.isConfirmed) {
+        router.push(`/reserva/confirmacao/${booking.id}`)
+      } else {
+        setError('O pagamento ainda não foi identificado. Aguarde alguns instantes após transferir.')
+      }
+    } catch {
+      setError('Erro ao verificar status. Tente novamente.')
+    } finally {
+      setIsChecking(false)
+    }
+  }
 
   const handleCopy = async () => {
     try {
@@ -212,40 +260,48 @@ export function PixCheckoutClient({ booking }: Props) {
                 borderRadius: '4px',
               }}
             >
-              {/* Dummy QR Code representation using pure SVG for crisp high-end design */}
-              <svg className="w-40 h-40" viewBox="0 0 100 100" fill="currentColor" style={{ color: 'var(--text-primary)' }}>
-                <rect width="100" height="100" fill="transparent" />
-                {/* Outer corners */}
-                <rect x="5" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
-                <rect x="10" y="10" width="15" height="15" />
-                
-                <rect x="70" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
-                <rect x="75" y="10" width="15" height="15" />
- 
-                <rect x="5" y="70" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
-                <rect x="10" y="75" width="15" height="15" />
-                
-                {/* Random blocks for realism */}
-                <rect x="40" y="10" width="10" height="5" />
-                <rect x="55" y="15" width="5" height="15" />
-                <rect x="40" y="25" width="15" height="5" />
-                <rect x="45" y="40" width="20" height="10" />
-                <rect x="15" y="45" width="10" height="5" />
-                <rect x="70" y="45" width="10" height="15" />
-                <rect x="80" y="75" width="15" height="10" />
-                <rect x="40" y="65" width="5" height="20" />
-                <rect x="55" y="70" width="15" height="5" />
-                <rect x="45" y="80" width="15" height="10" />
-                <rect x="15" y="60" width="5" height="5" />
-                
-                {/* Center logo icon (soccer ball) */}
-                <circle cx="50" cy="50" r="10" fill="var(--brand)" />
-                <circle cx="50" cy="50" r="8" fill="var(--bg-card)" />
-                <circle cx="50" cy="50" r="3" fill="var(--brand)" />
-              </svg>
+              {pixData?.pixQrCode ? (
+                <img
+                  src={pixData.pixQrCode}
+                  alt="QR Code PIX Asaas"
+                  className="w-44 h-44 object-contain rounded bg-white p-2 shadow"
+                />
+              ) : (
+                /* Dummy QR Code representation using pure SVG for crisp high-end design */
+                <svg className="w-40 h-40" viewBox="0 0 100 100" fill="currentColor" style={{ color: 'var(--text-primary)' }}>
+                  <rect width="100" height="100" fill="transparent" />
+                  {/* Outer corners */}
+                  <rect x="5" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="10" y="10" width="15" height="15" />
+                  
+                  <rect x="70" y="5" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="75" y="10" width="15" height="15" />
+   
+                  <rect x="5" y="70" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="6" />
+                  <rect x="10" y="75" width="15" height="15" />
+                  
+                  {/* Random blocks for realism */}
+                  <rect x="40" y="10" width="10" height="5" />
+                  <rect x="55" y="15" width="5" height="15" />
+                  <rect x="40" y="25" width="15" height="5" />
+                  <rect x="45" y="40" width="20" height="10" />
+                  <rect x="15" y="45" width="10" height="5" />
+                  <rect x="70" y="45" width="10" height="15" />
+                  <rect x="80" y="75" width="15" height="10" />
+                  <rect x="40" y="65" width="5" height="20" />
+                  <rect x="55" y="70" width="15" height="5" />
+                  <rect x="45" y="80" width="15" height="10" />
+                  <rect x="15" y="60" width="5" height="5" />
+                  
+                  {/* Center logo icon (soccer ball) */}
+                  <circle cx="50" cy="50" r="10" fill="var(--brand)" />
+                  <circle cx="50" cy="50" r="8" fill="var(--bg-card)" />
+                  <circle cx="50" cy="50" r="3" fill="var(--brand)" />
+                </svg>
+              )}
               
               <span className="text-[9px] uppercase font-bold tracking-widest text-center" style={{ color: 'var(--text-muted)' }}>
-                Aponte a câmera do seu celular
+                {isReal ? 'QR Code Oficial Asaas PIX' : 'Aponte a câmera do seu celular'}
               </span>
             </div>
  
@@ -289,63 +345,114 @@ export function PixCheckoutClient({ booking }: Props) {
  
               <div className="text-[10px] uppercase font-bold tracking-wider space-y-1" style={{ color: 'var(--text-muted)' }}>
                 <p>• O PIX expira em 15 minutos.</p>
-                <p>• Sem confirmação, a reserva é cancelada.</p>
+                <p>• A aprovação é automática em segundos.</p>
               </div>
             </div>
           </div>
  
-          {/* SIMULADOR DE PAGAMENTO */}
+          {/* ÁREA DE STATUS / CONFIRMAÇÃO */}
           <div className="pt-6 space-y-4" style={{ borderTop: '1px solid var(--border)' }}>
-            <div
-              className="p-5 space-y-3"
-              style={{
-                background: 'var(--bg-card-alt)',
-                border: '1px solid var(--border)',
-                borderRadius: '4px',
-              }}
-            >
-              <span
-                className="font-bold uppercase tracking-wider text-xs"
+            {error && (
+              <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 p-2.5 rounded font-bold uppercase tracking-wider" style={{ borderRadius: '2px' }}>
+                {error}
+              </div>
+            )}
+
+            {isReal ? (
+              /* MODO PRODUÇÃO COM ASAAS */
+              <div
+                className="p-5 space-y-3"
                 style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: '1.1rem',
-                  color: 'var(--text-primary)',
+                  background: 'var(--bg-card-alt)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '4px',
                 }}
               >
-                Área de Teste / Simulador de PIX
-              </span>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Clique no botão abaixo para simular a liquidação imediata da reserva pelo banco.
-              </p>
-              
-              {error && (
-                <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 p-2.5 rounded font-bold uppercase tracking-wider" style={{ borderRadius: '2px' }}>
-                  {error}
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span
+                    className="font-bold uppercase tracking-wider text-xs"
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: '1.1rem',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    Aguardando Confirmação do Banco...
+                  </span>
                 </div>
-              )}
- 
-              <button
-                onClick={handleSimulatePayment}
-                disabled={isPending}
-                id="btn-simular-pix"
-                className="w-full py-3.5 text-white font-bold text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 disabled:opacity-50"
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Assim que o pagamento for concluído no aplicativo do seu banco, esta tela atualizará automaticamente.
+                </p>
+
+                <button
+                  onClick={handleManualCheck}
+                  disabled={isChecking}
+                  className="w-full py-3 text-white font-bold text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 disabled:opacity-50"
+                  style={{
+                    background: 'var(--brand)',
+                    borderColor: 'var(--brand)',
+                    borderRadius: '2px',
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  {isChecking ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                      Consultando Banco...
+                    </>
+                  ) : (
+                    'Já paguei, verificar agora'
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* MODO SIMULADOR (DEV / TESTE) */
+              <div
+                className="p-5 space-y-3"
                 style={{
-                  background: 'var(--brand)',
-                  borderColor: 'var(--brand)',
-                  borderRadius: '2px',
-                  letterSpacing: '0.15em',
+                  background: 'var(--bg-card-alt)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '4px',
                 }}
               >
-                {isPending ? (
-                  <>
-                    <span className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
-                    Simulando...
-                  </>
-                ) : (
-                  'Confirmar Pagamento do Sinal ✓'
-                )}
-              </button>
-            </div>
+                <span
+                  className="font-bold uppercase tracking-wider text-xs"
+                  style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '1.1rem',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Área de Teste / Simulador de PIX
+                </span>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Chave Asaas não detectada. Clique no botão abaixo para simular a liquidação imediata da reserva.
+                </p>
+
+                <button
+                  onClick={handleSimulatePayment}
+                  disabled={isPending}
+                  id="btn-simular-pix"
+                  className="w-full py-3.5 text-white font-bold text-xs uppercase tracking-widest border transition-all flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 disabled:opacity-50"
+                  style={{
+                    background: 'var(--brand)',
+                    borderColor: 'var(--brand)',
+                    borderRadius: '2px',
+                    letterSpacing: '0.15em',
+                  }}
+                >
+                  {isPending ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                      Simulando...
+                    </>
+                  ) : (
+                    'Confirmar Pagamento do Sinal ✓'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -254,3 +254,36 @@ export async function getFinanceiroData(
     fixedPending,
   }
 }
+
+
+export async function sendManualDailyClosingAction(dateStr?: string) {
+  const supabase = await createClient()
+
+  const now = new Date()
+  const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const todayStr = dateStr || `${brTime.getFullYear()}-${String(brTime.getMonth() + 1).padStart(2, '0')}-${String(brTime.getDate()).padStart(2, '0')}`
+
+  const { data: bookings, error } = await supabase
+    .from('bookings')
+    .select('*, field:fields(name), customer:customers(name, phone, email)')
+    .eq('date', todayStr)
+    .order('start_time', { ascending: true })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const { sendDailyClosingReportEmail, DAILY_CLOSING_RECIPIENTS } = await import('@/lib/resend/emails')
+  const emailRes = await sendDailyClosingReportEmail(bookings ?? [], todayStr, {
+    closedBy: 'Administração / Manual',
+    notes: 'Fechamento diário disparado manualmente pelo painel financeiro.',
+  })
+
+  return {
+    success: emailRes.success,
+    recipients: emailRes.recipients || DAILY_CLOSING_RECIPIENTS,
+    bookingsCount: (bookings ?? []).length,
+    mock: emailRes.mock,
+    error: emailRes.error,
+  }
+}
