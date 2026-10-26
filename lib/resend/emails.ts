@@ -648,6 +648,10 @@ A Receber no Balcão: R$ ${totalRemaining.toFixed(2)}
       subject,
       html,
     })
+    if (response.error) {
+      console.error('[Resend] Erro retornado pela API:', response.error)
+      return { success: false, error: response.error.message }
+    }
     return { success: true, response, recipients }
   } catch (error: any) {
     console.error('[Resend] Erro ao enviar resumo diário ao admin:', error)
@@ -819,6 +823,10 @@ Pendente: R$ ${totalPending.toFixed(2)}
       subject,
       html,
     })
+    if (response.error) {
+      console.error('[Resend] Erro retornado pela API:', response.error)
+      return { success: false, error: response.error.message }
+    }
     return { success: true, response, recipients }
   } catch (error: any) {
     console.error('[Resend] Erro ao enviar fechamento diário por email:', error)
