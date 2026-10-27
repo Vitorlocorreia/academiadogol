@@ -1,4 +1,17 @@
 import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
+
+function getMailTransporter() {
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+  if (user && pass) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    })
+  }
+  return null
+}
 
 // Inicializa o Resend se a API Key estiver configurada
 const resendApiKey = process.env.RESEND_API_KEY
@@ -626,8 +639,46 @@ export async function sendAdminDailyDigestEmail(bookings: any[], dateStr: string
     </div>
   `
 
-  if (!resend) {
-    console.log(`
+  // 1. Tenta envio prioritário via Gmail SMTP (Nodemailer)
+  const transporter = getMailTransporter()
+  if (transporter) {
+    try {
+      const from = process.env.SMTP_FROM || `Academia do Gol <${process.env.SMTP_USER}>`
+      const info = await transporter.sendMail({
+        from,
+        to: recipients,
+        subject,
+        html,
+      })
+      console.log('[Gmail SMTP] Resumo diário enviado com sucesso:', info.messageId)
+      return { success: true, response: info, recipients }
+    } catch (smtpErr: any) {
+      console.error('[Gmail SMTP] Erro ao enviar resumo diário:', smtpErr.message)
+    }
+  }
+
+  // 2. Fallback via Resend
+  if (resend) {
+    try {
+      const response = await resend.emails.send({
+        from: EMAIL_SENDER,
+        to: recipients,
+        subject,
+        html,
+      })
+      if (response.error) {
+        console.error('[Resend] Erro retornado pela API:', response.error)
+        return { success: false, error: response.error.message }
+      }
+      return { success: true, response, recipients }
+    } catch (error: any) {
+      console.error('[Resend] Erro ao enviar resumo diário ao admin:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // 3. Fallback em Modo Mock
+  console.log(`
 =========================================
 [MOCK EMAIL ADMIN] ☀️ RESUMO DIÁRIO MATINAL
 =========================================
@@ -638,25 +689,7 @@ Sinais Arrecadados: R$ ${totalDeposit.toFixed(2)}
 A Receber no Balcão: R$ ${totalRemaining.toFixed(2)}
 =========================================
 `)
-    return { success: true, mock: true, recipients }
-  }
-
-  try {
-    const response = await resend.emails.send({
-      from: EMAIL_SENDER,
-      to: recipients,
-      subject,
-      html,
-    })
-    if (response.error) {
-      console.error('[Resend] Erro retornado pela API:', response.error)
-      return { success: false, error: response.error.message }
-    }
-    return { success: true, response, recipients }
-  } catch (error: any) {
-    console.error('[Resend] Erro ao enviar resumo diário ao admin:', error)
-    return { success: false, error: error.message }
-  }
+  return { success: true, mock: true, recipients }
 }
 
 /**
@@ -801,8 +834,46 @@ export async function sendDailyClosingReportEmail(
     </div>
   `
 
-  if (!resend) {
-    console.log(`
+  // 1. Tenta envio prioritário via Gmail SMTP (Nodemailer)
+  const transporter = getMailTransporter()
+  if (transporter) {
+    try {
+      const from = process.env.SMTP_FROM || `Academia do Gol <${process.env.SMTP_USER}>`
+      const info = await transporter.sendMail({
+        from,
+        to: recipients,
+        subject,
+        html,
+      })
+      console.log('[Gmail SMTP] Fechamento diário enviado com sucesso:', info.messageId)
+      return { success: true, response: info, recipients }
+    } catch (smtpErr: any) {
+      console.error('[Gmail SMTP] Erro ao enviar fechamento diário:', smtpErr.message)
+    }
+  }
+
+  // 2. Fallback via Resend
+  if (resend) {
+    try {
+      const response = await resend.emails.send({
+        from: EMAIL_SENDER,
+        to: recipients,
+        subject,
+        html,
+      })
+      if (response.error) {
+        console.error('[Resend] Erro retornado pela API:', response.error)
+        return { success: false, error: response.error.message }
+      }
+      return { success: true, response, recipients }
+    } catch (error: any) {
+      console.error('[Resend] Erro ao enviar fechamento diário por email:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // 3. Fallback em Modo Mock
+  console.log(`
 =========================================
 [MOCK EMAIL ADMIN] 🌙 FECHAMENTO DIÁRIO DE CAIXA
 =========================================
@@ -813,23 +884,5 @@ Arrecadado: R$ ${totalCollected.toFixed(2)}
 Pendente: R$ ${totalPending.toFixed(2)}
 =========================================
 `)
-    return { success: true, mock: true, recipients }
-  }
-
-  try {
-    const response = await resend.emails.send({
-      from: EMAIL_SENDER,
-      to: recipients,
-      subject,
-      html,
-    })
-    if (response.error) {
-      console.error('[Resend] Erro retornado pela API:', response.error)
-      return { success: false, error: response.error.message }
-    }
-    return { success: true, response, recipients }
-  } catch (error: any) {
-    console.error('[Resend] Erro ao enviar fechamento diário por email:', error)
-    return { success: false, error: error.message }
-  }
+  return { success: true, mock: true, recipients }
 }
