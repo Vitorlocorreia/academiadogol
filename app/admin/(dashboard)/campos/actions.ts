@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -23,6 +23,8 @@ const fieldSchema = z.object({
 
 // Action: criar campo
 export async function createFieldAction(formData: FormData) {
+  const { supabase } = await requireAdmin()
+
   const raw = {
     name: formData.get('name'),
     description: formData.get('description'),
@@ -40,7 +42,6 @@ export async function createFieldAction(formData: FormData) {
     return { error: parsed.error.issues[0].message }
   }
 
-  const supabase = await createClient()
   const { error } = await supabase.from('fields').insert(parsed.data)
 
   if (error) {
@@ -53,6 +54,8 @@ export async function createFieldAction(formData: FormData) {
 
 // Action: atualizar campo
 export async function updateFieldAction(id: string, formData: FormData) {
+  const { supabase } = await requireAdmin()
+
   const raw = {
     name: formData.get('name'),
     description: formData.get('description'),
@@ -70,7 +73,6 @@ export async function updateFieldAction(id: string, formData: FormData) {
     return { error: parsed.error.issues[0].message }
   }
 
-  const supabase = await createClient()
   const { error } = await supabase.from('fields').update(parsed.data).eq('id', id)
 
   if (error) {
@@ -83,7 +85,7 @@ export async function updateFieldAction(id: string, formData: FormData) {
 
 // Action: alternar status ativo/inativo
 export async function toggleFieldActiveAction(id: string, currentStatus: boolean) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('fields')
     .update({ is_active: !currentStatus })
@@ -98,7 +100,7 @@ export async function toggleFieldActiveAction(id: string, currentStatus: boolean
 
 // Action: deletar campo
 export async function deleteFieldAction(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase.from('fields').delete().eq('id', id)
 
   if (error) {

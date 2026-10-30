@@ -2,7 +2,7 @@
 
 // Formulário de dados do cliente para completar a reserva
 
-import { useActionState, useEffect } from 'react'
+import { useActionState } from 'react'
 import { createBookingAction } from '@/app/(public)/actions'
 import { getFieldPrice } from '@/lib/pricing'
 
@@ -136,25 +136,48 @@ export function BookingForm({
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-            WhatsApp / Telefone <span className="text-red-500">*</span>
-          </label>
-          <input
-            name="customer_phone"
-            type="tel"
-            required
-            autoComplete="tel"
-            placeholder="(81) 99999-9999"
-            className="w-full px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-all"
-            style={{
-              background: 'var(--bg-subtle)',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-              color: 'var(--text-primary)',
-            }}
-          />
-          <p className="text-[10px] uppercase font-semibold tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>Usado para consultar e cancelar sua reserva</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              CPF (para emissão do PIX) <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="customer_cpf"
+              type="text"
+              required
+              inputMode="numeric"
+              maxLength={14}
+              placeholder="000.000.000-00"
+              className="w-full px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-all"
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+                borderRadius: '2px',
+                color: 'var(--text-primary)',
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              WhatsApp / Telefone <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="customer_phone"
+              type="tel"
+              required
+              autoComplete="tel"
+              placeholder="(81) 99999-9999"
+              className="w-full px-4 py-3 text-sm focus:outline-none focus:border-zinc-500 transition-all"
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+                borderRadius: '2px',
+                color: 'var(--text-primary)',
+              }}
+            />
+            <p className="text-[10px] uppercase font-semibold tracking-wider mt-1" style={{ color: 'var(--text-muted)' }}>Usado para consultar e cancelar sua reserva</p>
+          </div>
         </div>
 
         <div>

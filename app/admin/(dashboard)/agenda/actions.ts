@@ -1,6 +1,8 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/server'
+import { getFieldPrice } from '@/lib/pricing'
+import { getOccupiedSlots } from '@/app/(public)/actions'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -8,9 +10,9 @@ const bookingSchema = z.object({
   field_id: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   start_time: z.string().regex(/^\d{2}:\d{2}$/),
-  duration_minutes: z.coerce.number().int().positive(),
-  customer_name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  customer_phone: z.string().min(8, 'Telefone inválido'),
+  duration_minutes: z.coerce.number().int().min(30).max(240),
+  customer_name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  customer_phone: z.string().transform((v) => v.replace(/\D/g, '')).refine((v) => v.length >= 8, 'Telefone inválido'),
   customer_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
 })
@@ -27,7 +29,7 @@ const blockSchema = z.object({
 
 // Busca dados consolidados para renderizar a agenda de um dia
 export async function getAgendaData(dateStr: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const dayOfWeek = new Date(dateStr + 'T12:00:00').getDay()
 
   // 1. Configurações gerais
@@ -83,6 +85,8 @@ export async function createManualBookingAction(
   _prev: { error: string; success?: boolean } | null,
   formData: FormData
 ) {
+  const { supabase } = await requireAdmin()
+
   const raw = {
     field_id: formData.get('field_id'),
     date: formData.get('date'),
@@ -110,8 +114,6 @@ export async function createManualBookingAction(
     notes,
   } = parsed.data
 
-  const supabase = await createClient()
-
   // Busca detalhes do campo
   const { data: field } = await supabase
     .from('fields')
@@ -123,13 +125,23 @@ export async function createManualBookingAction(
     return { error: 'Campo não encontrado.' }
   }
 
-  // Calcula término e valores
+  // Calcula término e valores usando a tabela oficial de preços por unidade/pacote
   const [hh, mm] = start_time.split(':').map(Number)
   const endMinutes = hh * 60 + mm + duration_minutes
+  if (endMinutes > 24 * 60) {
+    return { error: 'O horário de término não pode ultrapassar 00:00.' }
+  }
   const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-  const total_amount = (field.hourly_rate * duration_minutes) / 60
-  
-  // Realiza upsert no cliente pelo telefone
+  const total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
+
+  // Verifica conflito de horário na grade antes de inserir
+  const occupied = await getOccupiedSlots(field_id, date)
+  const hasConflict = occupied.some((slot) => slot.start_time < end_time && slot.end_time > start_time)
+  if (hasConflict) {
+    return { error: 'Conflito de horário: este período já está ocupado ou bloqueado neste campo.' }
+  }
+
+  // Realiza upsert no cliente pelo telefone normalizado
   const { data: customer, error: custError } = await supabase
     .from('customers')
     .upsert({
@@ -176,6 +188,8 @@ export async function createBlockedSlotAction(
   _prev: { error: string; success?: boolean } | null,
   formData: FormData
 ) {
+  const { supabase } = await requireAdmin()
+
   const is_recurring = formData.get('is_recurring') === 'true'
   const raw = {
     field_id: formData.get('field_id'),
@@ -205,8 +219,6 @@ export async function createBlockedSlotAction(
     return { error: 'O horário de início deve ser menor que o horário de término.' }
   }
 
-  const supabase = await createClient()
-
   const { error } = await supabase
     .from('blocked_slots')
     .insert({
@@ -229,7 +241,7 @@ export async function createBlockedSlotAction(
 
 // Remover bloqueio
 export async function deleteBlockedSlotAction(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('blocked_slots')
     .delete()
@@ -245,7 +257,7 @@ export async function deleteBlockedSlotAction(id: string) {
 
 // Cancelar reserva pelo admin
 export async function cancelBookingAction(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   // Busca os dados da reserva antes de cancelar
   const { data: booking } = await supabase
@@ -256,7 +268,7 @@ export async function cancelBookingAction(id: string) {
 
   const { error } = await supabase
     .from('bookings')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
     .eq('id', id)
 
   if (error) {

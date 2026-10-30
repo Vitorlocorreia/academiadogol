@@ -1,40 +1,90 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import type { Field, BlockedSlot } from '@/lib/supabase/types'
+import type { Field } from '@/lib/supabase/types'
 import { getFieldPrice } from '@/lib/pricing'
+
+// ─── Helpers de Normalização e Validação ─────────────────────────────────────
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
+
+function isValidCPF(cpfRaw: string): boolean {
+  const cpf = cpfRaw.replace(/\D/g, '')
+  if (cpf.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(cpf)) return false
+
+  let sum = 0
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf.charAt(i)) * (10 - i)
+  }
+  let rev = 11 - (sum % 11)
+  if (rev === 10 || rev === 11) rev = 0
+  if (rev !== parseInt(cpf.charAt(9))) return false
+
+  sum = 0
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf.charAt(i)) * (11 - i)
+  }
+  rev = 11 - (sum % 11)
+  if (rev === 10 || rev === 11) rev = 0
+  if (rev !== parseInt(cpf.charAt(10))) return false
+
+  return true
+}
+
+function getBrazilTodayStr(): string {
+  const now = new Date()
+  const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const y = brTime.getFullYear()
+  const m = String(brTime.getMonth() + 1).padStart(2, '0')
+  const d = String(brTime.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 // ─── Campos ─────────────────────────────────────────────────────────────────
 
 // Busca todos os campos ativos para exibição pública
 export async function getActiveFields(): Promise<Field[]> {
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('fields')
-    .select('*')
-    .eq('is_active', true)
-    .order('name')
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('fields')
+      .select('*')
+      .eq('is_active', true)
+      .order('name')
 
-  if (error) throw new Error(error.message)
-  return data ?? []
+    if (error) {
+      console.error('[getActiveFields] Erro ao buscar campos:', error.message)
+      return []
+    }
+    return data ?? []
+  } catch (err) {
+    console.error('[getActiveFields] Falha de conexão com Supabase:', err)
+    return []
+  }
 }
 
 // Busca um campo específico pelo ID
 export async function getFieldById(id: string): Promise<Field | null> {
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('fields')
-    .select('*')
-    .eq('id', id)
-    .eq('is_active', true)
-    .single()
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('fields')
+      .select('*')
+      .eq('id', id)
+      .eq('is_active', true)
+      .single()
 
-  if (error) return null
-  return data
+    if (error) return null
+    return data
+  } catch {
+    return null
+  }
 }
 
 // ─── Disponibilidade ─────────────────────────────────────────────────────────
@@ -45,63 +95,80 @@ export async function getOccupiedSlots(
   fieldId: string,
   date: string // formato ISO: 'YYYY-MM-DD'
 ): Promise<Array<{ start_time: string; end_time: string }>> {
-  const supabase = createAdminClient()
-  const dayOfWeek = new Date(date + 'T12:00:00').getDay() // evita problema de fuso
+  try {
+    const supabase = createAdminClient()
+    const dayOfWeek = new Date(date + 'T12:00:00').getDay() // evita problema de fuso
 
-  // Reservas ativas e pendentes
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select('start_time, end_time')
-    .eq('field_id', fieldId)
-    .eq('date', date)
-    .in('status', ['pending', 'confirmed'])
+    // Reservas ativas e pendentes
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('start_time, end_time')
+      .eq('field_id', fieldId)
+      .eq('date', date)
+      .in('status', ['pending', 'confirmed'])
 
-  // Bloqueios pontuais para a data específica
-  const { data: pointBlocks } = await supabase
-    .from('blocked_slots')
-    .select('start_time, end_time')
-    .eq('field_id', fieldId)
-    .eq('date', date)
-    .eq('is_recurring', false)
+    // Bloqueios pontuais para a data específica
+    const { data: pointBlocks } = await supabase
+      .from('blocked_slots')
+      .select('start_time, end_time')
+      .eq('field_id', fieldId)
+      .eq('date', date)
+      .eq('is_recurring', false)
 
-  // Bloqueios recorrentes válidos para o dia da semana
-  const { data: recurBlocks } = await supabase
-    .from('blocked_slots')
-    .select('start_time, end_time, recur_ends_at')
-    .eq('field_id', fieldId)
-    .eq('is_recurring', true)
-    .eq('recur_day_of_week', dayOfWeek)
+    // Bloqueios recorrentes válidos para o dia da semana
+    const { data: recurBlocks } = await supabase
+      .from('blocked_slots')
+      .select('start_time, end_time, recur_ends_at')
+      .eq('field_id', fieldId)
+      .eq('is_recurring', true)
+      .eq('recur_day_of_week', dayOfWeek)
 
-  // Filtra bloqueios recorrentes que já expiraram
-  const activeRecurBlocks = (recurBlocks ?? []).filter((b) => {
-    if (!b.recur_ends_at) return true
-    return b.recur_ends_at >= date
-  })
+    // Filtra bloqueios recorrentes que já expiraram
+    const activeRecurBlocks = (recurBlocks ?? []).filter((b) => {
+      if (!b.recur_ends_at) return true
+      return b.recur_ends_at >= date
+    })
 
-  const all = [
-    ...(bookings ?? []),
-    ...(pointBlocks ?? []),
-    ...activeRecurBlocks,
-  ]
+    const all = [
+      ...(bookings ?? []),
+      ...(pointBlocks ?? []),
+      ...activeRecurBlocks,
+    ]
 
-  return all.map(({ start_time, end_time }) => ({ start_time, end_time }))
+    return all.map(({ start_time, end_time }) => ({ start_time, end_time }))
+  } catch (err) {
+    console.error('[getOccupiedSlots] Erro ao carregar disponibilidade:', err)
+    return []
+  }
 }
 
 // ─── Reserva ─────────────────────────────────────────────────────────────────
 
 const reservationSchema = z.object({
-  field_id: z.string().uuid(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/),
-  duration_minutes: z.coerce.number().int().positive(),
-  customer_name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
-  customer_phone: z.string().min(8, 'Telefone inválido'),
-  customer_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  field_id: z.string().uuid('Campo inválido'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
+  start_time: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, 'Horário de início inválido'),
+  duration_minutes: z.coerce
+    .number()
+    .int()
+    .min(30, 'Duração mínima é de 30 minutos')
+    .max(240, 'Duração máxima é de 240 minutos (4h)')
+    .refine((val) => val % 30 === 0, 'A duração deve ser em blocos de 30 minutos'),
+  customer_name: z.string().trim().min(2, 'Nome deve ter ao menos 2 caracteres').max(120),
+  customer_phone: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ''))
+    .refine((v) => v.length >= 10 && v.length <= 11, 'Informe um WhatsApp válido com DDD (10 ou 11 dígitos)'),
+  customer_cpf: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ''))
+    .refine((v) => isValidCPF(v), 'CPF inválido. Digite um CPF válido para emissão do PIX.'),
+  customer_email: z.string().trim().email('E-mail inválido').optional().or(z.literal('')),
   customer_birth_date: z.string().optional().or(z.literal('')),
 })
 
 // Cria uma intenção de reserva com status 'pending'
-// Realiza upsert no cliente pelo telefone (chave de identificação)
+// Realiza upsert no cliente pelo telefone normalizado (chave de identificação)
 export async function createBookingAction(
   _prev: { error: string } | null,
   formData: FormData
@@ -113,6 +180,7 @@ export async function createBookingAction(
     duration_minutes: formData.get('duration_minutes'),
     customer_name: formData.get('customer_name'),
     customer_phone: formData.get('customer_phone'),
+    customer_cpf: formData.get('customer_cpf') ?? '',
     customer_email: formData.get('customer_email') ?? '',
     customer_birth_date: formData.get('customer_birth_date') ?? '',
   }
@@ -129,33 +197,44 @@ export async function createBookingAction(
     duration_minutes,
     customer_name,
     customer_phone,
+    customer_cpf,
     customer_email,
     customer_birth_date,
   } = parsed.data
+
+  // Bloqueia reservas para datas passadas
+  const todayStr = getBrazilTodayStr()
+  if (date < todayStr) {
+    return { error: 'Não é possível realizar reservas para datas passadas.' }
+  }
 
   const supabase = createAdminClient()
 
   // Busca dados do campo para calcular valores
   const { data: field, error: fieldError } = await supabase
     .from('fields')
-    .select('name, hourly_rate, deposit_type, deposit_value')
+    .select('name, hourly_rate, deposit_type, deposit_value, is_active')
     .eq('id', field_id)
     .single()
 
-  if (fieldError || !field) {
-    return { error: 'Campo não encontrado.' }
+  if (fieldError || !field || !field.is_active) {
+    return { error: 'Campo não encontrado ou indisponível.' }
   }
 
-  // Calcula horário de fim e valor total
+  // Calcula horário de fim e valida limite do dia
   const [hh, mm] = start_time.split(':').map(Number)
   const endMinutes = hh * 60 + mm + duration_minutes
+  if (endMinutes > 24 * 60) {
+    return { error: 'O horário de término não pode ultrapassar 00:00.' }
+  }
+
   const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
   const total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
   const deposit_amount =
     field.deposit_type === 'fixed'
       ? field.deposit_value
       : (total_amount * field.deposit_value) / 100
-  const remaining_amount = total_amount - deposit_amount
+  const remaining_amount = Math.max(0, total_amount - deposit_amount)
 
   // Verifica sobreposição antes de inserir (defesa dupla — trigger no banco)
   const occupied = await getOccupiedSlots(field_id, date)
@@ -166,13 +245,14 @@ export async function createBookingAction(
     return { error: 'Este horário não está mais disponível. Escolha outro.' }
   }
 
-  // Upsert do cliente pelo telefone
-  const { data: customer, error: customerError } = await supabase
+  // Upsert do cliente pelo telefone normalizado (apenas dígitos)
+  let { data: customer, error: customerError } = await supabase
     .from('customers')
     .upsert(
       {
         phone: customer_phone,
         name: customer_name,
+        cpf: customer_cpf,
         email: customer_email || null,
         birth_date: customer_birth_date || null,
       },
@@ -180,6 +260,25 @@ export async function createBookingAction(
     )
     .select('id')
     .single()
+
+  // Fallback caso a coluna cpf ainda não exista no schema remoto
+  if (customerError && customerError.message?.includes('cpf')) {
+    const retry = await supabase
+      .from('customers')
+      .upsert(
+        {
+          phone: customer_phone,
+          name: customer_name,
+          email: customer_email || null,
+          birth_date: customer_birth_date || null,
+        },
+        { onConflict: 'phone' }
+      )
+      .select('id')
+      .single()
+    customer = retry.data
+    customerError = retry.error
+  }
 
   if (customerError || !customer) {
     return { error: 'Erro ao registrar cliente.' }
@@ -201,11 +300,15 @@ export async function createBookingAction(
       status: 'pending',
       deposit_status: 'pending',
       remaining_status: 'pending',
+      notes: customer_cpf ? `CPF: ${customer_cpf}` : null,
     })
     .select('id')
     .single()
 
   if (bookingError || !booking) {
+    if (bookingError?.message?.includes('Conflito de horário')) {
+      return { error: 'Este horário acabou de ser reservado por outro cliente. Escolha outro.' }
+    }
     return { error: 'Erro ao criar reserva. Tente novamente.' }
   }
 
@@ -241,22 +344,28 @@ export async function consultBookingAction(
     return { error: parsed.error.issues[0].message, bookings: [] }
   }
 
+  const rawPhone = parsed.data.phone.trim()
+  const cleanPhone = normalizePhone(rawPhone)
+
   const supabase = createAdminClient()
 
-  const { data: customer } = await supabase
+  // Busca tanto pelo telefone normalizado (apenas dígitos) quanto pelo texto original de forma segura
+  const phoneCandidates = Array.from(new Set([cleanPhone, rawPhone].filter(Boolean)))
+  const { data: customers } = await supabase
     .from('customers')
     .select('id')
-    .eq('phone', parsed.data.phone)
-    .single()
+    .in('phone', phoneCandidates)
 
-  if (!customer) {
+  if (!customers || customers.length === 0) {
     return { error: 'Nenhuma reserva encontrada para este telefone.', bookings: [] }
   }
+
+  const customerIds = customers.map((c) => c.id)
 
   const { data: bookings } = await supabase
     .from('bookings')
     .select('*, field:fields(name)')
-    .eq('customer_id', customer.id)
+    .in('customer_id', customerIds)
     .order('date', { ascending: false })
     .limit(10)
 
@@ -265,19 +374,29 @@ export async function consultBookingAction(
 
 // Busca uma reserva específica pelo ID (com joins de campo e cliente)
 export async function getBookingById(id: string) {
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*, field:fields(*), customer:customers(*)')
-    .eq('id', id)
-    .single()
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, field:fields(*), customer:customers(*)')
+      .eq('id', id)
+      .single()
 
-  if (error) return null
-  return data
+    if (error) return null
+    return data
+  } catch {
+    return null
+  }
 }
 
-// Simula a confirmação de pagamento PIX (atualizando status)
+// Simula a confirmação de pagamento PIX (BLOQUEADO se ASAAS_API_KEY estiver ativa ou em produção)
 export async function confirmSimulatedPixPayment(bookingId: string) {
+  if (process.env.ASAAS_API_KEY || process.env.NODE_ENV === 'production') {
+    return {
+      error: 'Simulador de pagamento desativado em ambiente de produção. Realize o pagamento via PIX.',
+    }
+  }
+
   const supabase = createAdminClient()
 
   // Busca os dados completos da reserva (com relações de campo e cliente) para o e-mail
@@ -309,17 +428,11 @@ export async function confirmSimulatedPixPayment(bookingId: string) {
     const { sendConfirmationEmail, sendAdminNewBookingEmail } = await import('@/lib/resend/emails')
     const { sendBookingConfirmedPush } = await import('@/lib/web-push/push')
 
-    // Atualiza o objeto em memória com o status correto
     booking.status = 'confirmed'
     booking.deposit_status = 'paid'
-    
-    // 1. Envia e-mail ao cliente
-    await sendConfirmationEmail(booking)
-    
-    // 2. Envia e-mail ao administrador
-    await sendAdminNewBookingEmail(booking)
 
-    // 3. Envia Web Push para o celular/PC do administrador
+    await sendConfirmationEmail(booking)
+    await sendAdminNewBookingEmail(booking)
     await sendBookingConfirmedPush(booking)
   } catch (notifErr) {
     console.error('Erro ao disparar notificações de confirmação (e-mail/push):', notifErr)
@@ -349,4 +462,3 @@ export async function checkBookingStatusAction(bookingId: string) {
     depositStatus: data.deposit_status,
   }
 }
-

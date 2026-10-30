@@ -28,6 +28,7 @@ export interface Customer {
   id: string
   name: string
   phone: string
+  cpf?: string | null
   email: string | null
   birth_date: string | null
   total_bookings: number

@@ -26,3 +26,18 @@ export async function createClient() {
     }
   )
 }
+
+// Garante que a chamada vem de um administrador autenticado
+export async function requireAdmin() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    throw new Error('Acesso não autorizado. Faça login como administrador.')
+  }
+
+  return { supabase, user }
+}

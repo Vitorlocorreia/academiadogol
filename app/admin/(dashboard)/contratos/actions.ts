@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 const contractSchema = z.object({
   customer_name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
-  customer_phone: z.string().min(8, 'Telefone inválido'),
+  customer_phone: z.string().min(8, 'Telefone inválido').transform((val) => val.replace(/\D/g, '')),
   customer_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   field_id: z.string().uuid('Campo obrigatório'),
   day_of_week: z.coerce.number().int().min(0).max(6),
@@ -64,7 +64,7 @@ function generateFutureDates(
 
 // Busca todos os contratos com joins de cliente e campo
 export async function getContracts() {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { data, error } = await supabase
     .from('fixed_contracts')
     .select('*, customer:customers(id, name, phone, email), field:fields(id, name)')
@@ -76,7 +76,7 @@ export async function getContracts() {
 
 // Busca um contrato específico por ID com seus pagamentos
 export async function getContractById(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { data, error } = await supabase
     .from('fixed_contracts')
     .select('*, customer:customers(*), field:fields(*)')
@@ -89,7 +89,7 @@ export async function getContractById(id: string) {
 
 // Busca mensalidades de um contrato
 export async function getContractPayments(contractId: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { data, error } = await supabase
     .from('fixed_payments')
     .select('*')
@@ -102,7 +102,7 @@ export async function getContractPayments(contractId: string) {
 
 // Busca campos ativos para o formulário
 export async function getActiveFieldsForContract() {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { data } = await supabase
     .from('fields')
     .select('id, name')
@@ -116,6 +116,8 @@ export async function createContractAction(
   _prev: { error: string; success?: boolean } | null,
   formData: FormData
 ) {
+  const { supabase } = await requireAdmin()
+
   const raw = {
     customer_name: formData.get('customer_name'),
     customer_phone: formData.get('customer_phone'),
@@ -153,7 +155,6 @@ export async function createContractAction(
 
   const duration_minutes = calcDuration(start_time, end_time)
   const endsAtValue = ends_at || null
-  const supabase = await createClient()
 
   // 1. Upsert do cliente pelo telefone
   const { data: customer, error: custErr } = await supabase
@@ -214,11 +215,9 @@ export async function createContractAction(
     }
   }
 
-  // 4. Gera a mensalidade do mês corrente
-  const now = new Date()
-  const refMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split('T')[0]
+  // 4. Gera a mensalidade do mês corrente (fuso America/Sao_Paulo)
+  const nowBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+  const refMonth = `${nowBrt.slice(0, 7)}-01`
 
   await supabase.from('fixed_payments').insert({
     contract_id: contract.id,
@@ -233,7 +232,7 @@ export async function createContractAction(
 
 // Encerrar um contrato (is_active = false)
 export async function deactivateContractAction(id: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('fixed_contracts')
     .update({ is_active: false })
@@ -251,7 +250,7 @@ export async function markPaymentPaidAction(
   method: string,
   contractId: string
 ) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('fixed_payments')
     .update({
@@ -272,12 +271,14 @@ export async function generateNextMonthPaymentAction(
   contractId: string,
   monthlyAmount: number
 ) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
-  // Calcula o próximo mês
-  const now = new Date()
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  const refMonth = nextMonth.toISOString().split('T')[0]
+  // Calcula o próximo mês de forma segura independente de fuso horário
+  const nowBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+  const [year, month] = nowBrt.split('-').map(Number)
+  const nextYear = month === 12 ? year + 1 : year
+  const nextMonthNum = month === 12 ? 1 : month + 1
+  const refMonth = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}-01`
 
   // Verifica se já existe para não duplicar
   const { data: existing } = await supabase

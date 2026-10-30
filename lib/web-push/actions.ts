@@ -1,5 +1,6 @@
 'use server'
 
+import { requireAdmin } from '@/lib/supabase/server'
 import {
   savePushSubscription,
   removePushSubscription,
@@ -16,12 +17,14 @@ export async function getVapidPublicKeyAction() {
 }
 
 /**
- * Salva a inscrição do dispositivo no servidor
+ * Salva a inscrição do dispositivo no servidor (somente admin autenticado)
  */
 export async function savePushSubscriptionAction(
   subscription: StoredSubscription,
   userAgent?: string
 ) {
+  await requireAdmin()
+
   if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
     return { success: false, error: 'Inscrição push inválida.' }
   }
@@ -31,19 +34,23 @@ export async function savePushSubscriptionAction(
 }
 
 /**
- * Remove a inscrição quando o usuário desativa as notificações
+ * Remove a inscrição quando o usuário desativa as notificações (somente admin autenticado)
  */
 export async function removePushSubscriptionAction(endpoint: string) {
+  await requireAdmin()
+
   if (!endpoint) return { success: false }
   await removePushSubscription(endpoint)
   return { success: true }
 }
 
 /**
- * Envia uma notificação push de teste para validar a entrega
+ * Envia uma notificação push de teste para validar a entrega (somente admin autenticado)
  */
 export async function testAdminPushAction() {
   try {
+    await requireAdmin()
+
     const result = await sendAdminWebPush({
       title: '🎉 Notificações Web Push Ativas!',
       body: 'Seu dispositivo está configurado e receberá alertas em tempo real de novas reservas e cancelamentos.',

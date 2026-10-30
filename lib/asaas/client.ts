@@ -16,6 +16,7 @@ const BASE_URL =
 interface AsaasCustomerPayload {
   name: string
   phone: string
+  cpfCnpj?: string | null
   email?: string | null
 }
 
@@ -25,8 +26,17 @@ interface PixQrCodeResponse {
   expirationDate: string
 }
 
+function getBrazilTodayStr(): string {
+  const now = new Date()
+  const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const y = brTime.getFullYear()
+  const m = String(brTime.getMonth() + 1).padStart(2, '0')
+  const d = String(brTime.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 /**
- * Cria ou recupera um cliente no Asaas pelo telefone/e-mail
+ * Cria ou recupera um cliente no Asaas pelo CPF ou telefone/e-mail
  */
 export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Promise<string> {
   if (!ASAAS_API_KEY) {
@@ -34,10 +44,12 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
   }
 
   const cleanPhone = data.phone.replace(/\D/g, '')
+  const cleanCpf = data.cpfCnpj ? data.cpfCnpj.replace(/\D/g, '') : undefined
 
-  // 1. Tenta buscar cliente existente pelo telefone celular
+  // 1. Tenta buscar cliente existente pelo CPF (prioritário) ou telefone celular
   try {
-    const searchRes = await fetch(`${BASE_URL}/customers?mobilePhone=${cleanPhone}`, {
+    const queryParam = cleanCpf ? `cpfCnpj=${cleanCpf}` : `mobilePhone=${cleanPhone}`
+    const searchRes = await fetch(`${BASE_URL}/customers?${queryParam}`, {
       headers: {
         access_token: ASAAS_API_KEY,
         'Content-Type': 'application/json',
@@ -48,7 +60,24 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
     if (searchRes.ok) {
       const searchData = await searchRes.json()
       if (searchData.data && searchData.data.length > 0) {
-        return searchData.data[0].id
+        const existing = searchData.data[0]
+        // Se o cliente existente não tinha CPF e agora temos CPF, atualiza no Asaas
+        if (!existing.cpfCnpj && cleanCpf) {
+          await fetch(`${BASE_URL}/customers/${existing.id}`, {
+            method: 'POST',
+            headers: {
+              access_token: ASAAS_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: data.name,
+              cpfCnpj: cleanCpf,
+              mobilePhone: cleanPhone || undefined,
+            }),
+            cache: 'no-store',
+          })
+        }
+        return existing.id
       }
     }
   } catch (err) {
@@ -64,7 +93,8 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
     },
     body: JSON.stringify({
       name: data.name,
-      mobilePhone: cleanPhone,
+      cpfCnpj: cleanCpf,
+      mobilePhone: cleanPhone || undefined,
       email: data.email || undefined,
     }),
     cache: 'no-store',
@@ -97,8 +127,8 @@ export async function createAsaasPixCharge({
     throw new Error('ASAAS_API_KEY não configurada no ambiente.')
   }
 
-  // Vencimento de hoje
-  const today = new Date().toISOString().split('T')[0]
+  // Vencimento de hoje no fuso de Brasília (evita virada de dia UTC após 21h)
+  const today = getBrazilTodayStr()
 
   // 1. Cria a cobrança
   const paymentRes = await fetch(`${BASE_URL}/payments`, {
@@ -187,9 +217,16 @@ export async function getOrGenerateBookingPix(booking: any) {
     const customer = booking.customer
     const field = booking.field
 
+    // Extrai CPF da tabela customer ou das notes da reserva
+    const cpfFromNotes = booking.notes?.startsWith('CPF:')
+      ? booking.notes.replace('CPF:', '').trim()
+      : null
+    const cpfCnpj = customer?.cpf || cpfFromNotes || null
+
     const asaasCustomerId = await getOrCreateAsaasCustomer({
       name: customer?.name || 'Cliente Academia do Gol',
       phone: customer?.phone || '',
+      cpfCnpj,
       email: customer?.email || null,
     })
 
@@ -217,7 +254,6 @@ export async function getOrGenerateBookingPix(booking: any) {
     }
   } catch (error: any) {
     console.error('[Asaas] Erro ao gerar PIX dinâmico:', error)
-    // Fallback gracioso para modo simulado se a API falhar
     const fallbackCopyPaste = `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/${booking.id}5204000053039865405${Number(booking.deposit_amount).toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
     return {
       chargeId: null,

@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -17,6 +17,8 @@ const settingsSchema = z.object({
 })
 
 export async function saveSettingsAction(formData: FormData) {
+  const { supabase } = await requireAdmin()
+
   // Coleta os dias selecionados (checkboxes)
   const daysRaw = formData.getAll('days_of_week').map(Number)
 
@@ -36,8 +38,6 @@ export async function saveSettingsAction(formData: FormData) {
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message }
   }
-
-  const supabase = await createClient()
 
   // Sempre atualiza o único registro de configurações
   let { error } = await supabase

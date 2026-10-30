@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   phone text UNIQUE NOT NULL,
+  cpf text,
   email text,
   birth_date date,
   total_bookings integer NOT NULL DEFAULT 0,
@@ -33,6 +34,8 @@ CREATE TABLE IF NOT EXISTS public.customers (
   birthday_message_sent_year integer,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS cpf text;
 
 -- 3. Bookings
 CREATE TABLE IF NOT EXISTS public.bookings (
@@ -170,6 +173,36 @@ BEGIN
 END;
 $$;
 
+-- 11. Trigger de prevenção de concorrência (Race Condition / Double Booking)
+CREATE OR REPLACE FUNCTION public.check_booking_overlap()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.status <> 'cancelled' THEN
+    IF EXISTS (
+      SELECT 1
+      FROM public.bookings b
+      WHERE b.field_id = NEW.field_id
+        AND b.date = NEW.date
+        AND b.id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
+        AND b.status IN ('pending', 'confirmed', 'completed')
+        AND NEW.start_time < b.end_time
+        AND NEW.end_time > b.start_time
+    ) THEN
+      RAISE EXCEPTION 'Conflito de horário: este período já está reservado para este campo.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_booking_overlap ON public.bookings;
+CREATE TRIGGER trg_prevent_booking_overlap
+  BEFORE INSERT OR UPDATE ON public.bookings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.check_booking_overlap();
+
 -- RLS setup
 ALTER TABLE public.fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
@@ -190,17 +223,27 @@ CREATE POLICY "Admin write fields" ON public.fields
 
 -- Policies for customers
 CREATE POLICY "Public read/create customer" ON public.customers
-  FOR ALL USING (true) WITH CHECK (true);
+  FOR SELECT USING (true);
+
+CREATE POLICY "Public insert customer" ON public.customers
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public update customer" ON public.customers
+  FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Admin delete customer" ON public.customers
+  FOR DELETE USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 
 -- Policies for bookings
 CREATE POLICY "Public read bookings" ON public.bookings
   FOR SELECT USING (true);
 
 CREATE POLICY "Public insert bookings" ON public.bookings
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT WITH CHECK (status = 'pending' AND deposit_status = 'pending');
 
 CREATE POLICY "Admin update bookings" ON public.bookings
-  FOR UPDATE USING (true) WITH CHECK (true);
+  FOR UPDATE USING (auth.role() = 'authenticated' OR auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 
 -- Policies for blocked_slots
 CREATE POLICY "Public read blocked slots" ON public.blocked_slots
@@ -223,9 +266,10 @@ CREATE POLICY "Public read settings" ON public.settings
 CREATE POLICY "Admin update settings" ON public.settings
   FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 
--- Policies for push_subscriptions
+-- Policies for push_subscriptions (somente Admin e Service Role)
 CREATE POLICY "Admin access push subscriptions" ON public.push_subscriptions
-  FOR ALL USING (true) WITH CHECK (true);
+  FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 
 -- Policies for campaigns
 CREATE POLICY "Admin access campaigns" ON public.campaigns

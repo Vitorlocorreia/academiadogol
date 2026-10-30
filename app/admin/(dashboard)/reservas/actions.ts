@@ -1,11 +1,13 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+
+const ALLOWED_METHODS = ['pix_manual', 'cash', 'card_machine'] as const
 
 // Busca reservas com busca e filtro
 export async function getBookingsData(search?: string, status?: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   let query = supabase
     .from('bookings')
@@ -28,8 +30,8 @@ export async function getBookingsData(search?: string, status?: string) {
   let filtered = data ?? []
   if (search) {
     const s = search.toLowerCase().trim()
-    filtered = filtered.filter(b => 
-      b.customer?.name?.toLowerCase().includes(s) || 
+    filtered = filtered.filter((b) =>
+      b.customer?.name?.toLowerCase().includes(s) ||
       b.customer?.phone?.includes(s)
     )
   }
@@ -39,14 +41,18 @@ export async function getBookingsData(search?: string, status?: string) {
 
 // Confirmar recebimento do valor restante presencial
 export async function confirmRemainingPaymentAction(bookingId: string, method: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
+
+  if (!ALLOWED_METHODS.includes(method as any)) {
+    return { error: 'Método de pagamento inválido.' }
+  }
 
   const { error } = await supabase
     .from('bookings')
     .update({
       remaining_status: 'paid',
       remaining_payment_method: method,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', bookingId)
 
@@ -61,15 +67,18 @@ export async function confirmRemainingPaymentAction(bookingId: string, method: s
 
 // Finalizar partida (marcar como concluída e pagar restante)
 export async function completeBookingAction(bookingId: string, method?: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   const updatePayload: any = {
     status: 'completed',
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   }
 
-  // Se foi fornecido um método de pagamento, assume que o restante foi pago
+  // Se foi fornecido um método de pagamento, valida e assume que o restante foi pago
   if (method) {
+    if (!ALLOWED_METHODS.includes(method as any)) {
+      return { error: 'Método de pagamento inválido.' }
+    }
     updatePayload.remaining_status = 'paid'
     updatePayload.remaining_payment_method = method
   }
@@ -90,7 +99,7 @@ export async function completeBookingAction(bookingId: string, method?: string) 
 
 // Cancelar reserva
 export async function adminCancelBookingAction(bookingId: string) {
-  const supabase = await createClient()
+  const { supabase } = await requireAdmin()
 
   // Busca os dados da reserva antes de cancelar
   const { data: booking } = await supabase
@@ -103,7 +112,7 @@ export async function adminCancelBookingAction(bookingId: string) {
     .from('bookings')
     .update({
       status: 'cancelled',
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', bookingId)
 

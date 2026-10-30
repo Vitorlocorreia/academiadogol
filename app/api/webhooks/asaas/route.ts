@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendConfirmationEmail, sendAdminNewBookingEmail } from '@/lib/resend/emails'
+
+function isValidWebhookToken(received: string | null, expected: string | undefined): boolean {
+  if (!expected || !received) return false
+  const bufReceived = Buffer.from(received, 'utf8')
+  const bufExpected = Buffer.from(expected, 'utf8')
+  if (bufReceived.length !== bufExpected.length) return false
+  return crypto.timingSafeEqual(bufReceived, bufExpected)
+}
 
 /**
  * Route Handler para receber webhooks do Asaas.
@@ -12,9 +21,9 @@ export async function POST(request: Request) {
     const tokenHeader = request.headers.get('asaas-access-token')
     const configToken = process.env.ASAAS_WEBHOOK_TOKEN
 
-    // Se o token estiver configurado, valida a origem da requisição
-    if (configToken && tokenHeader !== configToken) {
-      console.warn('[Asaas Webhook] Token de segurança inválido recebido.')
+    // Fail-closed: exige que o token esteja configurado no servidor e coincida de forma timing-safe
+    if (!isValidWebhookToken(tokenHeader, configToken)) {
+      console.warn('[Asaas Webhook] Tentativa de acesso com token ausente ou inválido.')
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -66,12 +75,13 @@ export async function POST(request: Request) {
           continue
         }
 
-        // 3. Atualiza os status da reserva no banco de dados (bypass RLS via admin client)
+        // 3. Atualiza os status da reserva no banco de dados
         const { error: updateErr } = await supabase
           .from('bookings')
           .update({
             status: 'confirmed',
             deposit_status: 'paid',
+            updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id)
 
@@ -100,6 +110,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, processed: events.length })
   } catch (error: any) {
     console.error('[Asaas Webhook] Erro geral ao processar webhook:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno ao processar webhook' }, { status: 500 })
   }
 }
