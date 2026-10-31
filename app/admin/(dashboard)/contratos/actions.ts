@@ -230,9 +230,16 @@ export async function createContractAction(
   redirect('/admin/contratos')
 }
 
-// Encerrar um contrato (is_active = false)
+// Encerrar um contrato (is_active = false) e remover bloqueios futuros da agenda
 export async function deactivateContractAction(id: string) {
   const { supabase } = await requireAdmin()
+
+  const { data: contract } = await supabase
+    .from('fixed_contracts')
+    .select('*, customer:customers(name)')
+    .eq('id', id)
+    .single()
+
   const { error } = await supabase
     .from('fixed_contracts')
     .update({ is_active: false })
@@ -240,7 +247,20 @@ export async function deactivateContractAction(id: string) {
 
   if (error) return { error: error.message }
 
+  if (contract) {
+    const todayBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+    await supabase
+      .from('blocked_slots')
+      .delete()
+      .eq('field_id', contract.field_id)
+      .eq('start_time', contract.start_time)
+      .eq('end_time', contract.end_time)
+      .gte('date', todayBrt)
+  }
+
   revalidatePath('/admin/contratos')
+  revalidatePath(`/admin/contratos/${id}`)
+  revalidatePath('/admin/agenda')
   return { success: true }
 }
 

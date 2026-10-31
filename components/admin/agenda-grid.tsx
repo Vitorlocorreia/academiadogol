@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Trash2, Calendar, ShieldAlert, CheckCircle, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, Trash2, Calendar } from 'lucide-react'
 import { cancelBookingAction, deleteBlockedSlotAction } from '@/app/admin/(dashboard)/agenda/actions'
 import { BlockSlotModal } from './block-slot-modal'
 
@@ -36,9 +37,10 @@ function toMins(t: string): number {
 }
 
 export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settings }: Props) {
+  const router = useRouter()
   const [date, setDate] = useState(initialDate)
   const [activeFieldId, setActiveFieldId] = useState<string>(fields[0]?.id || '')
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false)
@@ -49,24 +51,24 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
   const closeTime = settings?.close_time?.slice(0, 5) ?? '23:00'
   const slots = generateHalfHourSlots(openTime, closeTime)
 
+  const goToDate = (newDate: string) => {
+    if (!newDate) return
+    setDate(newDate)
+    router.push(`/admin/agenda?date=${newDate}`)
+  }
+
   const handleNavigateDate = (offset: number) => {
     const d = new Date(date + 'T12:00:00')
     d.setDate(d.getDate() + offset)
     const newDate = d.toISOString().split('T')[0]
-    setDate(newDate)
-    
-    // Atualiza a URL para que o Next.js atualize os dados no servidor
-    const url = new URL(window.location.href)
-    url.searchParams.set('date', newDate)
-    window.history.pushState({}, '', url.toString())
-    // Força recarregamento suave
-    window.location.href = url.toString()
+    goToDate(newDate)
   }
 
   const handleCancelBooking = (id: string) => {
     if (!confirm('Deseja realmente cancelar esta reserva?')) return
     startTransition(async () => {
       await cancelBookingAction(id)
+      router.refresh()
     })
   }
 
@@ -74,6 +76,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
     if (!confirm('Deseja remover este bloqueio de horário?')) return
     startTransition(async () => {
       await deleteBlockedSlotAction(id)
+      router.refresh()
     })
   }
 
@@ -116,15 +119,15 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
     <div className="space-y-6">
       {/* Controles de Data */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-4 rounded-[4px]">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => handleNavigateDate(-1)}
-            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider cursor-pointer"
           >
             ← Dia Anterior
           </button>
           
-          <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950 rounded-[2px] border border-zinc-800">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-950 rounded-[2px] border border-zinc-800">
             <Calendar className="w-4 h-4 text-[var(--brand)]" />
             <span className="text-sm font-bold text-white uppercase">
               {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -133,11 +136,18 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
                 month: 'long',
               })}
             </span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => goToDate(e.target.value)}
+              aria-label="Selecionar data"
+              className="ml-2 bg-zinc-900 text-zinc-300 text-xs font-mono px-2 py-1 rounded-[2px] border border-zinc-700 cursor-pointer focus:outline-none focus:border-[var(--brand)]"
+            />
           </div>
 
           <button
             onClick={() => handleNavigateDate(1)}
-            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-[2px] transition-all font-bold text-xs uppercase tracking-wider cursor-pointer"
           >
             Próximo Dia →
           </button>
@@ -149,7 +159,7 @@ export function AgendaGrid({ initialDate, fields, bookings, blockedSlots, settin
             <button
               key={f.id}
               onClick={() => setActiveFieldId(f.id)}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-bold shrink-0 transition-all ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-bold shrink-0 transition-all cursor-pointer ${
                 activeFieldId === f.id
                   ? 'bg-[var(--brand)] text-white shadow-md'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'

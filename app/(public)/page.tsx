@@ -28,6 +28,8 @@ const WHATSAPP_LINK = 'https://wa.me/5581999096142'
 const INSTAGRAM_LINK = 'https://www.instagram.com/academia_do_gol/'
 const PHONE_DISPLAY = '(81) 99909-6142'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const fields = await getActiveFields()
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createManualBookingAction, createBlockedSlotAction } from '@/app/admin/(dashboard)/agenda/actions'
 
 interface Props {
@@ -13,12 +14,13 @@ interface Props {
 }
 
 export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, startTime }: Props) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'booking' | 'block'>('booking')
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
   // Estados dos inputs
-  const [duration, setDuration] = useState(60)
+  const [duration, setDuration] = useState(90)
   const [blockEndTime, setBlockEndTime] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
 
@@ -50,6 +52,7 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
         setError(res.error)
       } else {
         onClose()
+        router.refresh()
       }
     })
   }
@@ -67,12 +70,14 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
         setError(res.error)
       } else {
         onClose()
+        router.refresh()
       }
     })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-6 bg-zinc-950 border-b border-zinc-800 flex justify-between items-center">
           <div>
@@ -154,7 +159,7 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
                   name="customer_phone"
                   type="tel"
                   required
-                  placeholder="(11) 99999-9999"
+                  placeholder="(81) 99999-9999"
                   className="input-admin"
                 />
               </div>
@@ -183,9 +188,11 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
                       onChange={(e) => setDuration(Number(e.target.value))}
                       className="input-admin appearance-none pr-8 cursor-pointer"
                     >
-                      <option value={60} className="bg-zinc-900">60 min</option>
-                      <option value={90} className="bg-zinc-900">90 min</option>
-                      <option value={120} className="bg-zinc-900">120 min</option>
+                      <option value={60} className="bg-zinc-900">1h (60 min)</option>
+                      <option value={90} className="bg-zinc-900">1h30 (90 min)</option>
+                      <option value={120} className="bg-zinc-900">2h (120 min)</option>
+                      <option value={180} className="bg-zinc-900">3h (180 min)</option>
+                      <option value={240} className="bg-zinc-900">4h (240 min)</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500">
                       <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -222,7 +229,7 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
               <button
                 type="submit"
                 disabled={isPending}
-                className="btn-admin-primary w-full text-base uppercase tracking-widest font-bold mt-2"
+                className="btn-admin-primary w-full text-base uppercase tracking-widest font-bold mt-2 cursor-pointer"
                 style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
               >
                 {isPending ? 'Salvando...' : 'Confirmar Reserva Direta'}
@@ -304,7 +311,7 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
               <button
                 type="submit"
                 disabled={isPending}
-                className="btn-admin-primary w-full text-base uppercase tracking-widest font-bold mt-2"
+                className="btn-admin-primary w-full text-base uppercase tracking-widest font-bold mt-2 cursor-pointer"
                 style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
               >
                 {isPending ? 'Salvando...' : 'Aplicar Bloqueio'}

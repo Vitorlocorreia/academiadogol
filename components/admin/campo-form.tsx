@@ -10,8 +10,9 @@ interface CampoFormProps {
 }
 
 export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
-  const durationDefault = field?.duration_options?.join(', ') ?? '60, 90, 120'
+  const durationDefault = field?.duration_options?.join(', ') ?? '60, 90, 120, 180, 240'
   const amenitiesDefault = field?.amenities?.join(', ') ?? ''
+  const photoDefault = field?.photo_urls?.[0] ?? ''
 
   return (
     <form action={formAction} className="space-y-6">
@@ -47,6 +48,20 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               defaultValue={field?.description ?? ''}
               placeholder="Descreva o campo, grama sintética, dimensões..."
               className="input-admin resize-none"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="photo_url" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+              URL da Foto do Campo
+            </label>
+            <input
+              id="photo_url"
+              name="photo_url"
+              type="text"
+              defaultValue={photoDefault}
+              placeholder="Ex: /imagens/candeias/candeias.jpeg ou https://..."
+              className="input-admin"
             />
           </div>
 
@@ -117,7 +132,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                 name="duration_options"
                 type="text"
                 defaultValue={durationDefault}
-                placeholder="60, 90, 120"
+                placeholder="60, 90, 120, 180, 240"
                 className="input-admin"
               />
             </div>
@@ -204,8 +219,9 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           type="submit"
           id="btn-salvar-campo"
           disabled={isPending}
-          className="btn-admin-primary flex-1 text-center justify-center"
+          className="btn-admin-primary flex-1 text-center justify-center cursor-pointer"
         >
+          {isPending ? 'Salvando...' : field ? 'Salvar Alterações' : 'Criar Campo'}
         </button>
       </div>
     </form>

@@ -3,6 +3,8 @@
 import { getActiveFields } from '../actions'
 import { CampoCard } from '@/components/public/campo-card'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CamposPage() {
   const fields = await getActiveFields()
 
@@ -46,4 +48,3 @@ export default async function CamposPage() {
     </div>
   )
 }
-
