@@ -7,16 +7,18 @@ import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { getOccupiedSlots } from '@/app/(public)/actions'
 import { getFieldPrice } from '@/lib/pricing'
+import type { FieldPackage } from '@/lib/supabase/types'
 
 interface Props {
   fieldId: string
   fieldName: string
   openTime: string   // ex: '08:00'
   closeTime: string  // ex: '23:00'
-  durationOptions: number[]  // não mais usado para seleção, mas mantido para compatibilidade
+  durationOptions: number[]  // mantido para compatibilidade
   hourlyRate: number
   depositType: 'fixed' | 'percentage'
   depositValue: number
+  packages?: FieldPackage[]
 }
 
 // Gera todos os slots de meia-hora entre openTime e closeTime
@@ -51,19 +53,6 @@ function isRangeAvailable(
   )
 }
 
-// Verifica se um slot de início tem ao menos 30 min livres a partir dele
-function hasAnyAvailableEnd(
-  startTime: string,
-  allSlots: string[],
-  occupied: Array<{ start_time: string; end_time: string }>
-): boolean {
-  const startMins = toMins(startTime)
-  return allSlots.some((s) => {
-    const sMins = toMins(s)
-    return sMins > startMins && isRangeAvailable(startTime, s, occupied)
-  })
-}
-
 // Formata data para português
 function formatDatePT(date: Date): string {
   return date.toLocaleDateString('pt-BR', {
@@ -88,6 +77,7 @@ export function AvailabilityCalendar({
   hourlyRate,
   depositType,
   depositValue,
+  packages,
 }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -115,12 +105,7 @@ export function AvailabilityCalendar({
     })
   }, [fieldId, selectedDate])
 
-  // Todos os slots do dia incluindo o de fechamento (para aparecer como opção de "fim")
   const allSlots = generateHalfHourSlots(openTime, closeTime)
-  // Slots que podem ser escolhidos como INÍCIO (exceto o último)
-  const startSlots = allSlots.slice(0, -1)
-  // Slots que podem ser escolhidos como FIM (exceto o primeiro)
-  const endSlots = allSlots.slice(1)
 
   // Calcula dias do mês para o mini-calendário
   const daysInMonth = (): Array<Date | null> => {
@@ -137,20 +122,34 @@ export function AvailabilityCalendar({
   const duration = startSlot && endSlot
     ? toMins(endSlot) - toMins(startSlot)
     : 0
-  const total = getFieldPrice(fieldName, duration, hourlyRate)
-  const deposit = depositType === 'fixed' ? depositValue : (total * depositValue) / 100
+
+  const isFesta = duration >= 180
+  const bookingCategory = isFesta ? 'festa' : 'jogo'
+
+  const matchedPkg = packages?.find(
+    (p) => p.duration_minutes === duration && (p.category === bookingCategory || !p.category) && p.is_active !== false
+  ) || packages?.find((p) => p.duration_minutes === duration && p.is_active !== false)
+
+  const total = matchedPkg
+    ? Number(matchedPkg.total_price)
+    : getFieldPrice(fieldName, duration, hourlyRate, packages)
+
+  const deposit = matchedPkg && matchedPkg.deposit_price !== undefined
+    ? Number(matchedPkg.deposit_price)
+    : depositType === 'fixed'
+      ? depositValue
+      : (total * depositValue) / 100
+
   const selectionValid = startSlot && endSlot && duration >= 30
 
   const handleSlotClick = (slot: string) => {
     if (!startSlot) {
-      // Primeira seleção = início
       setStartSlot(slot)
       setEndSlot(null)
       return
     }
 
     if (slot === startSlot) {
-      // Deselecionar
       setStartSlot(null)
       setEndSlot(null)
       return
@@ -160,17 +159,13 @@ export function AvailabilityCalendar({
     const startMins = toMins(startSlot)
 
     if (clickedMins > startMins) {
-      // Clicou depois do início → definir como fim
-      // Verifica se o intervalo inteiro está livre
       if (isRangeAvailable(startSlot, slot, occupied)) {
         setEndSlot(slot)
       } else {
-        // Intervalo tem conflito → reinicia a partir deste slot
         setStartSlot(slot)
         setEndSlot(null)
       }
     } else {
-      // Clicou antes do início → redefinir início
       setStartSlot(slot)
       setEndSlot(null)
     }
@@ -209,7 +204,7 @@ export function AvailabilityCalendar({
 
     const slotMins = toMins(slot)
 
-    if (slot === startSlot) {
+    if (slot === startSlot || (endSlot && slot === endSlot)) {
       return {
         style: {
           background: 'var(--brand)',
@@ -223,21 +218,6 @@ export function AvailabilityCalendar({
       }
     }
 
-    if (endSlot && slot === endSlot) {
-      return {
-        style: {
-          background: 'var(--brand)',
-          color: 'white',
-          border: '1px solid var(--brand)',
-          borderRadius: '2px',
-          fontWeight: 'bold',
-          transform: 'scale(1.03)',
-        },
-        className: 'py-2 text-xs text-center transition-all shadow-md shadow-emerald-950/20'
-      }
-    }
-
-    // Slots dentro do range selecionado
     if (startSlot && endSlot) {
       const startMins = toMins(startSlot)
       const endMins = toMins(endSlot)
@@ -254,7 +234,6 @@ export function AvailabilityCalendar({
       }
     }
 
-    // Slots após o início mas sem fim definido — destaque fraco como sugestão
     if (startSlot && !endSlot) {
       const startMins = toMins(startSlot)
       if (slotMins > startMins) {
@@ -269,19 +248,6 @@ export function AvailabilityCalendar({
               cursor: 'pointer',
             },
             className: 'py-2 text-xs text-center hover:opacity-80 transition-colors'
-          }
-        } else {
-          return {
-            style: {
-              background: 'var(--bg-subtle)',
-              color: 'var(--text-muted)',
-              opacity: 0.5,
-              textDecoration: 'line-through',
-              cursor: 'not-allowed',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-            },
-            className: 'py-2 text-xs text-center'
           }
         }
       }
@@ -403,7 +369,6 @@ export function AvailabilityCalendar({
         ) : (
           <div className="grid grid-cols-4 gap-2">
             {allSlots.map((slot, idx) => {
-              // O último slot só pode ser fim (não início)
               const isLastSlot = idx === allSlots.length - 1
               const isOccupied = occupied.some(
                 (b) => b.start_time <= slot && b.end_time > slot
@@ -449,16 +414,28 @@ export function AvailabilityCalendar({
             borderRadius: '4px',
           }}
         >
-          <h3
-            className="font-bold uppercase tracking-wider text-sm"
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: '1.25rem',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Resumo da pré-reserva
-          </h3>
+          <div className="flex items-center justify-between pb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+            <h3
+              className="font-bold uppercase tracking-wider text-sm"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: '1.25rem',
+                color: 'var(--text-primary)',
+              }}
+            >
+              Resumo da pré-reserva
+            </h3>
+            {isFesta ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                🎂 Festa / Evento
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                ⚽ Jogo Avulso
+              </span>
+            )}
+          </div>
+
           <div className="space-y-2 text-xs uppercase tracking-wider font-bold animate-fade-in" style={{ color: 'var(--text-secondary)' }}>
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <span>Data</span>
@@ -472,12 +449,18 @@ export function AvailabilityCalendar({
               <span>Duração</span>
               <span style={{ color: 'var(--text-primary)' }}>{duration} minutos</span>
             </div>
+            {matchedPkg?.name && (
+              <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                <span>Pacote</span>
+                <span className="text-white">{matchedPkg.name}</span>
+              </div>
+            )}
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <span>Total</span>
+              <span>Total da Locação</span>
               <span style={{ color: 'var(--text-primary)' }}>R$ {total.toFixed(2)}</span>
             </div>
             <div className="flex justify-between pt-2 text-sm font-black" style={{ color: 'var(--brand)' }}>
-              <span>Sinal (PIX)</span>
+              <span>Sinal PIX para Garantir Horário</span>
               <span>R$ {deposit.toFixed(2)}</span>
             </div>
           </div>

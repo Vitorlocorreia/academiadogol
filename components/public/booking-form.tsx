@@ -5,6 +5,7 @@
 import { useActionState } from 'react'
 import { createBookingAction } from '@/app/(public)/actions'
 import { getFieldPrice } from '@/lib/pricing'
+import type { FieldPackage, BookingCategory } from '@/lib/supabase/types'
 
 interface Props {
   fieldId: string
@@ -15,6 +16,8 @@ interface Props {
   hourlyRate: number
   depositType: 'fixed' | 'percentage'
   depositValue: number
+  packages?: FieldPackage[]
+  bookingType?: BookingCategory
 }
 
 const INIT = { error: '' }
@@ -28,6 +31,8 @@ export function BookingForm({
   hourlyRate,
   depositType,
   depositValue,
+  packages,
+  bookingType: initialBookingType,
 }: Props) {
   const [state, formAction, isPending] = useActionState(
     async (_prev: typeof INIT, fd: FormData) => {
@@ -37,9 +42,22 @@ export function BookingForm({
     INIT
   )
 
-  const total = getFieldPrice(fieldName, duration, hourlyRate)
-  const deposit =
-    depositType === 'fixed' ? depositValue : (total * depositValue) / 100
+  const isFesta = initialBookingType === 'festa' || duration >= 180
+  const bookingCategory: BookingCategory = isFesta ? 'festa' : 'jogo'
+
+  const matchedPkg = packages?.find(
+    (p) => p.duration_minutes === duration && (p.category === bookingCategory || !p.category) && p.is_active !== false
+  ) || packages?.find((p) => p.duration_minutes === duration && p.is_active !== false)
+
+  const total = matchedPkg
+    ? Number(matchedPkg.total_price)
+    : getFieldPrice(fieldName, duration, hourlyRate, packages)
+
+  const deposit = matchedPkg && matchedPkg.deposit_price !== undefined
+    ? Number(matchedPkg.deposit_price)
+    : depositType === 'fixed'
+      ? depositValue
+      : (total * depositValue) / 100
 
   // Calcula horário de fim para exibição
   const [hh, mm] = startTime.split(':').map(Number)
@@ -59,6 +77,7 @@ export function BookingForm({
       <input type="hidden" name="date" value={date} />
       <input type="hidden" name="start_time" value={startTime} />
       <input type="hidden" name="duration_minutes" value={duration} />
+      <input type="hidden" name="booking_type" value={bookingCategory} />
 
       {/* Resumo da reserva */}
       <div
@@ -69,21 +88,38 @@ export function BookingForm({
           borderRadius: '4px',
         }}
       >
-        <h3
-          className="font-bold uppercase tracking-wider mb-1"
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: '1.25rem',
-            color: 'var(--text-primary)',
-          }}
-        >
-          Resumo da reserva
-        </h3>
+        <div className="flex items-center justify-between pb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+          <h3
+            className="font-bold uppercase tracking-wider"
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: '1.25rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Resumo da reserva
+          </h3>
+          {isFesta ? (
+            <span className="px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+              🎂 Pacote Festa / Evento
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              ⚽ Aluguel de Quadra (Jogo)
+            </span>
+          )}
+        </div>
         <div className="space-y-2 text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--text-secondary)' }}>
           <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
             <span>Campo</span>
             <span style={{ color: 'var(--text-primary)' }}>{fieldName}</span>
           </div>
+          {matchedPkg?.name && (
+            <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+              <span>Pacote</span>
+              <span className="text-white">{matchedPkg.name}</span>
+            </div>
+          )}
           <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
             <span>Data</span>
             <span style={{ color: 'var(--text-primary)' }}>{dateDisplay}</span>
@@ -93,11 +129,11 @@ export function BookingForm({
             <span style={{ color: 'var(--text-primary)' }}>{startTime} → {endTime} ({duration}min)</span>
           </div>
           <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span>Total</span>
+            <span>Total da Locação</span>
             <span style={{ color: 'var(--text-primary)' }}>R$ {total.toFixed(2)}</span>
           </div>
           <div className="flex justify-between pt-2 text-sm font-black" style={{ color: 'var(--brand)' }}>
-            <span>Sinal PIX agora</span>
+            <span>Sinal PIX para Garantir Horário</span>
             <span>R$ {deposit.toFixed(2)}</span>
           </div>
         </div>

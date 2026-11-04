@@ -67,9 +67,10 @@ export default async function ReservarPage({ params, searchParams }: Props) {
           hourlyRate={field.hourly_rate}
           depositType={field.deposit_type as 'fixed' | 'percentage'}
           depositValue={field.deposit_value}
+          packages={field.packages}
+          bookingType={duration >= 180 ? 'festa' : 'jogo'}
         />
       </div>
     </div>
   )
 }
-

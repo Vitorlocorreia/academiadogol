@@ -8,6 +8,17 @@ export type RemainingStatus = 'pending' | 'paid'
 export type RemainingPaymentMethod = 'pix_manual' | 'cash' | 'card_machine'
 export type CampaignStatus = 'draft' | 'sent'
 export type FixedPaymentStatus = 'pending' | 'paid'
+export type BookingCategory = 'jogo' | 'festa'
+
+export interface FieldPackage {
+  id: string
+  category: BookingCategory
+  name: string
+  duration_minutes: number
+  total_price: number
+  deposit_price: number
+  is_active: boolean
+}
 
 export interface Field {
   id: string
@@ -21,6 +32,7 @@ export interface Field {
   deposit_value: number
   is_active: boolean
   maps_url?: string | null
+  packages?: FieldPackage[]
   created_at: string
 }
 
@@ -55,6 +67,7 @@ export interface Booking {
   asaas_charge_id: string | null
   pix_qr_code?: string | null
   pix_copy_paste?: string | null
+  booking_type?: BookingCategory | null
   notes: string | null
   created_at: string
   updated_at: string

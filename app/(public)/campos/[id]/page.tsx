@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getFieldById } from '../../actions'
 import { AvailabilityCalendar } from '@/components/public/availability-calendar'
 import { createClient } from '@/lib/supabase/server'
-import { getFieldPrice } from '@/lib/pricing'
+import { getFieldPackages } from '@/lib/pricing'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -25,6 +25,10 @@ export default async function CampoDetailPage({ params }: Props) {
 
   const openTime = settings?.open_time?.slice(0, 5) ?? '08:00'
   const closeTime = settings?.close_time?.slice(0, 5) ?? '23:00'
+
+  const packages = getFieldPackages(field)
+  const jogoPackages = packages.filter((p) => p.category === 'jogo' && p.is_active !== false)
+  const festaPackages = packages.filter((p) => p.category === 'festa' && p.is_active !== false)
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-10">
@@ -137,61 +141,116 @@ export default async function CampoDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Preços e sinal */}
+          {/* Preços e Pacotes (Full Editáveis) */}
           <div
-            className="p-6"
+            className="p-6 space-y-6"
             style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
               borderRadius: '4px',
             }}
           >
-            <h2
-              className="uppercase tracking-wider mb-4 font-bold"
-              style={{
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: '1.25rem',
-                color: 'var(--text-primary)',
-              }}
-            >
-              Valores por Período
-            </h2>
-            <div className="space-y-3">
-              {(field.duration_options ?? [60]).map((min) => {
-                const total = getFieldPrice(field.name, min, field.hourly_rate)
-                const deposit =
-                  field.deposit_type === 'fixed'
-                    ? field.deposit_value
-                    : (total * field.deposit_value) / 100
-                const label =
-                  min === 60 ? 'Avulso 1h' :
-                  min === 90 ? 'Avulso 1h30' :
-                  min === 120 ? 'Avulso 2h' :
-                  min === 180 ? 'Festa de Aniversário 3h' :
-                  min === 240 ? 'Festa de Aniversário 4h' :
-                  `${min} minutos`
-                return (
-                  <div key={min} className="flex items-center justify-between pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                    <span className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
-                    <div className="text-right">
-                      <span
-                        className="font-black"
-                        style={{
-                          fontFamily: "'Bebas Neue', sans-serif",
-                          fontSize: '1.5rem',
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        R$ {total.toFixed(0)}
-                      </span>
-                      <span className="text-xs ml-2 font-semibold uppercase tracking-wider" style={{ color: 'var(--brand)' }}>
-                        (sinal: R$ {deposit.toFixed(0)})
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
+            <div>
+              <h2
+                className="uppercase tracking-wider font-bold"
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '1.35rem',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                Tabela de Valores & Pacotes
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Garantia imediata do horário pagando apenas o sinal via PIX no site.
+              </p>
             </div>
+
+            {/* 1. Aluguel de Quadra Normal */}
+            {jogoPackages.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-zinc-800">
+                  <span className="text-sm">⚽</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">
+                    Aluguel de Quadra (Horário Normal / Jogo)
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {jogoPackages.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className="flex items-center justify-between pb-2.5 border-b border-zinc-800/40"
+                    >
+                      <div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+                          {pkg.name}
+                        </span>
+                        <span className="block text-[11px] text-zinc-500 font-medium">
+                          {pkg.duration_minutes} minutos de jogo
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className="font-black text-white"
+                          style={{
+                            fontFamily: "'Bebas Neue', sans-serif",
+                            fontSize: '1.4rem',
+                          }}
+                        >
+                          R$ {Number(pkg.total_price).toFixed(0)}
+                        </span>
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">
+                          Sinal: R$ {Number(pkg.deposit_price).toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. Festas de Aniversário & Eventos */}
+            {festaPackages.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-purple-900/40">
+                  <span className="text-sm">🎂</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-purple-300">
+                    Festas de Aniversário & Eventos
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {festaPackages.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className="flex items-center justify-between pb-2.5 border-b border-zinc-800/40"
+                    >
+                      <div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-purple-200">
+                          {pkg.name}
+                        </span>
+                        <span className="block text-[11px] text-zinc-500 font-medium">
+                          {pkg.duration_minutes / 60} horas de estrutura completa
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className="font-black text-white"
+                          style={{
+                            fontFamily: "'Bebas Neue', sans-serif",
+                            fontSize: '1.4rem',
+                          }}
+                        >
+                          R$ {Number(pkg.total_price).toFixed(0)}
+                        </span>
+                        <span className="block text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                          Sinal: R$ {Number(pkg.deposit_price).toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Localização do Campo */}
@@ -229,6 +288,7 @@ export default async function CampoDetailPage({ params }: Props) {
               hourlyRate={field.hourly_rate}
               depositType={field.deposit_type as 'fixed' | 'percentage'}
               depositValue={field.deposit_value}
+              packages={packages}
             />
           </div>
         </div>
@@ -397,4 +457,3 @@ async function resolveLocation(mapsUrl: string) {
 
   return { embedUrl, wazeUrl, gmapsUrl }
 }
-

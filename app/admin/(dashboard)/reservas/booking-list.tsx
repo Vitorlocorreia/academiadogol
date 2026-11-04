@@ -198,8 +198,13 @@ export function BookingList({ initialBookings }: BookingListProps) {
                       <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       {new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {b.start_time.slice(0,5)}
                     </div>
-                    <div className="font-medium text-zinc-350">
-                      {b.field?.name ?? 'Campo'}
+                    <div className="font-medium text-zinc-350 flex items-center gap-1.5">
+                      <span>{b.field?.name ?? 'Campo'}</span>
+                      {b.booking_type === 'festa' || b.duration_minutes >= 180 ? (
+                        <span className="text-[10px] text-purple-400 font-bold">🎂 Festa</span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-400 font-bold">⚽ Jogo</span>
+                      )}
                     </div>
                   </div>
                   
@@ -229,7 +234,18 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
                   {/* Campo */}
                   <div className="text-zinc-300 text-sm font-medium hidden sm:block">
-                    {b.field?.name ?? 'Campo'}
+                    <div className="flex items-center gap-1.5">
+                      <span>{b.field?.name ?? 'Campo'}</span>
+                      {b.booking_type === 'festa' || b.duration_minutes >= 180 ? (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                          🎂 Festa
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          ⚽ Jogo
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Cliente — resumo */}

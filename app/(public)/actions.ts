@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import type { Field } from '@/lib/supabase/types'
+import type { Field, FieldPackage } from '@/lib/supabase/types'
 import { getFieldPrice } from '@/lib/pricing'
 
 // ─── Helpers de Normalização e Validação ─────────────────────────────────────
@@ -254,10 +254,10 @@ export async function createBookingAction(
 
   const supabase = createAdminClient()
 
-  // Busca dados do campo para calcular valores
+  // Busca dados do campo para calcular valores (incluindo tabela de pacotes)
   const { data: field, error: fieldError } = await supabase
     .from('fields')
-    .select('name, hourly_rate, deposit_type, deposit_value, is_active')
+    .select('name, hourly_rate, deposit_type, deposit_value, is_active, packages')
     .eq('id', field_id)
     .single()
 
@@ -273,11 +273,35 @@ export async function createBookingAction(
   }
 
   const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-  const total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
-  const deposit_amount =
-    field.deposit_type === 'fixed'
-      ? field.deposit_value
-      : (total_amount * field.deposit_value) / 100
+
+  // Determina tipo da reserva (jogo ou festa)
+  const requestedBookingType = formData.get('booking_type')
+  const booking_type = (requestedBookingType === 'festa' || duration_minutes >= 180) ? 'festa' : 'jogo'
+
+  // Procura pacote específico nos packages cadastrados do campo
+  const packages: FieldPackage[] = (field as any).packages ?? []
+  const matchedPkg = packages.find(
+    (p) => p.duration_minutes === duration_minutes && (p.category === booking_type || !p.category) && p.is_active !== false
+  ) || packages.find((p) => p.duration_minutes === duration_minutes && p.is_active !== false)
+
+  let total_amount: number
+  let deposit_amount: number
+
+  if (matchedPkg) {
+    total_amount = Number(matchedPkg.total_price)
+    deposit_amount = matchedPkg.deposit_price !== undefined && matchedPkg.deposit_price !== null
+      ? Number(matchedPkg.deposit_price)
+      : field.deposit_type === 'fixed'
+        ? Number(field.deposit_value)
+        : (total_amount * Number(field.deposit_value)) / 100
+  } else {
+    total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate, packages)
+    deposit_amount =
+      field.deposit_type === 'fixed'
+        ? Number(field.deposit_value)
+        : (total_amount * Number(field.deposit_value)) / 100
+  }
+
   const remaining_amount = Math.max(0, total_amount - deposit_amount)
 
   // Verifica sobreposição antes de inserir (defesa dupla — trigger no banco)
@@ -328,6 +352,13 @@ export async function createBookingAction(
     return { error: 'Erro ao registrar cliente.' }
   }
 
+  // Notas identificando o tipo de reserva e o pacote
+  const notesParts = [
+    booking_type === 'festa' ? '🎂 [FESTA DE ANIVERSÁRIO / EVENTO]' : '⚽ [JOGO / HORÁRIO NORMAL]',
+    matchedPkg?.name ? `Pacote: ${matchedPkg.name}` : null,
+    customer_cpf ? `CPF: ${customer_cpf}` : null,
+  ].filter(Boolean)
+
   // Cria a reserva com status pending
   const { data: booking, error: bookingError } = await supabase
     .from('bookings')
@@ -344,7 +375,8 @@ export async function createBookingAction(
       status: 'pending',
       deposit_status: 'pending',
       remaining_status: 'pending',
-      notes: customer_cpf ? `CPF: ${customer_cpf}` : null,
+      booking_type,
+      notes: notesParts.join(' | '),
     })
     .select('id')
     .single()
