@@ -5,13 +5,38 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY
-const ASAAS_ENV = process.env.ASAAS_ENVIRONMENT || 'production'
+function getAsaasApiKey(): string | undefined {
+  let raw = process.env.ASAAS_API_KEY?.trim()
+  if (!raw && process.env.ASAAS_API_KEY_B64) {
+    try {
+      raw = Buffer.from(process.env.ASAAS_API_KEY_B64.trim(), 'base64').toString('utf8').trim()
+    } catch {
+      // ignora erro de decode
+    }
+  }
+  if (!raw) return undefined
+  // Caso o $ inicial tenha sido omitido para evitar interpolação de variáveis em .env
+  if (raw.startsWith('aact_')) {
+    return `$${raw}`
+  }
+  return raw
+}
 
-const BASE_URL =
-  ASAAS_ENV === 'sandbox' || ASAAS_API_KEY?.startsWith('$aact_YTU')
-    ? 'https://sandbox.asaas.com/api/v3'
-    : 'https://api.asaas.com/api/v3'
+function getBaseUrl(apiKey?: string): string {
+  const env = (process.env.ASAAS_ENVIRONMENT || 'production').toLowerCase().trim()
+  if (env === 'sandbox' || apiKey?.startsWith('$aact_YTU') || apiKey?.startsWith('$aact_hmlg')) {
+    return 'https://sandbox.asaas.com/api/v3'
+  }
+  return 'https://api.asaas.com/v3'
+}
+
+function getAsaasHeaders(apiKey: string): Record<string, string> {
+  return {
+    access_token: apiKey,
+    'User-Agent': 'AcademiaDoGol/1.0',
+    'Content-Type': 'application/json',
+  }
+}
 
 interface AsaasCustomerPayload {
   name: string
@@ -35,25 +60,29 @@ function getBrazilTodayStr(): string {
   return `${y}-${m}-${d}`
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 /**
  * Cria ou recupera um cliente no Asaas pelo CPF ou telefone/e-mail
  */
 export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Promise<string> {
-  if (!ASAAS_API_KEY) {
+  const apiKey = getAsaasApiKey()
+  if (!apiKey) {
     throw new Error('ASAAS_API_KEY não configurada no ambiente.')
   }
 
+  const baseUrl = getBaseUrl(apiKey)
+  const headers = getAsaasHeaders(apiKey)
   const cleanPhone = data.phone.replace(/\D/g, '')
   const cleanCpf = data.cpfCnpj ? data.cpfCnpj.replace(/\D/g, '') : undefined
 
   // 1. Tenta buscar cliente existente pelo CPF (prioritário) ou telefone celular
   try {
     const queryParam = cleanCpf ? `cpfCnpj=${cleanCpf}` : `mobilePhone=${cleanPhone}`
-    const searchRes = await fetch(`${BASE_URL}/customers?${queryParam}`, {
-      headers: {
-        access_token: ASAAS_API_KEY,
-        'Content-Type': 'application/json',
-      },
+    const searchRes = await fetch(`${baseUrl}/customers?${queryParam}`, {
+      headers,
       cache: 'no-store',
     })
 
@@ -63,12 +92,9 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
         const existing = searchData.data[0]
         // Se o cliente existente não tinha CPF e agora temos CPF, atualiza no Asaas
         if (!existing.cpfCnpj && cleanCpf) {
-          await fetch(`${BASE_URL}/customers/${existing.id}`, {
+          await fetch(`${baseUrl}/customers/${existing.id}`, {
             method: 'POST',
-            headers: {
-              access_token: ASAAS_API_KEY,
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify({
               name: data.name,
               cpfCnpj: cleanCpf,
@@ -85,12 +111,9 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
   }
 
   // 2. Se não existir, cadastra novo cliente
-  const createRes = await fetch(`${BASE_URL}/customers`, {
+  const createRes = await fetch(`${baseUrl}/customers`, {
     method: 'POST',
-    headers: {
-      access_token: ASAAS_API_KEY,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       name: data.name,
       cpfCnpj: cleanCpf,
@@ -110,7 +133,7 @@ export async function getOrCreateAsaasCustomer(data: AsaasCustomerPayload): Prom
 }
 
 /**
- * Cria a cobrança PIX no Asaas e obtém o QR Code + Copia e Cola
+ * Cria a cobrança PIX no Asaas e obtém o QR Code + Copia e Cola (com retry automático)
  */
 export async function createAsaasPixCharge({
   customerId,
@@ -123,20 +146,21 @@ export async function createAsaasPixCharge({
   description: string
   externalReference: string
 }) {
-  if (!ASAAS_API_KEY) {
+  const apiKey = getAsaasApiKey()
+  if (!apiKey) {
     throw new Error('ASAAS_API_KEY não configurada no ambiente.')
   }
+
+  const baseUrl = getBaseUrl(apiKey)
+  const headers = getAsaasHeaders(apiKey)
 
   // Vencimento de hoje no fuso de Brasília (evita virada de dia UTC após 21h)
   const today = getBrazilTodayStr()
 
-  // 1. Cria a cobrança
-  const paymentRes = await fetch(`${BASE_URL}/payments`, {
+  // 1. Cria a cobrança PIX
+  const paymentRes = await fetch(`${baseUrl}/payments`, {
     method: 'POST',
-    headers: {
-      access_token: ASAAS_API_KEY,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       customer: customerId,
       billingType: 'PIX',
@@ -156,21 +180,35 @@ export async function createAsaasPixCharge({
   const paymentData = await paymentRes.json()
   const paymentId = paymentData.id
 
-  // 2. Obtém os dados do QR Code PIX
-  const qrRes = await fetch(`${BASE_URL}/payments/${paymentId}/pixQrCode`, {
-    headers: {
-      access_token: ASAAS_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    cache: 'no-store',
-  })
+  // 2. Obtém os dados do QR Code PIX (com retry caso o BACEN/Asaas leve ~1s para registrar o QR Code)
+  let qrData: PixQrCodeResponse | null = null
+  let lastErrorText = ''
+  let lastStatus = 0
 
-  if (!qrRes.ok) {
-    const errBody = await qrRes.text()
-    throw new Error(`Erro ao buscar QR Code PIX no Asaas (${qrRes.status}): ${errBody}`)
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const qrRes = await fetch(`${baseUrl}/payments/${paymentId}/pixQrCode`, {
+      headers,
+      cache: 'no-store',
+    })
+
+    if (qrRes.ok) {
+      qrData = await qrRes.json()
+      if (qrData?.encodedImage && qrData?.payload) {
+        break
+      }
+    } else {
+      lastStatus = qrRes.status
+      lastErrorText = await qrRes.text()
+    }
+
+    if (attempt < 4) {
+      await sleep(1000)
+    }
   }
 
-  const qrData: PixQrCodeResponse = await qrRes.json()
+  if (!qrData || !qrData.encodedImage || !qrData.payload) {
+    throw new Error(`Erro ao buscar QR Code PIX no Asaas (${lastStatus}): ${lastErrorText}`)
+  }
 
   // Garante o prefixo data:image/png;base64 caso o Asaas retorne apenas o base64 puro
   const qrImage = qrData.encodedImage.startsWith('data:')
@@ -202,8 +240,10 @@ export async function getOrGenerateBookingPix(booking: any) {
     }
   }
 
+  const apiKey = getAsaasApiKey()
+
   // Se não tiver ASAAS_API_KEY no ambiente, retorna modo simulado
-  if (!ASAAS_API_KEY) {
+  if (!apiKey) {
     const mockCopyPaste = `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/${booking.id}5204000053039865405${Number(booking.deposit_amount).toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
     return {
       chargeId: null,
