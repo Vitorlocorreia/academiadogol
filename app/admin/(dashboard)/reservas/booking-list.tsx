@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
+  confirmDepositManuallyAction,
   confirmRemainingPaymentAction, 
   completeBookingAction, 
   adminCancelBookingAction 
@@ -37,6 +38,19 @@ export function BookingList({ initialBookings }: BookingListProps) {
     
     return matchesSearch && matchesStatus
   })
+
+  const handleConfirmDeposit = (bookingId: string) => {
+    if (confirm('Confirmar manualmente o recebimento do sinal desta reserva?')) {
+      startTransition(async () => {
+        const res = await confirmDepositManuallyAction(bookingId)
+        if (res.success) {
+          router.refresh()
+        } else {
+          alert(res.error)
+        }
+      })
+    }
+  }
 
   const handleConfirmPayment = (bookingId: string) => {
     startTransition(async () => {
@@ -321,6 +335,16 @@ export function BookingList({ initialBookings }: BookingListProps) {
                       {/* Ações */}
                       {canAct && (
                         <div className="flex flex-wrap gap-2 pt-2">
+                          {b.status === 'pending' && (
+                            <button
+                              onClick={() => handleConfirmDeposit(b.id)}
+                              disabled={isPending}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              Confirmar Sinal (PIX)
+                            </button>
+                          )}
                           {isPendingPayment && (
                             <button
                               onClick={() => setSelectedBookingForPayment(b.id)}

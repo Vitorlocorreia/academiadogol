@@ -37,13 +37,32 @@ function isValidCPF(cpfRaw: string): boolean {
   return true
 }
 
-function getBrazilTodayStr(): string {
+function getBrazilNow(): { todayStr: string; currentHHMM: string; nextHalfHourSlot: string } {
   const now = new Date()
   const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
   const y = brTime.getFullYear()
   const m = String(brTime.getMonth() + 1).padStart(2, '0')
   const d = String(brTime.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+  const hh = brTime.getHours()
+  const mm = brTime.getMinutes()
+  const currentHHMM = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+
+  // Arredonda para o próximo bloco de 30 minutos para bloquear horários já iniciados hoje
+  const totalMins = hh * 60 + mm
+  const roundedMins = Math.min(24 * 60, Math.ceil((totalMins + 1) / 30) * 30)
+  const rH = String(Math.floor(roundedMins / 60)).padStart(2, '0')
+  const rM = String(roundedMins % 60).padStart(2, '0')
+  const nextHalfHourSlot = `${rH}:${rM}`
+
+  return {
+    todayStr: `${y}-${m}-${d}`,
+    currentHHMM,
+    nextHalfHourSlot,
+  }
+}
+
+function getBrazilTodayStr(): string {
+  return getBrazilNow().todayStr
 }
 
 // ─── Campos ─────────────────────────────────────────────────────────────────
@@ -99,13 +118,27 @@ export async function getOccupiedSlots(
     const supabase = createAdminClient()
     const dayOfWeek = new Date(date + 'T12:00:00').getDay() // evita problema de fuso
 
+    // Libera reservas pendentes abandonadas há mais de 20 minutos
+    try {
+      await supabase.rpc('expire_stale_pending_bookings')
+    } catch {
+      // ignora caso a RPC ainda não esteja disponível
+    }
+
     // Reservas ativas e pendentes
     const { data: bookings } = await supabase
       .from('bookings')
-      .select('start_time, end_time')
+      .select('start_time, end_time, status, created_at')
       .eq('field_id', fieldId)
       .eq('date', date)
       .in('status', ['pending', 'confirmed'])
+
+    const cutoffMs = Date.now() - 20 * 60 * 1000
+    const activeBookings = (bookings ?? []).filter((b) => {
+      if (b.status === 'confirmed') return true
+      if (!b.created_at) return true
+      return new Date(b.created_at).getTime() >= cutoffMs
+    })
 
     // Bloqueios pontuais para a data específica
     const { data: pointBlocks } = await supabase
@@ -129,10 +162,18 @@ export async function getOccupiedSlots(
       return b.recur_ends_at >= date
     })
 
+    // Se a data consultada for hoje no fuso de Brasília, bloqueia os horários que já passaram
+    const { todayStr, nextHalfHourSlot } = getBrazilNow()
+    const pastTodayBlocks =
+      date === todayStr && nextHalfHourSlot > '00:00'
+        ? [{ start_time: '00:00', end_time: nextHalfHourSlot }]
+        : []
+
     const all = [
-      ...(bookings ?? []),
+      ...activeBookings,
       ...(pointBlocks ?? []),
       ...activeRecurBlocks,
+      ...pastTodayBlocks,
     ]
 
     return all.map(({ start_time, end_time }) => ({ start_time, end_time }))
@@ -202,10 +243,13 @@ export async function createBookingAction(
     customer_birth_date,
   } = parsed.data
 
-  // Bloqueia reservas para datas passadas
-  const todayStr = getBrazilTodayStr()
+  // Bloqueia reservas para datas passadas ou horários já passados hoje
+  const { todayStr, currentHHMM } = getBrazilNow()
   if (date < todayStr) {
     return { error: 'Não é possível realizar reservas para datas passadas.' }
+  }
+  if (date === todayStr && start_time <= currentHHMM) {
+    return { error: 'Não é possível reservar um horário que já passou hoje. Escolha um horário futuro.' }
   }
 
   const supabase = createAdminClient()
@@ -443,11 +487,12 @@ export async function confirmSimulatedPixPayment(bookingId: string) {
 }
 
 // Verifica o status em tempo real de uma reserva (usado para auto-redirect após PIX)
+// Se ainda estiver pending no banco e tiver asaas_charge_id, consulta ativamente a API v3 do Asaas
 export async function checkBookingStatusAction(bookingId: string) {
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, status, deposit_status')
+    .select('*, field:fields(*), customer:customers(*)')
     .eq('id', bookingId)
     .single()
 
@@ -455,9 +500,56 @@ export async function checkBookingStatusAction(bookingId: string) {
     return { isConfirmed: false, status: 'pending' }
   }
 
-  const isConfirmed = data.status === 'confirmed' || data.status === 'completed'
+  if (data.status === 'confirmed' || data.status === 'completed') {
+    return {
+      isConfirmed: true,
+      status: data.status,
+      depositStatus: data.deposit_status,
+    }
+  }
+
+  // Consulta ativa na API do Asaas caso o pagamento já tenha sido compensado e o Webhook ainda não tenha chegado
+  if (data.status === 'pending' && data.asaas_charge_id) {
+    try {
+      const { checkAsaasPaymentStatus } = await import('@/lib/asaas/client')
+      const asaasCheck = await checkAsaasPaymentStatus(data.asaas_charge_id)
+
+      if (asaasCheck.isPaid) {
+        const { data: wasConfirmedNow } = await supabase.rpc('confirm_booking_payment', {
+          p_booking_id: bookingId,
+        })
+
+        if (wasConfirmedNow) {
+          try {
+            const { sendConfirmationEmail, sendAdminNewBookingEmail } = await import('@/lib/resend/emails')
+            const { sendBookingConfirmedPush } = await import('@/lib/web-push/push')
+
+            data.status = 'confirmed'
+            data.deposit_status = 'paid'
+
+            await sendConfirmationEmail(data)
+            await sendAdminNewBookingEmail(data)
+            await sendBookingConfirmedPush(data)
+          } catch (notifErr) {
+            console.error('[checkBookingStatusAction] Erro ao disparar notificações:', notifErr)
+          }
+        }
+
+        revalidatePath(`/reserva/pagamento/${bookingId}`)
+        revalidatePath(`/reserva/confirmacao/${bookingId}`)
+        return {
+          isConfirmed: true,
+          status: 'confirmed',
+          depositStatus: 'paid',
+        }
+      }
+    } catch (err) {
+      console.warn('[checkBookingStatusAction] Falha ao consultar Asaas:', err)
+    }
+  }
+
   return {
-    isConfirmed,
+    isConfirmed: false,
     status: data.status,
     depositStatus: data.deposit_status,
   }

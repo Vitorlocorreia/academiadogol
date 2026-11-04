@@ -302,3 +302,41 @@ export async function getOrGenerateBookingPix(booking: any) {
     }
   }
 }
+
+/**
+ * Consulta ativamente o status de uma cobrança PIX na API v3 do Asaas.
+ * Permite confirmar o pagamento em tempo real mesmo sem depender exclusivamente do Webhook.
+ */
+export async function checkAsaasPaymentStatus(
+  chargeId: string
+): Promise<{ isPaid: boolean; asaasStatus: string | null }> {
+  const apiKey = getAsaasApiKey()
+  if (!apiKey || !chargeId) {
+    return { isPaid: false, asaasStatus: null }
+  }
+
+  try {
+    const baseUrl = getBaseUrl(apiKey)
+    const headers = getAsaasHeaders(apiKey)
+    const res = await fetch(`${baseUrl}/payments/${chargeId}`, {
+      headers,
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      return { isPaid: false, asaasStatus: null }
+    }
+
+    const payment = await res.json()
+    const status: string = payment?.status || ''
+    const isPaid =
+      status === 'RECEIVED' ||
+      status === 'CONFIRMED' ||
+      status === 'RECEIVED_IN_CASH'
+
+    return { isPaid, asaasStatus: status }
+  } catch (err) {
+    console.warn('[Asaas] Falha ao consultar status da cobrança:', err)
+    return { isPaid: false, asaasStatus: null }
+  }
+}

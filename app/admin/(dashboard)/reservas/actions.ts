@@ -39,6 +39,45 @@ export async function getBookingsData(search?: string, status?: string) {
   return filtered
 }
 
+// Confirmar manualmente o pagamento do sinal PIX pelo admin
+export async function confirmDepositManuallyAction(bookingId: string) {
+  const { supabase } = await requireAdmin()
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('*, field:fields(*), customer:customers(*)')
+    .eq('id', bookingId)
+    .single()
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      status: 'confirmed',
+      deposit_status: 'paid',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId)
+
+  if (error) {
+    return { error: 'Erro ao confirmar sinal: ' + error.message }
+  }
+
+  if (booking) {
+    try {
+      const { sendConfirmationEmail } = await import('@/lib/resend/emails')
+      booking.status = 'confirmed'
+      booking.deposit_status = 'paid'
+      await sendConfirmationEmail(booking)
+    } catch (emailErr) {
+      console.error('Erro ao enviar e-mail de confirmação ao cliente:', emailErr)
+    }
+  }
+
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/agenda')
+  return { success: true }
+}
+
 // Confirmar recebimento do valor restante presencial
 export async function confirmRemainingPaymentAction(bookingId: string, method: string) {
   const { supabase } = await requireAdmin()

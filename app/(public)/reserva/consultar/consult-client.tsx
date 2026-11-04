@@ -207,10 +207,24 @@ export function ConsultClient() {
                         Pagar Sinal PIX →
                       </Link>
                     )}
-                    {booking.status === 'confirmed' && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--brand)' }}>
-                        Sinal pago: R$ {booking.deposit_amount.toFixed(2)}
-                      </span>
+                    {(booking.status === 'confirmed' || booking.status === 'completed') && (
+                      <div className="flex flex-col sm:items-end gap-1.5">
+                        <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--brand)' }}>
+                          Sinal pago: R$ {booking.deposit_amount.toFixed(2)}
+                        </span>
+                        <Link
+                          href={`/reserva/confirmacao/${booking.id}`}
+                          className="px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-widest transition-all duration-200 hover:opacity-90"
+                          style={{
+                            borderRadius: '2px',
+                            border: '1px solid var(--border)',
+                            background: 'var(--bg-subtle)',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          Ver Comprovante →
+                        </Link>
+                      </div>
                     )}
                   </div>
                 </div>
