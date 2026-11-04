@@ -10,11 +10,39 @@ import {
 } from './actions'
 import { 
   Search, DollarSign, X, CheckSquare, Calendar, Clock, 
-  ChevronDown, ChevronUp, Phone, Mail, User, Hash
+  ChevronDown, ChevronUp, Phone, Mail, User, Hash, MessageCircle
 } from 'lucide-react'
 
 interface BookingListProps {
   initialBookings: any[]
+}
+
+
+function getWhatsAppMessageUrl(b: any): string {
+  const phone = (b.customer?.phone || '').replace(/\D/g, '')
+  if (!phone) return '#'
+
+  const fullPhone = phone.startsWith('55') ? phone : `55${phone}`
+  const customerName = b.customer?.name || 'Cliente'
+  const fieldName = b.field?.name || 'Campo'
+  const dataFormatada = new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')
+  const startTime = b.start_time ? b.start_time.slice(0, 5) : ''
+  const endTime = b.end_time ? b.end_time.slice(0, 5) : ''
+  const depositAmount = Number(b.deposit_amount).toFixed(2).replace('.', ',')
+  const remainingAmount = Number(b.remaining_amount).toFixed(2).replace('.', ',')
+  const isFesta = b.booking_type === 'festa' || b.duration_minutes >= 180
+  const tipoLabel = isFesta ? '🎂 Festa de Aniversário / Evento' : '⚽ Aluguel de Quadra (Jogo)'
+
+  let text = ''
+  if (b.status === 'confirmed' || b.deposit_status === 'paid') {
+    text = `Olá, *${customerName}*! Tudo bem? ⚽🏟️\n\nAqui é da equipe *Academia do Gol*.\nSua reserva está *CONFIRMADA*!\n\n📋 *Detalhes da Reserva:*\n📍 *Unidade/Campo:* ${fieldName}\n🎟️ *Tipo:* ${tipoLabel}\n📅 *Data:* ${dataFormatada}\n⏰ *Horário:* ${startTime} às ${endTime} (${b.duration_minutes} min)\n\n💰 *Sinal PIX Pago:* R$ ${depositAmount}\n💵 *Saldo a Pagar no Balcão:* R$ ${remainingAmount}\n\nEstamos preparando tudo para receber você e sua turma! Se precisar de algo, só nos chamar por aqui. Nos vemos em campo! 🚀`
+  } else if (b.status === 'pending') {
+    text = `Olá, *${customerName}*! Tudo bem? ⚽🏟️\n\nAqui é da *Academia do Gol*.\nVimos que você iniciou a reserva para o campo *${fieldName}* no dia *${dataFormatada}* às *${startTime}*.\n\nFalta apenas concluir o pagamento do sinal PIX (R$ ${depositAmount}) para garantir seu horário antes que ele expire:\n🔗 https://academiadogol.vercel.app/reserva/pagamento/${b.id}\n\nQualquer dúvida estou à disposição!`
+  } else {
+    text = `Olá, *${customerName}*! Aqui é da equipe da *Academia do Gol*. Tudo bem? Entramos em contato referente à sua reserva do campo *${fieldName}* no dia *${dataFormatada}*. Como podemos te ajudar?`
+  }
+
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(text)}`
 }
 
 export function BookingList({ initialBookings }: BookingListProps) {
@@ -209,9 +237,21 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   </div>
                   
                   <div className="flex sm:hidden items-center justify-between text-xs pt-2 border-t border-zinc-800/40">
-                    <div>
-                      <span className="text-zinc-500 font-medium">Total:</span>{' '}
-                      <span className="font-bold text-white">R$ {Number(b.total_amount).toFixed(2)}</span>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <span className="text-zinc-500 font-medium">Total:</span>{' '}
+                        <span className="font-bold text-white">R$ {Number(b.total_amount).toFixed(2)}</span>
+                      </div>
+                      <a
+                        href={getWhatsAppMessageUrl(b)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        <span>WhatsApp</span>
+                      </a>
                     </div>
                     <div className="flex items-center gap-1 text-[var(--brand)] font-semibold">
                       <span>Detalhes</span>
@@ -262,6 +302,21 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
                   {/* Status */}
                   <div className="hidden sm:block">{getStatusBadge(b.status)}</div>
+
+                  {/* Botão rápido WhatsApp */}
+                  <div className="hidden sm:block">
+                    <a
+                      href={getWhatsAppMessageUrl(b)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Enviar mensagem pronta pelo WhatsApp"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-[2px] bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 text-xs font-bold transition-all"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  </div>
 
                   {/* Chevron */}
                   <div className="text-zinc-500 hidden sm:block">
@@ -351,6 +406,15 @@ export function BookingList({ initialBookings }: BookingListProps) {
                       {/* Ações */}
                       {canAct && (
                         <div className="flex flex-wrap gap-2 pt-2">
+                          <a
+                            href={getWhatsAppMessageUrl(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            Enviar Mensagem WhatsApp
+                          </a>
                           {b.status === 'pending' && (
                             <button
                               onClick={() => handleConfirmDeposit(b.id)}

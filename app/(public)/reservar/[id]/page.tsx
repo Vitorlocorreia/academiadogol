@@ -3,6 +3,7 @@
 import { notFound } from 'next/navigation'
 import { getFieldById } from '@/app/(public)/actions'
 import { BookingForm } from '@/components/public/booking-form'
+import type { BookingCategory } from '@/lib/supabase/types'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -10,12 +11,13 @@ interface Props {
     date?: string
     start_time?: string
     duration?: string
+    booking_type?: string
   }>
 }
 
 export default async function ReservarPage({ params, searchParams }: Props) {
   const { id } = await params
-  const { date, start_time: startTime, duration: durationStr } = await searchParams
+  const { date, start_time: startTime, duration: durationStr, booking_type: bookingTypeStr } = await searchParams
 
   if (!date || !startTime || !durationStr) {
     notFound()
@@ -30,6 +32,8 @@ export default async function ReservarPage({ params, searchParams }: Props) {
   if (isNaN(duration)) {
     notFound()
   }
+
+  const bookingType: BookingCategory = (bookingTypeStr === 'festa' || duration >= 180) ? 'festa' : 'jogo'
 
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-8 py-12">
@@ -68,7 +72,7 @@ export default async function ReservarPage({ params, searchParams }: Props) {
           depositType={field.deposit_type as 'fixed' | 'percentage'}
           depositValue={field.deposit_value}
           packages={field.packages}
-          bookingType={duration >= 180 ? 'festa' : 'jogo'}
+          bookingType={bookingType}
         />
       </div>
     </div>
