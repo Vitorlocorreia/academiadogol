@@ -275,7 +275,7 @@ export function BookingForm({
       </button>
 
       <p className="text-center text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--text-muted)' }}>
-        Ao confirmar, você concorda com as regras de cancelamento do complexo.
+        Ao confirmar, você concorda com o regulamento da arena. Estorno do sinal permitido somente até 48h antes da partida.
       </p>
     </form>
   )

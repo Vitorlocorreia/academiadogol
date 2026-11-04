@@ -77,7 +77,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
       name: category === 'festa' ? `Festa ${defaultMins / 60}h` : `Avulso ${defaultMins}min`,
       duration_minutes: defaultMins,
       total_price: category === 'festa' ? 700 : 300,
-      deposit_price: 50,
+      deposit_price: 150,
       is_active: true,
     }
     setPackages((prev) => [...prev, newPkg])

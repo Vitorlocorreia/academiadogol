@@ -10,20 +10,20 @@ export function getDefaultPackagesForField(fieldName: string, hourlyRateFallback
   // CANDEIAS e SETUBAL
   if (name.includes('candeias') || name.includes('setúbal') || name.includes('setubal')) {
     return [
-      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 300, deposit_price: 50, is_active: true },
-      { id: 'jogo_120', category: 'jogo', name: 'Avulso 2h', duration_minutes: 120, total_price: 400, deposit_price: 50, is_active: true },
-      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 700, deposit_price: 50, is_active: true },
-      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 850, deposit_price: 50, is_active: true },
+      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 300, deposit_price: 150, is_active: true },
+      { id: 'jogo_120', category: 'jogo', name: 'Avulso 2h', duration_minutes: 120, total_price: 400, deposit_price: 150, is_active: true },
+      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 700, deposit_price: 150, is_active: true },
+      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 850, deposit_price: 150, is_active: true },
     ]
   }
 
   // JANGA
   if (name.includes('janga')) {
     return [
-      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 280, deposit_price: 50, is_active: true },
-      { id: 'jogo_120', category: 'jogo', name: 'Avulso 2h', duration_minutes: 120, total_price: 350, deposit_price: 50, is_active: true },
-      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 450, deposit_price: 50, is_active: true },
-      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 550, deposit_price: 50, is_active: true },
+      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 280, deposit_price: 150, is_active: true },
+      { id: 'jogo_120', category: 'jogo', name: 'Avulso 2h', duration_minutes: 120, total_price: 350, deposit_price: 150, is_active: true },
+      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 450, deposit_price: 150, is_active: true },
+      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 550, deposit_price: 150, is_active: true },
     ]
   }
 
@@ -35,19 +35,19 @@ export function getDefaultPackagesForField(fieldName: string, hourlyRateFallback
     name.includes('arraial')
   ) {
     return [
-      { id: 'jogo_60', category: 'jogo', name: 'Avulso 1h', duration_minutes: 60, total_price: 250, deposit_price: 50, is_active: true },
-      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 370, deposit_price: 50, is_active: true },
-      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 850, deposit_price: 50, is_active: true },
-      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 1000, deposit_price: 50, is_active: true },
+      { id: 'jogo_60', category: 'jogo', name: 'Avulso 1h', duration_minutes: 60, total_price: 250, deposit_price: 150, is_active: true },
+      { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: 370, deposit_price: 150, is_active: true },
+      { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: 850, deposit_price: 150, is_active: true },
+      { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: 1000, deposit_price: 150, is_active: true },
     ]
   }
 
   // Fallback padrão genérico
   return [
-    { id: 'jogo_60', category: 'jogo', name: 'Avulso 1h', duration_minutes: 60, total_price: hourlyRateFallback, deposit_price: 50, is_active: true },
-    { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: Math.round(hourlyRateFallback * 1.5), deposit_price: 50, is_active: true },
-    { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: Math.round(hourlyRateFallback * 3), deposit_price: 50, is_active: true },
-    { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: Math.round(hourlyRateFallback * 4), deposit_price: 50, is_active: true },
+    { id: 'jogo_60', category: 'jogo', name: 'Avulso 1h', duration_minutes: 60, total_price: hourlyRateFallback, deposit_price: 150, is_active: true },
+    { id: 'jogo_90', category: 'jogo', name: 'Avulso 1h30', duration_minutes: 90, total_price: Math.round(hourlyRateFallback * 1.5), deposit_price: 150, is_active: true },
+    { id: 'festa_180', category: 'festa', name: 'Festa 3h', duration_minutes: 180, total_price: Math.round(hourlyRateFallback * 3), deposit_price: 150, is_active: true },
+    { id: 'festa_240', category: 'festa', name: 'Festa 4h', duration_minutes: 240, total_price: Math.round(hourlyRateFallback * 4), deposit_price: 150, is_active: true },
   ]
 }
 

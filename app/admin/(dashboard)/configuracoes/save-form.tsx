@@ -248,7 +248,7 @@ export function SaveSettingsForm({ settings }: Props) {
           </div>
           <div>
             <label htmlFor="cancellation_hours" className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Prazo de cancelamento (h)
+              Prazo para estorno do sinal (h)
             </label>
             <input
               id="cancellation_hours"
@@ -256,7 +256,7 @@ export function SaveSettingsForm({ settings }: Props) {
               type="number"
               min="0"
               max="168"
-              defaultValue={settings?.cancellation_hours ?? 24}
+              defaultValue={settings?.cancellation_hours ?? 48}
               className="input-admin"
             />
           </div>

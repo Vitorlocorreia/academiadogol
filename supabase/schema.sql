@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.fields (
   duration_options integer[] DEFAULT '{60, 90, 120, 180, 240}'::integer[],
   amenities text[] DEFAULT '{}'::text[],
   deposit_type text NOT NULL DEFAULT 'fixed' CHECK (deposit_type IN ('fixed', 'percentage')),
-  deposit_value numeric(10,2) NOT NULL DEFAULT 50.00,
+  deposit_value numeric(10,2) NOT NULL DEFAULT 150.00,
   is_active boolean NOT NULL DEFAULT true,
   maps_url text,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   days_of_week integer[] DEFAULT '{0,1,2,3,4,5,6}'::integer[],
   advance_booking_days integer NOT NULL DEFAULT 30,
   min_advance_hours integer NOT NULL DEFAULT 2,
-  cancellation_hours integer NOT NULL DEFAULT 24,
+  cancellation_hours integer NOT NULL DEFAULT 48,
   birthday_message_template text,
   push_subscriptions jsonb DEFAULT '[]'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now()

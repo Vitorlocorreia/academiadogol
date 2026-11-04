@@ -269,6 +269,7 @@ export function ConfirmationClient({ booking, businessPhone }: Props) {
           <li>É proibido o uso de chuteiras de campo (cravos altos de alumínio). Utilize chuteiras society ou futsal.</li>
           <li>Os coletes para divisão de equipes são fornecidos gratuitamente pelo complexo.</li>
           <li>O restante do pagamento (R$ {remaining.toFixed(2)}) deverá ser pago no caixa em dinheiro, cartão ou PIX.</li>
+          <li>Cancelamento e estorno do sinal: permitido somente com no mínimo 48h de antecedência ao horário do jogo.</li>
         </ul>
       </div>
 

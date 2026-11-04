@@ -130,7 +130,7 @@ export async function sendConfirmationEmail(booking: any) {
 
       <div style="background-color: #09090b; padding: 12px; border-radius: 8px; border: 1px dashed rgba(245, 158, 11, 0.25); margin-top: 24px;">
         <p style="margin: 0; font-size: 12px; color: #f59e0b; line-height: 1.4; text-align: center;">
-          ⚠️ <strong>Importante:</strong> Chegue com 10 minutos de antecedência. Em caso de cancelamento, o aviso deve ser feito com no mínimo 24h de antecedência.
+          ⚠️ <strong>Importante:</strong> Chegue com 10 minutos de antecedência. Em caso de cancelamento, o estorno do sinal é permitido somente com no mínimo 48h de antecedência.
         </p>
       </div>
 
