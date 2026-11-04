@@ -9,10 +9,18 @@ export const dynamic = 'force-dynamic'
  * 1. Vercel Cron Job (diariamente)
  * 2. Inngest Scheduled Cron (a cada 6h)
  * 3. GitHub Actions Workflow (a cada 12h)
- * Realiza leitura e escrita leve via RPC no PostgREST para impedir auto-pause por inatividade.
+ * Se CRON_SECRET estiver definido no ambiente, exige o header de autorização correspondente.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const cronSecret = process.env.CRON_SECRET
+    if (cronSecret) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      }
+    }
+
     const supabase = createAdminClient()
 
     const [{ data: heartbeat, error: rpcError }, { data: fields, error: fieldsError }] =
