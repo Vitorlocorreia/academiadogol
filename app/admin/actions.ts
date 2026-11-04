@@ -11,10 +11,16 @@ const loginSchema = z.object({
 
 // Action: login do administrador
 export async function loginAction(formData: FormData) {
-  let emailInput = (formData.get('email') as string || '').trim()
+  let emailInput = (formData.get('email') as string || '').trim().toLowerCase()
   const password = formData.get('password') as string
 
-  if (emailInput && !emailInput.includes('@')) {
+  if (
+    emailInput === 'admin' ||
+    emailInput === 'acaddogol' ||
+    emailInput === 'admin@academiadogol.com.br'
+  ) {
+    emailInput = 'acaddogol@academiadogol.com.br'
+  } else if (emailInput && !emailInput.includes('@')) {
     emailInput = `${emailInput}@academiadogol.com.br`
   }
 
@@ -30,6 +36,7 @@ export async function loginAction(formData: FormData) {
   })
 
   if (error) {
+    console.warn('[loginAction] Falha ao autenticar:', error.message)
     return { error: 'Usuário ou senha inválidos.' }
   }
 
