@@ -101,12 +101,15 @@ export default async function CamposPage() {
         {field.amenities && field.amenities.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {field.amenities.slice(0, 3).map((a) => (
-              <span key={a} className="px-2 py-0.5 bg-zinc-800 text-zinc-450 text-xs rounded-[2px] border border-zinc-700">
+              <span
+                key={a}
+                className="px-2.5 py-0.5 bg-zinc-800 text-zinc-100 font-semibold text-xs rounded border border-zinc-700 shadow-sm"
+              >
                 {a}
               </span>
             ))}
             {field.amenities.length > 3 && (
-              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-500 text-xs rounded-[2px] border border-zinc-700">
+              <span className="px-2 py-0.5 bg-zinc-800/80 text-zinc-300 font-semibold text-xs rounded border border-zinc-700">
                 +{field.amenities.length - 3}
               </span>
             )}

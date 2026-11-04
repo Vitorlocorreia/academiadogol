@@ -129,11 +129,11 @@ export function CampoCard({ field, index }: Props) {
             {field.amenities.slice(0, 4).map((item) => (
               <span
                 key={item}
-                className="text-xs px-2 py-0.5"
+                className="text-xs px-2.5 py-0.5 font-medium"
                 style={{
-                  color: 'var(--text-muted)',
-                  background: 'var(--bg-subtle)',
-                  border: '1px solid var(--border)',
+                  color: '#f4f4f5',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.16)',
                   borderRadius: '2px',
                 }}
               >
@@ -142,8 +142,8 @@ export function CampoCard({ field, index }: Props) {
             ))}
             {field.amenities.length > 4 && (
               <span
-                className="text-xs px-2 py-0.5"
-                style={{ color: 'var(--text-muted)', borderRadius: '2px' }}
+                className="text-xs px-2.5 py-0.5 font-medium"
+                style={{ color: '#d4d4d8', borderRadius: '4px' }}
               >
                 +{field.amenities.length - 4}
               </span>

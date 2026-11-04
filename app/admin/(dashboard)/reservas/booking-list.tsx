@@ -152,15 +152,26 @@ export function BookingList({ initialBookings }: BookingListProps) {
     <div className="space-y-5">
       {/* Barra de busca + filtros */}
       <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-[4px]">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-zinc-500" />
+        <div className="relative w-full sm:max-w-xs flex items-center">
+          <Search className="pointer-events-none absolute left-3.5 w-4 h-4 text-zinc-400 z-10" />
           <input
             type="text"
             placeholder="Nome, celular, e-mail ou campo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-admin py-2 pl-10"
+            className="input-admin py-2 text-xs"
+            style={{ paddingLeft: '2.75rem', paddingRight: search ? '2.25rem' : '1rem' }}
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 text-zinc-400 hover:text-white p-0.5 cursor-pointer z-10"
+              title="Limpar pesquisa"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">

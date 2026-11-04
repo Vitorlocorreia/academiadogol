@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import type { Field, FieldPackage, BookingCategory } from '@/lib/supabase/types'
 import { getDefaultPackagesForField } from '@/lib/pricing'
-import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Trash2, CheckCircle, XCircle, X, Sparkles } from 'lucide-react'
 
 interface CampoFormProps {
   formAction: (formData: FormData) => void
@@ -12,10 +12,43 @@ interface CampoFormProps {
   field?: Field
 }
 
+const SUGGESTED_AMENITIES = [
+  '🚿 Vestiário',
+  '💡 Iluminação LED',
+  '🥩 Churrasqueira',
+  '🚗 Estacionamento',
+  '🍺 Bar / Lanchonete',
+  '👕 Coletes Gratuitos',
+  '🌱 Grama Sintética Premium',
+  '📶 Wi-Fi Grátis',
+  '🛡️ Segurança 24h',
+  '❄️ Freezers Disponíveis',
+  '🎉 Espaço para Festas',
+  '📺 Telão / TV',
+]
+
 export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
   const durationDefault = field?.duration_options?.join(', ') ?? '60, 90, 120, 180, 240'
-  const amenitiesDefault = field?.amenities?.join(', ') ?? ''
   const photoDefault = field?.photo_urls?.[0] ?? ''
+
+  // Estado das comodidades (Badges interativos)
+  const [amenities, setAmenities] = useState<string[]>(
+    field?.amenities && field.amenities.length > 0 ? field.amenities : []
+  )
+  const [newAmenityInput, setNewAmenityInput] = useState('')
+
+  const handleAddAmenity = (name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    if (!amenities.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+      setAmenities((prev) => [...prev, trimmed])
+    }
+    setNewAmenityInput('')
+  }
+
+  const handleRemoveAmenity = (indexToRemove: number) => {
+    setAmenities((prev) => prev.filter((_, i) => i !== indexToRemove))
+  }
 
   // Inicializa pacotes com os salvos ou com os padrões da unidade
   const initialPackages: FieldPackage[] =
@@ -105,18 +138,109 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           </div>
 
           <div>
-            <label htmlFor="amenities" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
-              Comodidades
-              <span className="text-zinc-500 font-normal normal-case ml-1">(separadas por vírgula)</span>
-            </label>
-            <input
-              id="amenities"
-              name="amenities"
-              type="text"
-              defaultValue={amenitiesDefault}
-              placeholder="Ex: Vestiário, Iluminação LED, Churrasqueira, Estacionamento"
-              className="input-admin"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Comodidades do Campo (Badges Editáveis)
+              </label>
+              <span className="text-[11px] text-zinc-400 font-medium">
+                {amenities.length} {amenities.length === 1 ? 'item configurado' : 'itens configurados'}
+              </span>
+            </div>
+
+            {/* Input oculto que envia as comodidades em string separada por vírgula para a Action */}
+            <input type="hidden" name="amenities" value={amenities.join(', ')} />
+
+            {/* Caixa de Badges Ativas */}
+            <div className="p-3.5 bg-zinc-950/70 border border-zinc-800 rounded-lg min-h-[56px] mb-3">
+              {amenities.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic py-1">
+                  Nenhuma comodidade adicionada ainda. Adicione uma nova ou clique nas sugestões rápidas abaixo.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {amenities.map((item, idx) => (
+                    <span
+                      key={`${item}-${idx}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-800 text-zinc-100 font-semibold text-xs rounded-full border border-zinc-700 shadow-sm hover:border-zinc-500 transition-all"
+                    >
+                      <span>{item}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAmenity(idx)}
+                        className="text-zinc-400 hover:text-red-400 transition-colors p-0.5 rounded-full hover:bg-zinc-700 cursor-pointer"
+                        title={`Remover ${item}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Input para adicionar nova comodidade personalizada */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newAmenityInput}
+                onChange={(e) => setNewAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAddAmenity(newAmenityInput)
+                  }
+                }}
+                placeholder="Digitar comodidade personalizada (ex: Área Coberta, Bebedouro...)"
+                className="input-admin flex-1 text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => handleAddAmenity(newAmenityInput)}
+                disabled={!newAmenityInput.trim()}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded border border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar
+              </button>
+            </div>
+
+            {/* Sugestões Rápidas (1 clique) */}
+            <div className="pt-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[var(--brand)]" />
+                Sugestões Rápidas (Clique para adicionar ou remover):
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_AMENITIES.map((sug) => {
+                  const isSelected = amenities.some(
+                    (a) => a.toLowerCase() === sug.toLowerCase() || sug.toLowerCase().includes(a.toLowerCase())
+                  )
+                  return (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          const idx = amenities.findIndex(
+                            (a) => a.toLowerCase() === sug.toLowerCase() || sug.toLowerCase().includes(a.toLowerCase())
+                          )
+                          if (idx !== -1) handleRemoveAmenity(idx)
+                        } else {
+                          handleAddAmenity(sug)
+                        }
+                      }}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border-[var(--brand-ring)] font-bold shadow-sm'
+                          : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                      }`}
+                    >
+                      {isSelected ? <CheckCircle className="w-3 h-3" /> : <Plus className="w-3 h-3 text-zinc-400" />}
+                      <span>{sug}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
           <div>
