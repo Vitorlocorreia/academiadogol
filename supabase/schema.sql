@@ -173,6 +173,73 @@ BEGIN
 END;
 $$;
 
+-- 10b. RPC: save_booking_pix
+CREATE OR REPLACE FUNCTION public.save_booking_pix(
+  p_booking_id uuid,
+  p_charge_id text,
+  p_qr_code text,
+  p_copy_paste text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE public.bookings
+  SET asaas_charge_id = p_charge_id,
+      pix_qr_code = p_qr_code,
+      pix_copy_paste = p_copy_paste,
+      updated_at = now()
+  WHERE id = p_booking_id
+    AND status = 'pending';
+END;
+$$;
+
+-- 10c. RPC: confirm_booking_payment
+CREATE OR REPLACE FUNCTION public.confirm_booking_payment(
+  p_booking_id uuid
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_updated boolean := false;
+BEGIN
+  UPDATE public.bookings
+  SET status = 'confirmed',
+      deposit_status = 'paid',
+      updated_at = now()
+  WHERE id = p_booking_id
+    AND status = 'pending';
+
+  IF FOUND THEN
+    v_updated := true;
+  END IF;
+
+  RETURN v_updated;
+END;
+$$;
+
+-- 10d. RPC: keep_alive_heartbeat
+CREATE OR REPLACE FUNCTION public.keep_alive_heartbeat()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  field_count integer;
+BEGIN
+  SELECT count(*) INTO field_count FROM public.fields WHERE is_active = true;
+  UPDATE public.settings SET updated_at = now() WHERE business_name = 'Academia do Gol';
+  RETURN jsonb_build_object(
+    'status', 'alive',
+    'active_fields', field_count,
+    'timestamp', now()
+  );
+END;
+$$;
+
 -- 11. Trigger de prevenção de concorrência (Race Condition / Double Booking)
 CREATE OR REPLACE FUNCTION public.check_booking_overlap()
 RETURNS trigger

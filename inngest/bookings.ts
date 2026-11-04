@@ -144,3 +144,27 @@ export const dailyClosingFunction = inngest.createFunction(
     })
   }
 )
+
+/**
+ * Job agendado (Cron) a cada 6 horas para manter o banco Supabase sempre ativo (Keep-Alive)
+ */
+export const keepAliveDatabaseFunction = inngest.createFunction(
+  { id: "keep-alive-database", triggers: [{ cron: "0 */6 * * *" }] },
+  async ({ step }) => {
+    return await step.run("ping-supabase-heartbeat", async () => {
+      const supabase = createAdminClient()
+      const { data: heartbeat } = await supabase.rpc("keep_alive_heartbeat")
+      const { count } = await supabase
+        .from("fields")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true)
+
+      return {
+        ok: true,
+        heartbeat,
+        activeFields: count ?? 0,
+        timestamp: new Date().toISOString(),
+      }
+    })
+  }
+)

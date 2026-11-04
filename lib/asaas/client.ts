@@ -237,16 +237,14 @@ export async function getOrGenerateBookingPix(booking: any) {
       externalReference: booking.id,
     })
 
-    // Salva na reserva no Supabase para persistência imediata
+    // Salva na reserva no Supabase para persistência imediata via RPC SECURITY DEFINER
     const supabase = createAdminClient()
-    await supabase
-      .from('bookings')
-      .update({
-        asaas_charge_id: pixDetails.chargeId,
-        pix_qr_code: pixDetails.pixQrCode,
-        pix_copy_paste: pixDetails.pixCopyPaste,
-      })
-      .eq('id', booking.id)
+    await supabase.rpc('save_booking_pix', {
+      p_booking_id: booking.id,
+      p_charge_id: pixDetails.chargeId,
+      p_qr_code: pixDetails.pixQrCode,
+      p_copy_paste: pixDetails.pixCopyPaste,
+    })
 
     return {
       ...pixDetails,

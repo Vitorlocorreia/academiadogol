@@ -1,0 +1,14 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Academia do Gol Keep-Alive Endpoint
+        run: |
+          curl -fsSL --retry 3 --max-time 30 "https://academiadogol.vercel.app/api/cron/keep-alive"

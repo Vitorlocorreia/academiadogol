@@ -75,15 +75,10 @@ export async function POST(request: Request) {
           continue
         }
 
-        // 3. Atualiza os status da reserva no banco de dados
-        const { error: updateErr } = await supabase
-          .from('bookings')
-          .update({
-            status: 'confirmed',
-            deposit_status: 'paid',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', booking.id)
+        // 3. Atualiza os status da reserva no banco de dados via RPC SECURITY DEFINER
+        const { error: updateErr } = await supabase.rpc('confirm_booking_payment', {
+          p_booking_id: booking.id,
+        })
 
         if (updateErr) {
           console.error('[Asaas Webhook] Erro ao atualizar status da reserva no banco:', updateErr)
