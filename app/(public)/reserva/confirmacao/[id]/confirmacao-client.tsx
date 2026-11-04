@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar, CheckCircle2, Clock, Landmark, MapPin, Receipt, Share2, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Calendar, CheckCircle2, Clock, Landmark, MapPin, Receipt, Share2, User, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
   booking: any
+  businessPhone?: string
 }
 
-export function ConfirmationClient({ booking }: Props) {
+export function ConfirmationClient({ booking, businessPhone }: Props) {
   const router = useRouter()
   const [copiedLink, setCopiedLink] = useState(false)
+  const [countdown, setCountdown] = useState<number>(3)
 
   const dateDisplay = new Date(booking.date + 'T12:00:00').toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -28,6 +30,48 @@ export function ConfirmationClient({ booking }: Props) {
   const deposit = Number(booking.deposit_amount)
   const remaining = Number(booking.remaining_amount)
 
+  const isFesta = booking.booking_type === 'festa' || booking.duration_minutes >= 180
+  const tipoLabel = isFesta ? '🎂 Festa de Aniversário / Evento' : '⚽ Aluguel de Quadra (Jogo)'
+
+  // Telefone oficial da Academia do Gol
+  const rawPhone = (businessPhone || booking.field?.business_phone || '81999096142').replace(/\D/g, '')
+  const formattedPhone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`
+
+  // Link do comprovante oficial para compartilhar
+  const comprovanteUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/reserva/confirmacao/${booking.id}`
+    : `https://academiadogol.vercel.app/reserva/confirmacao/${booking.id}`
+
+  // Mensagem pronta e detalhada para o WhatsApp da Academia
+  const waMessage = `Olá! Acabei de reservar o campo *${booking.field?.name || 'Academia do Gol'}* pelo site! ⚽🏟️\n\n📋 *Comprovante de Reserva:*\n• *Titular:* ${booking.customer?.name || 'Cliente'}\n• *Data:* ${dateDisplay}\n• *Horário:* ${booking.start_time.substring(0, 5)} às ${endTime} (${booking.duration_minutes} min)\n• *Tipo:* ${tipoLabel}\n• *Sinal PIX Pago:* R$ ${deposit.toFixed(2).replace('.', ',')}\n• *Saldo Restante na Arena:* R$ ${remaining.toFixed(2).replace('.', ',')}\n\n📄 *Link do Comprovante Oficial:*\n${comprovanteUrl}\n\nObrigado e até o jogo!`
+
+  const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(waMessage)}`
+
+  // Redirecionamento automático com fallback
+  useEffect(() => {
+    // Se já tentou redirecionar nesta sessão, não repete em loop
+    const storageKey = `wa_auto_redirect_${booking.id}`
+    if (sessionStorage.getItem(storageKey)) {
+      setCountdown(0)
+      return
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          sessionStorage.setItem(storageKey, 'true')
+          // Tenta abrir o WhatsApp automaticamente
+          window.location.href = waUrl
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [booking.id, waUrl])
+
   const shareText = `Fala galera! Horário reservado na Academia do Gol. Campo: ${booking.field?.name} | Data: ${dateDisplay} às ${booking.start_time.substring(0, 5)} - bora bater esse futebol!`
   
   const handleShare = async () => {
@@ -36,14 +80,14 @@ export function ConfirmationClient({ booking }: Props) {
         await navigator.share({
           title: 'Reserva Academia do Gol',
           text: shareText,
-          url: window.location.origin + `/reserva/confirmacao/${booking.id}`,
+          url: comprovanteUrl,
         })
       } catch (err) {
         console.log('Error sharing:', err)
       }
     } else {
       try {
-        await navigator.clipboard.writeText(window.location.origin + `/reserva/confirmacao/${booking.id}`)
+        await navigator.clipboard.writeText(comprovanteUrl)
         setCopiedLink(true)
         setTimeout(() => setCopiedLink(false), 2000)
       } catch (err) {
@@ -51,12 +95,6 @@ export function ConfirmationClient({ booking }: Props) {
       }
     }
   }
-
-  // Gera o link do WhatsApp para suporte ou contato com a quadra
-  const formattedPhone = booking.field?.business_phone || '5511999999999' // mock de telefone de contato
-  const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(
-    `Olá! Acabei de fazer uma reserva de teste (ID: ${booking.id}) para o dia ${booking.date} no horário ${booking.start_time}.`
-  )}`
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -105,6 +143,43 @@ export function ConfirmationClient({ booking }: Props) {
         </div>
       </div>
 
+      {/* CARD DE NOTIFICAÇÃO WHATSAPP (AUTOMÁTICO + BOTÃO DE FALLBACK) */}
+      <div className="p-5 sm:p-6 rounded-xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/50 via-zinc-900 to-zinc-950 space-y-4 shadow-xl">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 text-xl">
+            💬
+          </div>
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-white font-bold text-sm sm:text-base flex items-center gap-2">
+                <span>Avisar Academia do Gol no WhatsApp</span>
+              </h3>
+              {countdown > 0 && (
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30 animate-pulse">
+                  Abrindo em {countdown}s...
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              {countdown > 0
+                ? 'Seu comprovante foi gerado! Estamos abrindo o WhatsApp da Academia do Gol automaticamente...'
+                : 'Se o WhatsApp não abriu sozinho no seu celular, clique no botão abaixo para avisar a recepção sobre sua reserva.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Botão de WhatsApp */}
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-lg shadow-emerald-950/50 cursor-pointer"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span>Abrir WhatsApp & Enviar Comprovante</span>
+        </a>
+      </div>
+
       {/* Recibo Premium - Estilo Ficha de Jogo/Estatística Esportiva */}
       <div
         className="p-6 sm:p-8 space-y-6 shadow-xl"
@@ -124,7 +199,7 @@ export function ConfirmationClient({ booking }: Props) {
               color: 'var(--text-primary)',
             }}
           >
-            Ficha de Reserva & Estatísticas
+            Ficha de Reserva & Detalhes
           </h2>
         </div>
 
@@ -133,6 +208,10 @@ export function ConfirmationClient({ booking }: Props) {
           <div className="flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
             <span>Arena / Campo</span>
             <span style={{ color: 'var(--text-primary)' }}>{booking.field?.name}</span>
+          </div>
+          <div className="flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
+            <span>Tipo de Reserva</span>
+            <span style={{ color: isFesta ? '#c084fc' : 'var(--text-primary)' }}>{tipoLabel}</span>
           </div>
           <div className="flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
             <span>Data Selecionada</span>
@@ -209,10 +288,8 @@ export function ConfirmationClient({ booking }: Props) {
           {copiedLink ? 'Link Copiado!' : 'Convidar Amigos'}
         </button>
 
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => router.push('/campos')}
           className="flex-1 flex items-center justify-center gap-2 px-6 py-4 font-bold text-xs uppercase tracking-widest transition-all duration-200 hover:opacity-90 cursor-pointer text-center"
           style={{
             border: '1px solid var(--border)',
@@ -221,18 +298,7 @@ export function ConfirmationClient({ booking }: Props) {
             color: 'var(--text-primary)',
           }}
         >
-          Precisa de Ajuda? Falar Conosco
-        </a>
-      </div>
-
-      {/* Voltar */}
-      <div className="flex justify-center pt-2">
-        <button
-          onClick={() => router.push('/campos')}
-          className="text-xs uppercase font-bold tracking-widest transition-all flex items-center gap-1.5 hover:opacity-80"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          ← Voltar para a listagem
+          Voltar para os Campos
         </button>
       </div>
     </div>
