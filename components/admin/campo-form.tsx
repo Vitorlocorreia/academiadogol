@@ -4,7 +4,21 @@ import { useState } from 'react'
 import Link from 'next/link'
 import type { Field, FieldPackage, BookingCategory } from '@/lib/supabase/types'
 import { getDefaultPackagesForField } from '@/lib/pricing'
-import { Plus, Trash2, CheckCircle, XCircle, X, Sparkles } from 'lucide-react'
+import { 
+  Plus, 
+  Trash2, 
+  CheckCircle, 
+  XCircle, 
+  X, 
+  Sparkles,
+  Upload,
+  Camera,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Link as LinkIcon
+} from 'lucide-react'
+import { uploadFieldPhotoAction } from '@/app/admin/(dashboard)/campos/actions'
 
 interface CampoFormProps {
   formAction: (formData: FormData) => void
@@ -30,6 +44,40 @@ const SUGGESTED_AMENITIES = [
 export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
   const durationDefault = field?.duration_options?.join(', ') ?? '60, 90, 120, 180, 240'
   const photoDefault = field?.photo_urls?.[0] ?? ''
+
+  // Estado do upload da foto do campo
+  const [photoUrl, setPhotoUrl] = useState(photoDefault)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoSuccess, setPhotoSuccess] = useState(false)
+  const [showManualUrl, setShowManualUrl] = useState(false)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingPhoto(true)
+    setPhotoError(null)
+    setPhotoSuccess(false)
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await uploadFieldPhotoAction(fd)
+
+      if (res.success && res.url) {
+        setPhotoUrl(res.url)
+        setPhotoSuccess(true)
+        setTimeout(() => setPhotoSuccess(false), 4000)
+      } else {
+        setPhotoError(res.error || 'Erro ao enviar a imagem.')
+      }
+    } catch (err: any) {
+      setPhotoError(err.message || 'Falha de comunicação ao enviar a foto.')
+    } finally {
+      setIsUploadingPhoto(false)
+    }
+  }
 
   // Estado das comodidades (Badges interativos)
   const [amenities, setAmenities] = useState<string[]>(
@@ -123,18 +171,158 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
             />
           </div>
 
-          <div>
-            <label htmlFor="photo_url" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              URL da Foto do Campo
-            </label>
-            <input
-              id="photo_url"
-              name="photo_url"
-              type="text"
-              defaultValue={photoDefault}
-              placeholder="Ex: /imagens/candeias/candeias.jpeg ou https://..."
-              className="input-admin"
-            />
+          {/* Seção da Foto do Campo com Upload direto */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                Foto Principal do Campo
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowManualUrl(!showManualUrl)}
+                className="text-[11px] font-semibold text-[var(--brand)] hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <LinkIcon className="w-3 h-3" />
+                {showManualUrl ? 'Ocultar link manual' : 'Inserir link manual'}
+              </button>
+            </div>
+
+            {/* Input oculto que envia a URL da foto para a Action do formulário */}
+            <input type="hidden" id="photo_url" name="photo_url" value={photoUrl} />
+
+            {/* Caixa interativa de Upload */}
+            <div 
+              className="border rounded-lg p-4 transition-all"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
+              {photoUrl ? (
+                <div className="space-y-3">
+                  {/* Preview da foto */}
+                  <div className="relative w-full h-52 sm:h-64 rounded-md overflow-hidden border shadow-inner group" style={{ borderColor: 'var(--border)' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photoUrl}
+                      alt="Foto do Campo"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <label className="btn-admin-primary px-3 py-2 text-xs rounded cursor-pointer shadow-lg flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5" />
+                        Trocar Foto
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          disabled={isUploadingPhoto}
+                          className="sr-only"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoUrl('')}
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded transition-colors shadow-lg flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <p className="text-xs truncate max-w-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                      {photoUrl}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label 
+                        className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded border cursor-pointer hover:opacity-80 transition-all flex items-center gap-1.5 shadow-xs"
+                        style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
+                      >
+                        {isUploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--brand)]" /> : <Upload className="w-3.5 h-3.5" />}
+                        {isUploadingPhoto ? 'Enviando...' : 'Alterar Foto'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          disabled={isUploadingPhoto}
+                          className="sr-only"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoUrl('')}
+                        className="px-2.5 py-1.5 text-xs font-bold text-red-500 hover:bg-red-500/10 rounded border border-transparent transition-colors cursor-pointer"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Estado Vazio - Botão de Adicionar Foto */
+                <label 
+                  className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer hover:border-[var(--brand)] transition-all group"
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+                >
+                  <div 
+                    className="w-14 h-14 rounded-full flex items-center justify-center mb-3 group-hover:scale-105 transition-transform border"
+                    style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+                  >
+                    {isUploadingPhoto ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-[var(--brand)]" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-[var(--brand)]" />
+                    )}
+                  </div>
+                  <p className="text-sm font-bold uppercase tracking-wide mb-1" style={{ color: 'var(--text-primary)' }}>
+                    {isUploadingPhoto ? 'Enviando foto...' : 'Adicionar Foto do Campo'}
+                  </p>
+                  <p className="text-xs text-center max-w-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+                    Clique para tirar foto com a câmera do celular ou escolher uma imagem do seu dispositivo (JPG, PNG ou WebP até 10MB)
+                  </p>
+                  <span className="btn-admin-primary px-4 py-2 text-xs font-bold uppercase tracking-wider rounded shadow-sm">
+                    <Upload className="w-3.5 h-3.5" /> Selecionar Foto
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploadingPhoto}
+                    className="sr-only"
+                  />
+                </label>
+              )}
+
+              {/* Mensagens de feedback */}
+              {photoSuccess && (
+                <div className="mt-2.5 flex items-center gap-2 p-2.5 rounded text-xs bg-[var(--brand-subtle)] border border-[var(--brand-ring)] text-[var(--brand)] font-semibold">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  Foto enviada com sucesso para o sistema!
+                </div>
+              )}
+              {photoError && (
+                <div className="mt-2.5 flex items-center gap-2 p-2.5 rounded text-xs bg-red-500/10 border border-red-500/20 text-red-500 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {photoError}
+                </div>
+              )}
+
+              {/* Input de URL manual alternativo */}
+              {showManualUrl && (
+                <div className="mt-3 pt-3 border-t space-y-1.5" style={{ borderColor: 'var(--border)' }}>
+                  <label htmlFor="manual_photo_url" className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                    Link Direto / URL da Imagem
+                  </label>
+                  <input
+                    id="manual_photo_url"
+                    type="text"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="Ex: https://... ou /imagens/candeias/candeias.jpeg"
+                    className="input-admin text-xs"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div>

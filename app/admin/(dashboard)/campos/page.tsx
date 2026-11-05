@@ -75,13 +75,27 @@ function CampoCard({ field }: { field: Field }) {
       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
     >
       {/* Foto */}
-      <div className="h-44 relative overflow-hidden" style={{ background: 'var(--bg-subtle)' }}>
+      <div className="h-44 relative overflow-hidden group" style={{ background: 'var(--bg-subtle)' }}>
         {foto ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={foto} alt={field.name} className="w-full h-full object-cover" />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={foto} alt={field.name} className="w-full h-full object-cover" />
+            <Link
+              href={`/admin/campos/${field.id}/editar`}
+              className="absolute top-3 left-3 px-2 py-0.5 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+            >
+              Alterar Foto
+            </Link>
+          </>
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <ImageOff className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
+          <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center">
+            <ImageOff className="w-7 h-7" style={{ color: 'var(--text-muted)' }} />
+            <Link
+              href={`/admin/campos/${field.id}/editar`}
+              className="px-3 py-1 bg-[var(--brand)] text-white text-xs font-bold uppercase rounded-[2px] shadow-xs hover:opacity-90 transition-opacity"
+            >
+              + Adicionar Foto
+            </Link>
           </div>
         )}
         {/* Badge status */}

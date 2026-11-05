@@ -158,3 +158,63 @@ export async function deleteFieldAction(id: string) {
 
   revalidateFieldPages()
 }
+
+// Action: upload de foto do campo no Supabase Storage
+export async function uploadFieldPhotoAction(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const { supabase } = await requireAdmin()
+    const file = formData.get('file') as File | null
+    if (!file || file.size === 0) {
+      return { success: false, error: 'Nenhum arquivo enviado.' }
+    }
+
+    if (!file.type.startsWith('image/')) {
+      return { success: false, error: 'O arquivo selecionado deve ser uma imagem válida (JPG, PNG, WebP).' }
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return { success: false, error: 'O tamanho da imagem não pode ultrapassar 10MB.' }
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const fileName = `campo_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`
+
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const { error: uploadError } = await supabase.storage
+      .from('fields')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: true,
+      })
+
+    if (uploadError) {
+      return { success: false, error: `Falha no upload: ${uploadError.message}` }
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('fields')
+      .getPublicUrl(fileName)
+
+    return { success: true, url: publicUrl }
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Erro inesperado ao fazer upload da foto.' }
+  }
+}
+
+// Action: vincular foto diretamente a um campo existente
+export async function updateFieldPhotoAction(fieldId: string, photoUrl: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('fields')
+    .update({ photo_urls: [photoUrl] })
+    .eq('id', fieldId)
+
+  if (error) {
+    return { error: `Erro ao atualizar foto: ${error.message}` }
+  }
+
+  revalidateFieldPages()
+  return { success: true }
+}
