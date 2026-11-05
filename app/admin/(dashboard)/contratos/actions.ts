@@ -62,13 +62,75 @@ function generateFutureDates(
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
-// Busca todos os contratos com joins de cliente e campo
-export async function getContracts() {
+export interface FieldContractStat {
+  id: string
+  name: string
+  description?: string | null
+  photo_urls: string[] | null
+  hourly_rate: number
+  is_active: boolean
+  total_contracts: number
+  active_contracts: number
+  total_monthly_amount: number
+}
+
+// Busca todos os campos com contagem e faturamento de contratos
+export async function getFieldsWithContractStats(): Promise<FieldContractStat[]> {
   const { supabase } = await requireAdmin()
-  const { data, error } = await supabase
+
+  // 1. Busca todos os campos
+  const { data: fields, error: fieldsError } = await supabase
+    .from('fields')
+    .select('id, name, description, photo_urls, hourly_rate, is_active')
+    .order('name', { ascending: true })
+
+  if (fieldsError) throw new Error(fieldsError.message)
+
+  // 2. Busca contratos para agregação
+  const { data: contracts, error: contractsError } = await supabase
     .from('fixed_contracts')
-    .select('*, customer:customers(id, name, phone, email), field:fields(id, name)')
+    .select('id, field_id, monthly_amount, is_active')
+
+  if (contractsError) throw new Error(contractsError.message)
+
+  const statsMap: Record<string, { total: number; active: number; amount: number }> = {}
+  for (const c of contracts ?? []) {
+    if (!statsMap[c.field_id]) {
+      statsMap[c.field_id] = { total: 0, active: 0, amount: 0 }
+    }
+    statsMap[c.field_id].total += 1
+    if (c.is_active) {
+      statsMap[c.field_id].active += 1
+      statsMap[c.field_id].amount += Number(c.monthly_amount || 0)
+    }
+  }
+
+  return (fields ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    description: f.description,
+    photo_urls: f.photo_urls,
+    hourly_rate: Number(f.hourly_rate || 0),
+    is_active: f.is_active ?? true,
+    total_contracts: statsMap[f.id]?.total ?? 0,
+    active_contracts: statsMap[f.id]?.active ?? 0,
+    total_monthly_amount: statsMap[f.id]?.amount ?? 0,
+  }))
+}
+
+// Busca contratos com joins de cliente e campo (opcionalmente filtrado por campo)
+export async function getContracts(fieldId?: string) {
+  const { supabase } = await requireAdmin()
+  let query = supabase
+    .from('fixed_contracts')
+    .select('*, customer:customers(id, name, phone, email), field:fields(id, name, photo_urls)')
     .order('created_at', { ascending: false })
+
+  if (fieldId && fieldId !== 'todos') {
+    query = query.eq('field_id', fieldId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw new Error(error.message)
   return data ?? []

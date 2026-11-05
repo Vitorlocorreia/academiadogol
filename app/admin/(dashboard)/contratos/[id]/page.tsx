@@ -24,11 +24,12 @@ export default async function ContratoDetalhesPage({ params }: Props) {
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       {/* Voltar */}
       <Link
-        href="/admin/contratos"
-        className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-medium transition-colors"
+        href={contract.field_id ? `/admin/contratos?campo=${contract.field_id}` : '/admin/contratos'}
+        className="inline-flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80"
+        style={{ color: 'var(--text-secondary)' }}
       >
         <ArrowLeft className="w-4 h-4" />
-        Voltar para Contratos
+        Voltar para Contratos {contract.field?.name ? `(${contract.field.name})` : ''}
       </Link>
 
       {/* Client Panel */}

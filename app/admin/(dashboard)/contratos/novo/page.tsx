@@ -3,14 +3,19 @@ import { ArrowLeft } from 'lucide-react'
 import { getActiveFieldsForContract } from '../actions'
 import { CreateContractForm } from './form-client'
 
-export default async function NovoContratoPage() {
+interface Props {
+  searchParams: Promise<{ campo?: string }>
+}
+
+export default async function NovoContratoPage({ searchParams }: Props) {
+  const { campo: initialFieldId } = await searchParams
   const fields = await getActiveFieldsForContract()
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto space-y-6">
       {/* Voltar */}
       <Link
-        href="/admin/contratos"
+        href={initialFieldId ? `/admin/contratos?campo=${initialFieldId}` : '/admin/contratos'}
         className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
         style={{ color: 'var(--text-secondary)' }}
       >
@@ -42,7 +47,7 @@ export default async function NovoContratoPage() {
           border: '1px solid var(--border)',
         }}
       >
-        <CreateContractForm fields={fields} />
+        <CreateContractForm fields={fields} initialFieldId={initialFieldId} />
       </div>
     </div>
   )

@@ -12,6 +12,7 @@ interface FieldOption {
 
 interface CreateContractFormProps {
   fields: FieldOption[]
+  initialFieldId?: string
 }
 
 const DAYS_OF_WEEK = [
@@ -24,7 +25,7 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sábado' },
 ]
 
-export function CreateContractForm({ fields }: CreateContractFormProps) {
+export function CreateContractForm({ fields, initialFieldId }: CreateContractFormProps) {
   const [state, formAction, isPending] = useActionState(createContractAction, null)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -130,6 +131,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               id="field_id"
               name="field_id"
               required
+              defaultValue={initialFieldId || ''}
               className="input-admin"
             >
               <option value="">Selecione um campo...</option>
