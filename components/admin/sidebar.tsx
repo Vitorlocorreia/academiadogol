@@ -49,9 +49,9 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
           <Image
             src="/logo.png"
             alt="Academia do Gol"
-            width={32}
-            height={32}
-            className="rounded-full object-contain shrink-0"
+            width={34}
+            height={34}
+            className="object-contain shrink-0"
             priority
           />
           <div>
@@ -113,9 +113,9 @@ export function AdminSidebar({ userEmail }: AdminSidebarProps) {
             <Image
               src="/logo.png"
               alt="Academia do Gol"
-              width={40}
-              height={40}
-              className="rounded-full object-contain shrink-0 shadow-xs"
+              width={42}
+              height={42}
+              className="object-contain shrink-0"
               priority
             />
             <div>

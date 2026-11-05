@@ -37,7 +37,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex flex-col sm:flex-row items-start justify-between gap-8">
             {/* Marca */}
             <div className="flex items-center gap-3">
-              <Image src="/logo.png" alt="Academia do Gol" width={40} height={40} className="rounded-full" />
+              <Image src="/logo.png" alt="Academia do Gol" width={40} height={40} className="object-contain" />
               <div>
                 <p className="text-sm font-black uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>
                   Academia do Gol

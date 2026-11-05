@@ -98,7 +98,7 @@ export function PublicHeader() {
               width={52}
               height={52}
               priority
-              className="rounded-full"
+              className="object-contain"
               style={{ boxShadow: '0 2px 12px rgba(26,107,46,0.2)' }}
             />
           </Link>
@@ -124,7 +124,7 @@ export function PublicHeader() {
               width={40}
               height={40}
               priority
-              className="rounded-full"
+              className="object-contain"
             />
             <span
               className="font-bold text-lg tracking-tight"
@@ -208,7 +208,7 @@ export function PublicHeader() {
           style={{ borderBottom: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Academia do Gol" width={36} height={36} className="rounded-full" />
+            <Image src="/logo.png" alt="Academia do Gol" width={36} height={36} className="object-contain" />
             <div>
               <p className="text-xs font-black uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>
                 Academia do Gol

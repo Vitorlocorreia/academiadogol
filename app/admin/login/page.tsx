@@ -20,13 +20,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8 flex flex-col items-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 border border-white/10 mb-4 p-1 shadow-2xl backdrop-blur-sm">
+          <div className="mb-4">
             <Image
               src="/logo.png"
               alt="Academia do Gol"
-              width={72}
-              height={72}
-              className="rounded-full object-contain"
+              width={96}
+              height={96}
+              className="object-contain drop-shadow-xl"
               priority
             />
           </div>
