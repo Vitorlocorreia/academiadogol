@@ -137,6 +137,20 @@ export function BookingForm({
             <span>R$ {deposit.toFixed(2)}</span>
           </div>
         </div>
+
+        {isFesta && (
+          <div className="p-3.5 bg-gradient-to-r from-purple-950/80 via-purple-900/50 to-zinc-900 border border-purple-500/50 rounded-lg text-white space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🎉</span>
+              <p className="font-black text-xs uppercase tracking-wide text-white">
+                Estrutura Completa de Festa Incluída
+              </p>
+            </div>
+            <p className="text-[11px] text-zinc-200 font-medium leading-relaxed pl-6">
+              Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Dados do cliente */}

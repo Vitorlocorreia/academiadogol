@@ -354,10 +354,10 @@ export function AvailabilityCalendar({
         {/* 2. CHIPS DE DURAÇÃO / PACOTE RÁPIDO */}
         {availablePackages.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs font-bold text-zinc-300 uppercase tracking-wider">
               <span>{activeCategory === 'festa' ? '🎂 Escolha o Pacote de Festa:' : '⚽ Escolha o Tempo de Jogo:'}</span>
               {selectedPackage && (
-                <span className={activeCategory === 'festa' ? 'text-purple-400' : 'text-[var(--brand)]'}>
+                <span className={activeCategory === 'festa' ? 'text-purple-300 font-extrabold' : 'text-emerald-400 font-extrabold'}>
                   Sinal PIX: R$ {Number(selectedPackage.deposit_price).toFixed(0)}
                 </span>
               )}
@@ -370,19 +370,19 @@ export function AvailabilityCalendar({
                     key={pkg.id}
                     type="button"
                     onClick={() => handleSelectPackage(pkg)}
-                    className={`p-2.5 rounded text-left transition-all border cursor-pointer ${
+                    className={`p-3 rounded-lg text-left transition-all border cursor-pointer ${
                       isSelected
                         ? activeCategory === 'festa'
-                          ? 'bg-purple-950/40 border-purple-500 text-white shadow'
-                          : 'bg-emerald-950/40 border-emerald-500 text-white shadow'
-                        : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                          ? 'bg-purple-950/70 border-purple-400 text-white shadow-lg ring-1 ring-purple-400/50'
+                          : 'bg-emerald-950/70 border-emerald-400 text-white shadow-lg ring-1 ring-emerald-400/50'
+                        : 'bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:border-zinc-500 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs uppercase tracking-wide">{pkg.name}</span>
+                      <span className="font-extrabold text-xs uppercase tracking-wide text-white">{pkg.name}</span>
                       <span className="font-black text-xs text-white">R$ {Number(pkg.total_price).toFixed(0)}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-500 block mt-0.5">
+                    <span className="text-[11px] text-zinc-300 font-semibold block mt-1">
                       {pkg.duration_minutes} min • Sinal R$ {Number(pkg.deposit_price).toFixed(0)}
                     </span>
                   </button>
@@ -394,13 +394,31 @@ export function AvailabilityCalendar({
 
         {/* Banner informativo se for Festa */}
         {activeCategory === 'festa' && (
-          <div className="p-3 bg-purple-950/30 border border-purple-900/40 rounded text-xs text-purple-200 flex items-start gap-2">
-            <span className="text-base shrink-0">🎉</span>
-            <div>
-              <p className="font-bold">Estrutura Completa de Festa Incluída</p>
-              <p className="text-[11px] text-purple-300/80 mt-0.5">
-                Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
-              </p>
+          <div className="p-4 bg-gradient-to-br from-purple-950 via-zinc-900 to-zinc-950 border-2 border-purple-500/70 rounded-lg text-white space-y-3 shadow-xl">
+            <div className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-full bg-purple-500/20 border border-purple-400/50 flex items-center justify-center text-xl shrink-0">
+                🎉
+              </span>
+              <div>
+                <p className="font-black text-sm uppercase tracking-wide text-white">
+                  Estrutura Completa de Festa Incluída
+                </p>
+                <p className="text-xs text-zinc-200 font-medium leading-relaxed mt-0.5">
+                  Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-500/30 text-[11px] font-bold text-zinc-100">
+              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
+                <span className="text-emerald-400">✓</span> Campo Society Exclusivo
+              </div>
+              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
+                <span className="text-emerald-400">✓</span> Churrasqueira & Freezers
+              </div>
+              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
+                <span className="text-emerald-400">✓</span> Apoio para Convidados
+              </div>
             </div>
           </div>
         )}
