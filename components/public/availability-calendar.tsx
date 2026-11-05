@@ -262,9 +262,9 @@ export function AvailabilityCalendar({
     if (slot === startSlot || (endSlot && slot === endSlot)) {
       return {
         style: {
-          background: activeCategory === 'festa' ? '#9333ea' : 'var(--brand)',
+          background: 'var(--brand)',
           color: 'white',
-          border: `1px solid ${activeCategory === 'festa' ? '#a855f7' : 'var(--brand)'}`,
+          border: '1px solid var(--brand)',
           borderRadius: '2px',
           fontWeight: 'bold',
           transform: 'scale(1.03)',
@@ -279,9 +279,9 @@ export function AvailabilityCalendar({
       if (slotMins > startMins && slotMins < endMins) {
         return {
           style: {
-            background: activeCategory === 'festa' ? 'rgba(168, 85, 247, 0.15)' : 'var(--brand-subtle)',
-            color: activeCategory === 'festa' ? '#c084fc' : 'var(--brand)',
-            border: `1px solid ${activeCategory === 'festa' ? 'rgba(168, 85, 247, 0.4)' : 'var(--brand-ring)'}`,
+            background: 'var(--brand-subtle)',
+            color: 'var(--brand)',
+            border: '1px solid var(--brand-ring)',
             borderRadius: '2px',
           },
           className: 'py-2 text-xs text-center'
@@ -324,15 +324,23 @@ export function AvailabilityCalendar({
     <div className="space-y-6">
       {/* 1. SELETOR DE CATEGORIA: JOGO VS FESTA */}
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 border border-zinc-800 rounded">
+        <div
+          className="grid grid-cols-2 gap-1.5 p-1"
+          style={{
+            background: 'var(--bg-subtle)',
+            border: '1px solid var(--border)',
+            borderRadius: '4px',
+          }}
+        >
           <button
             type="button"
             onClick={() => handleSelectCategory('jogo')}
-            className={`py-2.5 px-3 rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeCategory === 'jogo'
-                ? 'bg-[var(--brand)] text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-            }`}
+            className="py-2.5 px-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+            style={{
+              borderRadius: '2px',
+              background: activeCategory === 'jogo' ? 'var(--brand)' : 'transparent',
+              color: activeCategory === 'jogo' ? '#ffffff' : 'var(--text-secondary)',
+            }}
           >
             <span>⚽</span>
             <span>Aluguel de Quadra</span>
@@ -340,11 +348,12 @@ export function AvailabilityCalendar({
           <button
             type="button"
             onClick={() => handleSelectCategory('festa')}
-            className={`py-2.5 px-3 rounded text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeCategory === 'festa'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40'
-                : 'text-zinc-400 hover:text-purple-300 hover:bg-zinc-800/60'
-            }`}
+            className="py-2.5 px-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+            style={{
+              borderRadius: '2px',
+              background: activeCategory === 'festa' ? 'var(--brand)' : 'transparent',
+              color: activeCategory === 'festa' ? '#ffffff' : 'var(--text-secondary)',
+            }}
           >
             <span>🎂</span>
             <span>Festa de Aniversário</span>
@@ -354,10 +363,13 @@ export function AvailabilityCalendar({
         {/* 2. CHIPS DE DURAÇÃO / PACOTE RÁPIDO */}
         {availablePackages.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-zinc-300 uppercase tracking-wider">
+            <div
+              className="flex items-center justify-between text-xs font-bold uppercase tracking-wider"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               <span>{activeCategory === 'festa' ? '🎂 Escolha o Pacote de Festa:' : '⚽ Escolha o Tempo de Jogo:'}</span>
               {selectedPackage && (
-                <span className={activeCategory === 'festa' ? 'text-purple-300 font-extrabold' : 'text-emerald-400 font-extrabold'}>
+                <span style={{ color: 'var(--brand)' }}>
                   Sinal PIX: R$ {Number(selectedPackage.deposit_price).toFixed(0)}
                 </span>
               )}
@@ -370,19 +382,25 @@ export function AvailabilityCalendar({
                     key={pkg.id}
                     type="button"
                     onClick={() => handleSelectPackage(pkg)}
-                    className={`p-3 rounded-lg text-left transition-all border cursor-pointer ${
-                      isSelected
-                        ? activeCategory === 'festa'
-                          ? 'bg-purple-950/70 border-purple-400 text-white shadow-lg ring-1 ring-purple-400/50'
-                          : 'bg-emerald-950/70 border-emerald-400 text-white shadow-lg ring-1 ring-emerald-400/50'
-                        : 'bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:border-zinc-500 hover:text-white'
-                    }`}
+                    className="p-3 text-left transition-all cursor-pointer"
+                    style={{
+                      borderRadius: '4px',
+                      background: isSelected ? 'var(--brand-subtle)' : 'var(--bg-card)',
+                      border: isSelected ? '1px solid var(--brand)' : '1px solid var(--border)',
+                    }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-xs uppercase tracking-wide text-white">{pkg.name}</span>
-                      <span className="font-black text-xs text-white">R$ {Number(pkg.total_price).toFixed(0)}</span>
+                      <span
+                        className="font-bold text-xs uppercase tracking-wide"
+                        style={{ color: isSelected ? 'var(--brand)' : 'var(--text-primary)' }}
+                      >
+                        {pkg.name}
+                      </span>
+                      <span className="font-black text-xs" style={{ color: 'var(--text-primary)' }}>
+                        R$ {Number(pkg.total_price).toFixed(0)}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-zinc-300 font-semibold block mt-1">
+                    <span className="text-[11px] font-semibold block mt-1" style={{ color: 'var(--text-muted)' }}>
                       {pkg.duration_minutes} min • Sinal R$ {Number(pkg.deposit_price).toFixed(0)}
                     </span>
                   </button>
@@ -394,32 +412,29 @@ export function AvailabilityCalendar({
 
         {/* Banner informativo se for Festa */}
         {activeCategory === 'festa' && (
-          <div className="p-4 bg-gradient-to-br from-purple-950 via-zinc-900 to-zinc-950 border-2 border-purple-500/70 rounded-lg text-white space-y-3 shadow-xl">
-            <div className="flex items-start gap-3">
-              <span className="w-9 h-9 rounded-full bg-purple-500/20 border border-purple-400/50 flex items-center justify-center text-xl shrink-0">
-                🎉
+          <div
+            className="p-3.5 space-y-1"
+            style={{
+              background: 'var(--bg-card-alt)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">🎉</span>
+              <span
+                className="font-bold text-xs uppercase tracking-wider"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Estrutura Completa de Festa Incluída
               </span>
-              <div>
-                <p className="font-black text-sm uppercase tracking-wide text-white">
-                  Estrutura Completa de Festa Incluída
-                </p>
-                <p className="text-xs text-zinc-200 font-medium leading-relaxed mt-0.5">
-                  Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
-                </p>
-              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-purple-500/30 text-[11px] font-bold text-zinc-100">
-              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
-                <span className="text-emerald-400">✓</span> Campo Society Exclusivo
-              </div>
-              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
-                <span className="text-emerald-400">✓</span> Churrasqueira & Freezers
-              </div>
-              <div className="flex items-center gap-1.5 bg-purple-950/60 px-2.5 py-1.5 rounded border border-purple-500/40">
-                <span className="text-emerald-400">✓</span> Apoio para Convidados
-              </div>
-            </div>
+            <p
+              className="text-xs leading-relaxed pl-6"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
+            </p>
           </div>
         )}
       </div>
@@ -481,10 +496,10 @@ export function AvailabilityCalendar({
                 style={{
                   borderRadius: '2px',
                   background: isSelected
-                    ? activeCategory === 'festa' ? '#9333ea' : 'var(--brand)'
+                    ? 'var(--brand)'
                     : isPast ? 'transparent' : 'var(--bg-subtle)',
                   border: isSelected
-                    ? `1px solid ${activeCategory === 'festa' ? '#a855f7' : 'var(--brand)'}`
+                    ? '1px solid var(--brand)'
                     : '1px solid var(--border)',
                 }}
               >
@@ -494,7 +509,7 @@ export function AvailabilityCalendar({
           })}
         </div>
 
-        <p className="text-xs font-semibold uppercase tracking-wider mt-2 capitalize" style={{ color: activeCategory === 'festa' ? '#c084fc' : 'var(--brand)' }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mt-2 capitalize" style={{ color: 'var(--brand)' }}>
           {formatDatePT(selectedDate)}
         </p>
       </div>
@@ -587,11 +602,27 @@ export function AvailabilityCalendar({
               Resumo da pré-reserva
             </h3>
             {isFesta ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+              <span
+                className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  borderRadius: '2px',
+                  background: 'var(--brand-subtle)',
+                  color: 'var(--brand)',
+                  border: '1px solid var(--brand-ring)',
+                }}
+              >
                 🎂 Festa / Evento
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span
+                className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  borderRadius: '2px',
+                  background: 'var(--brand-subtle)',
+                  color: 'var(--brand)',
+                  border: '1px solid var(--brand-ring)',
+                }}
+              >
                 ⚽ Jogo Avulso
               </span>
             )}
@@ -613,14 +644,14 @@ export function AvailabilityCalendar({
             {matchedPkg?.name && (
               <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                 <span>Pacote Selecionado</span>
-                <span className="text-white">{matchedPkg.name}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{matchedPkg.name}</span>
               </div>
             )}
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <span>Total da Locação</span>
               <span style={{ color: 'var(--text-primary)' }}>R$ {total.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between pt-2 text-sm font-black" style={{ color: isFesta ? '#c084fc' : 'var(--brand)' }}>
+            <div className="flex justify-between pt-2 text-sm font-black" style={{ color: 'var(--brand)' }}>
               <span>Sinal PIX para Garantir Horário</span>
               <span>R$ {deposit.toFixed(2)}</span>
             </div>
@@ -630,7 +661,7 @@ export function AvailabilityCalendar({
             disabled={isPending}
             className="w-full py-3.5 text-white font-bold text-xs uppercase tracking-widest transition-all duration-200 hover:opacity-90 cursor-pointer shadow-lg"
             style={{
-              background: isFesta ? '#9333ea' : 'var(--brand)',
+              background: 'var(--brand)',
               borderRadius: '2px',
               letterSpacing: '0.15em',
             }}

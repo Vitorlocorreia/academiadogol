@@ -100,11 +100,27 @@ export function BookingForm({
             Resumo da reserva
           </h3>
           {isFesta ? (
-            <span className="px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+            <span
+              className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+              style={{
+                borderRadius: '2px',
+                background: 'var(--brand-subtle)',
+                color: 'var(--brand)',
+                border: '1px solid var(--brand-ring)',
+              }}
+            >
               🎂 Pacote Festa / Evento
             </span>
           ) : (
-            <span className="px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <span
+              className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+              style={{
+                borderRadius: '2px',
+                background: 'var(--brand-subtle)',
+                color: 'var(--brand)',
+                border: '1px solid var(--brand-ring)',
+              }}
+            >
               ⚽ Aluguel de Quadra (Jogo)
             </span>
           )}
@@ -117,7 +133,13 @@ export function BookingForm({
           {matchedPkg?.name && (
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <span>Pacote</span>
-              <span className="text-white">{matchedPkg.name}</span>
+              <span style={{ color: 'var(--text-primary)' }}>{matchedPkg.name}</span>
+            </div>
+          )}
+          {isFesta && (
+            <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+              <span>Estrutura Inclusa</span>
+              <span style={{ color: 'var(--text-primary)' }}>Campo + Churrasqueira + Freezers</span>
             </div>
           )}
           <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -137,20 +159,6 @@ export function BookingForm({
             <span>R$ {deposit.toFixed(2)}</span>
           </div>
         </div>
-
-        {isFesta && (
-          <div className="p-3.5 bg-gradient-to-r from-purple-950/80 via-purple-900/50 to-zinc-900 border border-purple-500/50 rounded-lg text-white space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🎉</span>
-              <p className="font-black text-xs uppercase tracking-wide text-white">
-                Estrutura Completa de Festa Incluída
-              </p>
-            </div>
-            <p className="text-[11px] text-zinc-200 font-medium leading-relaxed pl-6">
-              Campo society + área de churrasqueira, freezers e apoio para parabéns e convidados.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Dados do cliente */}
