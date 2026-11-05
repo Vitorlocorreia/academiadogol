@@ -17,12 +17,12 @@ export default async function CamposPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 
-            className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            className="text-3xl font-black uppercase tracking-wider leading-none"
+            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif", color: 'var(--text-primary)' }}
           >
             Campos
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">Gerencie os campos do complexo</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Gerencie os campos do complexo</p>
         </div>
         <Link
           href="/admin/campos/novo"
@@ -35,7 +35,7 @@ export default async function CamposPage() {
       </div>
 
       {error && (
-        <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-[2px] text-red-400 text-sm">
+        <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-[4px] text-red-500 text-sm">
           Erro ao carregar campos: {error.message}
         </div>
       )}
@@ -48,53 +48,70 @@ export default async function CamposPage() {
 
         {(!fields || fields.length === 0) && (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-4">
-              <ImageOff className="w-8 h-8 text-zinc-600" />
+            <div 
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
+              <ImageOff className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
             </div>
-            <p className="text-zinc-400 font-medium">Nenhum campo cadastrado</p>
-            <p className="text-zinc-600 text-sm mt-1">Clique em "Novo Campo" para começar</p>
+            <p className="font-medium" style={{ color: 'var(--text-secondary)' }}>Nenhum campo cadastrado</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Clique em "Novo Campo" para começar</p>
           </div>
         )}
       </div>
     </div>
   )
 }
-function CampoCard({ field }: { field: Field }) {
+
+function CampoCard({ field }: { field: Field }) {
   const foto = field.photo_urls?.[0]
   const depositLabel = field.deposit_type === 'fixed'
     ? `R$ ${field.deposit_value.toFixed(2).replace('.', ',')} fixo`
     : `${field.deposit_value}% do total`
 
   return (
-    <div className={`bg-zinc-900 border overflow-hidden transition-all rounded-[4px] ${field.is_active ? 'border-zinc-800' : 'border-zinc-850 opacity-60'}`}>
+    <div 
+      className={`border overflow-hidden transition-all rounded-[4px] shadow-sm ${field.is_active ? '' : 'opacity-60'}`}
+      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+    >
       {/* Foto */}
-      <div className="h-44 bg-zinc-850 relative overflow-hidden">
+      <div className="h-44 relative overflow-hidden" style={{ background: 'var(--bg-subtle)' }}>
         {foto ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={foto} alt={field.name} className="w-full h-full object-cover" />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <ImageOff className="w-8 h-8 text-zinc-750" />
+            <ImageOff className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
           </div>
         )}
         {/* Badge status */}
-        <div className={`absolute top-3 right-3 px-2 py-0.5 rounded-[2px] text-xs font-semibold uppercase tracking-wider ${field.is_active ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]' : 'bg-zinc-850 text-zinc-500 border border-zinc-750'}`}>
+        <div className={`absolute top-3 right-3 px-2 py-0.5 rounded-[2px] text-xs font-semibold uppercase tracking-wider ${
+          field.is_active 
+            ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]' 
+            : 'border'
+        }`}
+        style={!field.is_active ? { background: 'var(--bg-card)', color: 'var(--text-muted)', borderColor: 'var(--border)' } : undefined}
+        >
           {field.is_active ? 'Ativo' : 'Inativo'}
         </div>
       </div>
 
       {/* Conteúdo */}
       <div className="p-5">
-        <h3 className="text-white font-bold text-base mb-1 uppercase tracking-wide">{field.name}</h3>
+        <h3 className="font-bold text-base mb-1 uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>
+          {field.name}
+        </h3>
         {field.description && (
-          <p className="text-zinc-400 text-sm mb-3 line-clamp-2 leading-relaxed">{field.description}</p>
+          <p className="text-sm mb-3 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {field.description}
+          </p>
         )}
 
         <div className="flex items-center justify-between text-sm mb-4">
-          <span className="text-[var(--brand)] font-bold">
+          <span className="font-bold" style={{ color: 'var(--brand)' }}>
             R$ {field.hourly_rate.toFixed(2).replace('.', ',')} / h
           </span>
-          <span className="text-zinc-500 text-xs">Sinal: {depositLabel}</span>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Sinal: {depositLabel}</span>
         </div>
 
         {/* Comodidades */}
@@ -103,13 +120,17 @@ export default async function CamposPage() {
             {field.amenities.slice(0, 3).map((a) => (
               <span
                 key={a}
-                className="px-2.5 py-0.5 bg-zinc-800 text-zinc-100 font-semibold text-xs rounded border border-zinc-700 shadow-sm"
+                className="px-2.5 py-0.5 font-semibold text-xs rounded border shadow-xs"
+                style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
               >
                 {a}
               </span>
             ))}
             {field.amenities.length > 3 && (
-              <span className="px-2 py-0.5 bg-zinc-800/80 text-zinc-300 font-semibold text-xs rounded border border-zinc-700">
+              <span 
+                className="px-2 py-0.5 font-semibold text-xs rounded border"
+                style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+              >
                 +{field.amenities.length - 3}
               </span>
             )}
@@ -117,11 +138,12 @@ export default async function CamposPage() {
         )}
 
         {/* Ações */}
-        <div className="flex items-center gap-2 pt-3 border-t border-zinc-800">
+        <div className="flex items-center gap-2 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
           <Link
             href={`/admin/campos/${field.id}/editar`}
             id={`btn-editar-${field.id}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-[2px] transition-all flex-1 justify-center font-semibold uppercase tracking-wider"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-[2px] transition-all flex-1 justify-center font-semibold uppercase tracking-wider border hover:opacity-80"
+            style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
           >
             <Pencil className="w-3.5 h-3.5" />
             Editar
@@ -134,11 +156,12 @@ export default async function CamposPage() {
             <button
               type="submit"
               id={`btn-toggle-${field.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 text-xs rounded-[2px] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-[2px] transition-all cursor-pointer border hover:opacity-80"
+              style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
               title={field.is_active ? 'Desativar' : 'Ativar'}
             >
               {field.is_active
-                ? <ToggleRight className="w-3.5 h-3.5 text-[var(--brand)]" />
+                ? <ToggleRight className="w-3.5 h-3.5" style={{ color: 'var(--brand)' }} />
                 : <ToggleLeft className="w-3.5 h-3.5" />
               }
             </button>
@@ -151,7 +174,8 @@ export default async function CamposPage() {
             <button
               type="submit"
               id={`btn-deletar-${field.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-red-500/10 hover:text-red-400 text-zinc-400 text-xs rounded-[2px] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-red-500/10 hover:text-red-500 text-xs rounded-[2px] transition-all cursor-pointer border hover:border-red-500/20"
+              style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
               title="Excluir"
             >
               <Trash2 className="w-3.5 h-3.5" />

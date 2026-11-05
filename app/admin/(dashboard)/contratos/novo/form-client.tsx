@@ -38,19 +38,26 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {state?.error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-[4px] text-sm font-medium">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-[4px] text-sm font-medium">
           {state.error}
         </div>
       )}
 
       {/* Seção: Cliente */}
       <div>
-        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3
+          className="text-sm font-bold uppercase tracking-wider mb-4"
+          style={{ color: 'var(--text-primary)' }}
+        >
           Informações do Mensalista
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="customer_name" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="customer_name"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Nome Completo
             </label>
             <input
@@ -64,7 +71,11 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="customer_phone" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="customer_phone"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Telefone / WhatsApp
             </label>
             <input
@@ -78,7 +89,11 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="customer_email" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="customer_email"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               E-mail (opcional)
             </label>
             <input
@@ -92,16 +107,23 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
         </div>
       </div>
 
-      <hr className="border-zinc-800" />
+      <hr style={{ borderColor: 'var(--border)' }} />
 
       {/* Seção: Detalhes do Contrato */}
       <div>
-        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3
+          className="text-sm font-bold uppercase tracking-wider mb-4"
+          style={{ color: 'var(--text-primary)' }}
+        >
           Detalhes do Contrato & Agendamento
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="field_id" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="field_id"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Campo Reservado
             </label>
             <select
@@ -112,7 +134,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
             >
               <option value="">Selecione um campo...</option>
               {fields.map((f) => (
-                <option key={f.id} value={f.id} className="bg-zinc-900">
+                <option key={f.id} value={f.id}>
                   {f.name}
                 </option>
               ))}
@@ -120,7 +142,11 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="day_of_week" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="day_of_week"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Dia Fixo da Semana
             </label>
             <select
@@ -130,7 +156,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
               className="input-admin"
             >
               {DAYS_OF_WEEK.map((d) => (
-                <option key={d.value} value={d.value} className="bg-zinc-900">
+                <option key={d.value} value={d.value}>
                   {d.label}
                 </option>
               ))}
@@ -138,11 +164,15 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="start_time" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="start_time"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Horário de Início
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                 <Clock className="w-4 h-4" />
               </span>
               <input
@@ -156,11 +186,15 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="end_time" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="end_time"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Horário de Término
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                 <Clock className="w-4 h-4" />
               </span>
               <input
@@ -174,11 +208,15 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="monthly_amount" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="monthly_amount"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Valor da Mensalidade (R$)
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                 <DollarSign className="w-4 h-4" />
               </span>
               <input
@@ -195,11 +233,15 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div>
-            <label htmlFor="starts_at" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="starts_at"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Data de Início da Vigência
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                 <CalendarDays className="w-4 h-4" />
               </span>
               <input
@@ -213,11 +255,15 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="ends_at" className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+            <label
+              htmlFor="ends_at"
+              className="block text-xs font-semibold uppercase mb-1.5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               Data de Término da Vigência (Opcional)
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                 <CalendarDays className="w-4 h-4" />
               </span>
               <input
@@ -227,7 +273,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
                 className="input-admin pl-12 font-mono"
               />
             </div>
-            <p className="text-[11px] text-zinc-500 mt-1.5">
+            <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
               Se deixado em branco, o contrato será considerado por prazo indeterminado e gerará bloqueios contínuos na agenda.
             </p>
           </div>
@@ -235,7 +281,10 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
       </div>
 
       {/* Botões */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+      <div
+        className="flex items-center justify-end gap-3 pt-4"
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
         <Link
           href="/admin/contratos"
           className="btn-admin-secondary px-5 py-2.5 text-sm font-semibold rounded-[2px]"
@@ -246,7 +295,7 @@ export function CreateContractForm({ fields }: CreateContractFormProps) {
           type="submit"
           id="btn-confirmar-contrato"
           disabled={isPending}
-          className="btn-admin-primary flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-[2px] disabled:bg-zinc-800 disabled:text-zinc-500 cursor-pointer"
+          className="btn-admin-primary flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-[2px] cursor-pointer"
         >
           {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
           Criar Contrato Fixo

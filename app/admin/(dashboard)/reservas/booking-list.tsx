@@ -163,20 +163,27 @@ export function BookingList({ initialBookings }: BookingListProps) {
   const getStatusBadge = (status: string, depositStatus?: string) => {
     if (depositStatus === 'refunded') {
       return (
-        <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
+        <span
+          className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider"
+          style={{
+            background: 'var(--bg-subtle)',
+            color: 'var(--text-muted)',
+            border: '1px solid var(--border)',
+          }}
+        >
           Estornado
         </span>
       )
     }
     switch (status) {
       case 'pending':
-        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/25">Pendente</span>
       case 'confirmed':
         return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">Confirmado</span>
       case 'completed':
-        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">Concluído</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/25">Concluído</span>
       case 'cancelled':
-        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20">Cancelado</span>
+        return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/25">Cancelado</span>
       default:
         return null
     }
@@ -200,9 +207,15 @@ export function BookingList({ initialBookings }: BookingListProps) {
   return (
     <div className="space-y-5">
       {/* Barra de busca + filtros */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-zinc-900 border border-zinc-800 p-4 rounded-[4px]">
+      <div
+        className="flex flex-col sm:flex-row gap-3 justify-between items-center p-4 rounded-[4px]"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+        }}
+      >
         <div className="relative w-full sm:max-w-xs flex items-center">
-          <Search className="pointer-events-none absolute left-3.5 w-4 h-4 text-zinc-400 z-10" />
+          <Search className="pointer-events-none absolute left-3.5 w-4 h-4 z-10" style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
             placeholder="Nome, celular, e-mail ou campo..."
@@ -215,7 +228,8 @@ export function BookingList({ initialBookings }: BookingListProps) {
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute right-3 text-zinc-400 hover:text-white p-0.5 cursor-pointer z-10"
+              className="absolute right-3 p-0.5 cursor-pointer z-10"
+              style={{ color: 'var(--text-muted)' }}
               title="Limpar pesquisa"
             >
               <X className="w-3.5 h-3.5" />
@@ -234,11 +248,12 @@ export function BookingList({ initialBookings }: BookingListProps) {
             <button
               key={opt.value}
               onClick={() => setStatusFilter(opt.value)}
-              className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-[2px] border transition-all cursor-pointer ${
-                statusFilter === opt.value
-                  ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border-[var(--brand-ring)]'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
-              }`}
+              className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-[2px] transition-all cursor-pointer"
+              style={{
+                background: statusFilter === opt.value ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
+                color: statusFilter === opt.value ? 'var(--brand)' : 'var(--text-secondary)',
+                border: statusFilter === opt.value ? '1px solid var(--brand-ring)' : '1px solid var(--border)',
+              }}
             >
               {opt.label}
             </button>
@@ -247,14 +262,21 @@ export function BookingList({ initialBookings }: BookingListProps) {
       </div>
 
       {/* Contador */}
-      <p className="text-xs text-zinc-500 px-1">
+      <p className="text-xs px-1" style={{ color: 'var(--text-muted)' }}>
         {filteredBookings.length} reserva{filteredBookings.length !== 1 ? 's' : ''} encontrada{filteredBookings.length !== 1 ? 's' : ''}
       </p>
 
       {/* Lista de reservas */}
       <div className="space-y-2">
         {filteredBookings.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] py-14 text-center text-zinc-500">
+          <div
+            className="rounded-[4px] py-14 text-center text-sm"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+            }}
+          >
             Nenhuma reserva encontrada.
           </div>
         ) : (
@@ -266,54 +288,63 @@ export function BookingList({ initialBookings }: BookingListProps) {
             return (
               <div
                 key={b.id}
-                className={`bg-zinc-900 border rounded-[4px] overflow-hidden transition-all duration-200 ${
-                  isExpanded ? 'border-[var(--brand-ring)]' : 'border-zinc-800 hover:border-zinc-700'
-                }`}
+                className="rounded-[4px] overflow-hidden transition-all duration-200"
+                style={{
+                  background: 'var(--bg-card)',
+                  border: isExpanded ? '1px solid var(--brand)' : '1px solid var(--border)',
+                }}
               >
                 {/* Linha principal — clicável para expandir */}
                 <button
                   onClick={() => setExpandedRow(isExpanded ? null : b.id)}
-                  className="w-full text-left p-4 sm:px-5 sm:py-4 flex flex-col sm:grid sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-3 sm:gap-4 items-stretch sm:items-center cursor-pointer"
+                  className="w-full text-left p-4 sm:px-5 sm:py-4 flex flex-col sm:grid sm:grid-cols-[1.5fr_1fr_1fr_auto_auto_auto] gap-3 sm:gap-4 items-stretch sm:items-center cursor-pointer transition-colors hover:bg-[var(--bg-subtle)]"
                 >
                   {/* Mobile Row Layout (Visible below sm) */}
                   <div className="flex sm:hidden items-center justify-between">
-                    <div className="font-bold text-white text-sm">{b.customer?.name}</div>
+                    <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {b.customer?.name}
+                    </div>
                     <div>{getStatusBadge(b.status, b.deposit_status)}</div>
                   </div>
                   
-                  <div className="flex sm:hidden items-center justify-between text-xs text-zinc-400">
+                  <div className="flex sm:hidden items-center justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
                       {new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {b.start_time.slice(0,5)}
                     </div>
-                    <div className="font-medium text-zinc-350 flex items-center gap-1.5">
+                    <div className="font-medium flex items-center gap-1.5">
                       <span>{b.field?.name ?? 'Campo'}</span>
                       {b.booking_type === 'festa' || b.duration_minutes >= 180 ? (
-                        <span className="text-[10px] text-purple-400 font-bold">🎂 Festa</span>
+                        <span className="text-[10px] text-purple-500 font-bold">🎂 Festa</span>
                       ) : (
-                        <span className="text-[10px] text-emerald-400 font-bold">⚽ Jogo</span>
+                        <span className="text-[10px] text-emerald-500 font-bold">⚽ Jogo</span>
                       )}
                     </div>
                   </div>
                   
-                  <div className="flex sm:hidden items-center justify-between text-xs pt-2 border-t border-zinc-800/40">
+                  <div
+                    className="flex sm:hidden items-center justify-between text-xs pt-2"
+                    style={{ borderTop: '1px solid var(--border)' }}
+                  >
                     <div className="flex items-center gap-3">
                       <div>
-                        <span className="text-zinc-500 font-medium">Total:</span>{' '}
-                        <span className="font-bold text-white">R$ {Number(b.total_amount).toFixed(2)}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Total:</span>{' '}
+                        <span className="font-bold" style={{ color: 'var(--text-primary)' }}>
+                          R$ {Number(b.total_amount).toFixed(2)}
+                        </span>
                       </div>
                       <a
                         href={getWhatsAppMessageUrl(b)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30"
+                        className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30"
                       >
                         <MessageCircle className="w-3 h-3" />
                         <span>WhatsApp</span>
                       </a>
                     </div>
-                    <div className="flex items-center gap-1 text-[var(--brand)] font-semibold">
+                    <div className="flex items-center gap-1 font-semibold" style={{ color: 'var(--brand)' }}>
                       <span>Detalhes</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </div>
@@ -322,26 +353,26 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   {/* Desktop Row Layout (Hidden below sm) */}
                   {/* Partida */}
                   <div className="hidden sm:block">
-                    <div className="flex items-center gap-1.5 text-white font-semibold text-sm">
-                      <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                    <div className="flex items-center gap-1.5 font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
                       {new Date(b.date + 'T12:00:00').toLocaleDateString('pt-BR')}
                     </div>
-                    <div className="flex items-center gap-1.5 text-zinc-500 text-xs mt-0.5">
+                    <div className="flex items-center gap-1.5 text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       <Clock className="w-3 h-3 shrink-0" />
                       {b.start_time.slice(0,5)} – {b.end_time.slice(0,5)}
                     </div>
                   </div>
 
                   {/* Campo */}
-                  <div className="text-zinc-300 text-sm font-medium hidden sm:block">
+                  <div className="text-sm font-medium hidden sm:block" style={{ color: 'var(--text-secondary)' }}>
                     <div className="flex items-center gap-1.5">
                       <span>{b.field?.name ?? 'Campo'}</span>
                       {b.booking_type === 'festa' || b.duration_minutes >= 180 ? (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-500 border border-purple-500/30">
                           🎂 Festa
                         </span>
                       ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
                           ⚽ Jogo
                         </span>
                       )}
@@ -350,14 +381,22 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
                   {/* Cliente — resumo */}
                   <div className="hidden sm:block">
-                    <div className="font-bold text-white text-sm">{b.customer?.name}</div>
-                    <div className="text-zinc-500 text-xs mt-0.5">{b.customer?.phone}</div>
+                    <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {b.customer?.name}
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {b.customer?.phone}
+                    </div>
                   </div>
 
                   {/* Valores */}
                   <div className="text-right hidden sm:block">
-                    <div className="font-bold text-white text-sm">R$ {Number(b.total_amount).toFixed(2)}</div>
-                    <div className="text-zinc-500 text-xs mt-0.5">Sinal: R$ {Number(b.deposit_amount).toFixed(2)}</div>
+                    <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      R$ {Number(b.total_amount).toFixed(2)}
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      Sinal: R$ {Number(b.deposit_amount).toFixed(2)}
+                    </div>
                   </div>
 
                   {/* Status */}
@@ -389,49 +428,67 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
                 {/* Painel expandido */}
                 {isExpanded && (
-                  <div className="border-t border-zinc-800 px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div
+                    className="px-5 py-5 grid grid-cols-1 sm:grid-cols-2 gap-6"
+                    style={{ borderTop: '1px solid var(--border)' }}
+                  >
                     {/* Dados do cliente */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                      <h4
+                        className="text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
                         <User className="w-3.5 h-3.5" />
                         Dados do Cliente
                       </h4>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
-                          <User className="w-4 h-4 text-zinc-500 shrink-0" />
-                          <span className="text-white font-semibold">{b.customer?.name ?? '—'}</span>
+                          <User className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
+                          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            {b.customer?.name ?? '—'}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Phone className="w-4 h-4 text-zinc-500 shrink-0" />
+                          <Phone className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
                           <a
                             href={`https://wa.me/55${b.customer?.phone?.replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[var(--brand)] hover:underline transition-colors"
+                            className="hover:underline transition-colors font-mono font-medium"
+                            style={{ color: 'var(--brand)' }}
                           >
                             {b.customer?.phone ?? '—'}
                           </a>
                         </div>
                         {b.customer?.email && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
-                            <span className="text-zinc-300">{b.customer.email}</span>
+                            <Mail className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
+                            <span style={{ color: 'var(--text-secondary)' }}>{b.customer.email}</span>
                           </div>
                         )}
                         {b.customer?.birth_date && (
                           <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-zinc-500 shrink-0" />
-                            <span className="text-zinc-400 text-xs">Nascimento: {formatBirthDate(b.customer.birth_date)}</span>
+                            <Calendar className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                              Nascimento: {formatBirthDate(b.customer.birth_date)}
+                            </span>
                           </div>
                         )}
-                        <div className="flex items-center gap-2 text-xs text-zinc-500 pt-1">
+                        <div className="flex items-center gap-2 text-xs pt-1" style={{ color: 'var(--text-muted)' }}>
                           <Hash className="w-3.5 h-3.5" />
-                          Total de reservas: <span className="text-zinc-300 font-semibold ml-1">{b.customer?.total_bookings ?? 1}</span>
+                          Total de reservas: <span className="font-semibold ml-1" style={{ color: 'var(--text-primary)' }}>{b.customer?.total_bookings ?? 1}</span>
                         </div>
                         {b.notes && (
-                          <div className="mt-2 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/50 rounded-[2px] px-3 py-2">
-                            <span className="font-semibold text-zinc-300">Obs:</span> {b.notes}
+                          <div
+                            className="mt-2 text-xs rounded-[2px] px-3 py-2"
+                            style={{
+                              background: 'var(--bg-subtle)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Obs:</span> {b.notes}
                           </div>
                         )}
                       </div>
@@ -439,23 +496,28 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
                     {/* Pagamento + Ações */}
                     <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                      <h4
+                        className="text-xs font-bold uppercase tracking-wider"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
                         Pagamento
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between items-center">
-                          <span className="text-zinc-400">Total</span>
-                          <span className="text-white font-bold">R$ {Number(b.total_amount).toFixed(2)}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>Total</span>
+                          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>
+                            R$ {Number(b.total_amount).toFixed(2)}
+                          </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-zinc-400">Sinal (entrada)</span>
-                          <span className={b.deposit_status === 'paid' ? 'text-[var(--brand)] font-semibold' : 'text-amber-400 font-semibold'}>
+                          <span style={{ color: 'var(--text-muted)' }}>Sinal (entrada)</span>
+                          <span className={b.deposit_status === 'paid' ? 'font-semibold' : 'text-amber-500 font-semibold'} style={b.deposit_status === 'paid' ? { color: 'var(--brand)' } : {}}>
                             R$ {Number(b.deposit_amount).toFixed(2)} — {b.deposit_status === 'paid' ? '✓ Pago' : '⏳ Pendente'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-zinc-400">Restante (balcão)</span>
-                          <span className={b.remaining_status === 'paid' ? 'text-[var(--brand)] font-semibold' : 'text-amber-400 font-semibold'}>
+                          <span style={{ color: 'var(--text-muted)' }}>Restante (balcão)</span>
+                          <span className={b.remaining_status === 'paid' ? 'font-semibold' : 'text-amber-500 font-semibold'} style={b.remaining_status === 'paid' ? { color: 'var(--brand)' } : {}}>
                             R$ {Number(b.remaining_amount).toFixed(2)} — {b.remaining_status === 'paid' 
                               ? `✓ ${displayPaymentMethod(b.remaining_payment_method)}` 
                               : '⏳ Pendente'}
@@ -470,7 +532,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             href={getWhatsAppMessageUrl(b)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-600/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                             Enviar Mensagem WhatsApp
@@ -479,7 +541,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             <button
                               onClick={() => handleConfirmDeposit(b.id)}
                               disabled={isPending}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                               <CheckSquare className="w-3.5 h-3.5" />
                               Confirmar Sinal (PIX)
@@ -496,7 +558,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                           )}
                           <button
                             onClick={() => handleCompletePartida(b.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                           >
                             <CheckSquare className="w-3.5 h-3.5" />
                             Concluir Partida
@@ -509,7 +571,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                                 setForceOverride(false)
                                 setRefundReason('')
                               }}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                               title="Estornar sinal PIX de volta para a conta do cliente via Asaas"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
@@ -518,7 +580,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                           )}
                           <button
                             onClick={() => handleCancelReserva(b.id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             Cancelar
@@ -537,15 +599,26 @@ export function BookingList({ initialBookings }: BookingListProps) {
       {/* Modal de confirmação de pagamento */}
       {selectedBookingForPayment && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 max-w-sm w-full space-y-6">
+          <div
+            className="rounded-[4px] p-6 max-w-sm w-full space-y-6 shadow-2xl"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+            }}
+          >
             <div>
               <h3 
-                className="text-2xl font-black text-white uppercase tracking-wider"
-                style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+                className="text-2xl font-black uppercase tracking-wider"
+                style={{
+                  fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+                  color: 'var(--text-primary)',
+                }}
               >
                 Registrar Pagamento
               </h3>
-              <p className="text-zinc-400 text-xs mt-1">Como o cliente pagou o restante do valor?</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                Como o cliente pagou o restante do valor?
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -556,11 +629,12 @@ export function BookingList({ initialBookings }: BookingListProps) {
               ].map(opt => (
                 <label
                   key={opt.value}
-                  className={`flex items-center gap-3 p-3 rounded-[2px] border cursor-pointer transition-all ${
-                    paymentMethod === opt.value
-                      ? 'bg-[var(--brand-subtle)] border-[var(--brand-ring)] text-white font-semibold'
-                      : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:bg-zinc-850 hover:text-zinc-300'
-                  }`}
+                  className="flex items-center gap-3 p-3 rounded-[2px] cursor-pointer transition-all"
+                  style={{
+                    background: paymentMethod === opt.value ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
+                    border: paymentMethod === opt.value ? '1px solid var(--brand)' : '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
                 >
                   <input
                     type="radio"
@@ -571,7 +645,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                     className="sr-only"
                   />
                   <span className="text-xl">{opt.icon}</span>
-                  <span className="text-sm">{opt.label}</span>
+                  <span className="text-sm font-semibold">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -603,68 +677,85 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
         return (
           <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full space-y-5 shadow-2xl">
+            <div
+              className="rounded-lg p-6 max-w-md w-full space-y-5 shadow-2xl"
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
                   <RotateCcw className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 
-                    className="text-2xl font-black text-white uppercase tracking-wider leading-none"
-                    style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+                    className="text-2xl font-black uppercase tracking-wider leading-none"
+                    style={{
+                      fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+                      color: 'var(--text-primary)',
+                    }}
                   >
                     Estornar Sinal PIX
                   </h3>
-                  <p className="text-zinc-400 text-xs mt-0.5">Devolução imediata para a conta bancária do cliente</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    Devolução imediata para a conta bancária do cliente
+                  </p>
                 </div>
               </div>
 
               {/* Detalhes da Reserva */}
-              <div className="bg-zinc-950/70 border border-zinc-800 rounded-lg p-4 space-y-2 text-xs">
+              <div
+                className="rounded-lg p-4 space-y-2 text-xs"
+                style={{
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
+                }}
+              >
                 <div className="flex justify-between">
-                  <span className="text-zinc-400 font-medium">Cliente:</span>
-                  <span className="text-white font-bold">{selectedBookingForRefund.customer?.name}</span>
+                  <span className="font-medium" style={{ color: 'var(--text-muted)' }}>Cliente:</span>
+                  <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{selectedBookingForRefund.customer?.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400 font-medium">Campo:</span>
-                  <span className="text-zinc-200">{selectedBookingForRefund.field?.name}</span>
+                  <span className="font-medium" style={{ color: 'var(--text-muted)' }}>Campo:</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{selectedBookingForRefund.field?.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400 font-medium">Data e Horário:</span>
-                  <span className="text-zinc-200">
+                  <span className="font-medium" style={{ color: 'var(--text-muted)' }}>Data e Horário:</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>
                     {new Date(selectedBookingForRefund.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {selectedBookingForRefund.start_time?.slice(0, 5)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-zinc-800">
-                  <span className="text-amber-400 font-bold uppercase tracking-wider">Valor do Sinal a Devolver:</span>
-                  <span className="text-amber-400 font-black text-sm">R$ {depositFmt}</span>
+                <div className="flex justify-between pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                  <span className="text-amber-500 font-bold uppercase tracking-wider">Valor do Sinal a Devolver:</span>
+                  <span className="text-amber-500 font-black text-sm">R$ {depositFmt}</span>
                 </div>
               </div>
 
               {/* Status do Prazo das 48 Horas */}
               {isWithinPolicy ? (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-md flex items-start gap-2 text-xs text-emerald-300">
-                  <CheckSquare className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-md flex items-start gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                  <CheckSquare className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold uppercase tracking-wider block">Dentro do Prazo Oficial (48h)</span>
                     Faltam <strong>{hoursLeft.toFixed(1)} horas</strong> para a partida. O estorno está em conformidade com as regras da arena.
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2 text-xs text-amber-300">
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2 text-xs text-amber-600 dark:text-amber-400">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold uppercase tracking-wider block text-amber-400">Fora do Prazo Oficial</span>
+                      <span className="font-bold uppercase tracking-wider block">Fora do Prazo Oficial</span>
                       Faltam apenas <strong>{Math.max(0, hoursLeft).toFixed(1)} horas</strong> para a partida (o prazo mínimo é 48h).
                     </div>
                   </div>
-                  <label className="flex items-center gap-2 pt-1.5 border-t border-amber-500/20 cursor-pointer text-[11px] text-zinc-200">
+                  <label className="flex items-center gap-2 pt-1.5 cursor-pointer text-[11px]" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-primary)' }}>
                     <input
                       type="checkbox"
                       checked={forceOverride}
                       onChange={(e) => setForceOverride(e.target.checked)}
-                      className="rounded border-zinc-700 text-amber-500 focus:ring-amber-500"
+                      className="rounded text-amber-500 focus:ring-amber-500"
                     />
                     <span>Autorizar estorno excepcional como Gerente</span>
                   </label>
@@ -673,7 +764,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
 
               {/* Motivo opcional */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
                   Motivo do Estorno (Opcional):
                 </label>
                 <input

@@ -13,7 +13,6 @@ import {
   DollarSign,
   Ban,
   CheckCircle,
-  AlertTriangle,
   Loader2,
   FileText,
   CreditCard,
@@ -32,7 +31,9 @@ const DAYS_OF_WEEK = [
 
 // Formatação do mês de referência
 function formatReferenceMonth(dateStr: string) {
-  const parts = dateStr.split('-')
+  if (!dateStr) return '—'
+  const cleanStr = String(dateStr).split('T')[0]
+  const parts = cleanStr.split('-')
   if (parts.length < 2) return dateStr
   const year = parts[0]
   const monthIdx = parseInt(parts[1], 10) - 1
@@ -50,7 +51,8 @@ function formatReferenceMonth(dateStr: string) {
     'Novembro',
     'Dezembro',
   ]
-  return `${months[monthIdx]} / ${year}`
+  const monthName = months[monthIdx] || parts[1]
+  return `${monthName} / ${year}`
 }
 
 interface Customer {
@@ -114,11 +116,11 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       setErrorMsg('')
       setSuccessMsg('')
       const res = await deactivateContractAction(contract.id)
-      if (res.error) {
-        setErrorMsg(res.error)
+      if (res?.error) {
+        setErrorMsg('Erro ao encerrar contrato: ' + res.error)
       } else {
         setIsActive(false)
-        setSuccessMsg('Contrato encerrado com sucesso.')
+        setSuccessMsg('Contrato encerrado com sucesso!')
       }
     })
   }
@@ -130,10 +132,9 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       setErrorMsg('')
       setSuccessMsg('')
       const res = await markPaymentPaidAction(paymentId, method, contract.id)
-      if (res.error) {
-        setErrorMsg(res.error)
+      if (res?.error) {
+        setErrorMsg('Erro ao confirmar pagamento: ' + res.error)
       } else {
-        // Atualiza a lista localmente
         setPayments((prev) =>
           prev.map((p) =>
             p.id === paymentId
@@ -160,13 +161,10 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
         contract.id,
         contract.monthly_amount
       )
-      if (res.error) {
+      if (res?.error) {
         setErrorMsg(res.error)
       } else {
-        // Recarrega página ou adiciona localmente (como as mensalidades vêm ordenadas, recarregar ou obter é melhor)
-        // Para uma UX rápida, apenas calculamos o próximo mês na lista localmente
         setSuccessMsg('Mensalidade do próximo mês gerada com sucesso!')
-        // Recarregar os pagamentos atualizados
         window.location.reload()
       }
     })
@@ -181,7 +179,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
     <div className="space-y-6">
       {/* Mensagens de Feedback */}
       {errorMsg && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-[4px] text-sm font-medium">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-[4px] text-sm font-medium">
           {errorMsg}
         </div>
       )}
@@ -194,48 +192,92 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       {/* Grid: Informações Gerais e do Cliente */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card Contrato */}
-        <div className="md:col-span-2 bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 space-y-6">
+        <div
+          className="md:col-span-2 rounded-[4px] p-6 space-y-6"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+          }}
+        >
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-zinc-500 text-xs font-bold uppercase tracking-wider">
+              <span
+                className="text-xs font-bold uppercase tracking-wider"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 Contrato Fixo
               </span>
-              <h2 className="text-xl font-bold text-white mt-1">
+              <h2
+                className="text-xl font-bold mt-1"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 Toda {DAYS_OF_WEEK[contract.day_of_week]} no {contract.field?.name}
               </h2>
             </div>
             {isActive ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                style={{
+                  background: 'var(--brand-subtle)',
+                  color: 'var(--brand)',
+                  border: '1px solid var(--brand-ring)',
+                }}
+              >
                 <CheckCircle className="w-3 h-3 text-[var(--brand)]" />
                 Vigente
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-zinc-805 text-zinc-500 border border-zinc-700">
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                style={{
+                  background: 'var(--bg-subtle)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                }}
+              >
                 <Ban className="w-3 h-3" />
                 Encerrado
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-800 text-sm">
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 text-sm"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
             <div>
-              <p className="text-zinc-500 text-xs font-semibold uppercase">Horário</p>
-              <p className="text-white font-medium mt-1 flex items-center gap-1.5 font-mono">
-                <Clock className="w-4 h-4 text-zinc-400" />
+              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                Horário
+              </p>
+              <p
+                className="font-medium mt-1 flex items-center gap-1.5 font-mono"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Clock className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                 {contract.start_time.substring(0, 5)} - {contract.end_time.substring(0, 5)}
               </p>
             </div>
             <div>
-              <p className="text-zinc-500 text-xs font-semibold uppercase">Mensalidade</p>
-              <p className="text-[var(--brand)] font-bold mt-1 flex items-center gap-1 font-mono">
+              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                Mensalidade
+              </p>
+              <p
+                className="font-bold mt-1 flex items-center gap-1 font-mono"
+                style={{ color: 'var(--brand)' }}
+              >
                 <DollarSign className="w-4 h-4" />
                 {formattedMonthly}
               </p>
             </div>
             <div>
-              <p className="text-zinc-500 text-xs font-semibold uppercase">Vigência</p>
-              <p className="text-white font-medium mt-1 flex items-center gap-1.5 font-mono">
-                <Calendar className="w-4 h-4 text-zinc-400" />
+              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                Vigência
+              </p>
+              <p
+                className="font-medium mt-1 flex items-center gap-1.5 font-mono"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                 Desde {new Date(contract.starts_at + 'T12:00:00').toLocaleDateString('pt-BR')}
               </p>
             </div>
@@ -243,13 +285,13 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
 
           {/* Encerramento */}
           {isActive && (
-            <div className="pt-6 border-t border-zinc-800 flex justify-end">
+            <div className="pt-6 flex justify-end" style={{ borderTop: '1px solid var(--border)' }}>
               <button
                 type="button"
                 id="btn-encerrar-contrato"
                 onClick={handleDeactivate}
                 disabled={isPending}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-transparent text-red-400 text-xs font-bold rounded-[2px] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-transparent text-red-500 text-xs font-bold rounded-[2px] transition-all cursor-pointer"
               >
                 {isPending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -263,24 +305,44 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
         </div>
 
         {/* Card Cliente */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 space-y-4">
-          <div className="flex items-center gap-2 text-zinc-400">
+        <div
+          className="rounded-[4px] p-6 space-y-4"
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
             <User className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider">Cliente Mensalista</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+              Cliente Mensalista
+            </h3>
           </div>
           <div className="space-y-3 pt-2">
             <div>
-              <p className="text-zinc-500 text-[10px] font-semibold uppercase">Nome</p>
-              <p className="text-white text-sm font-semibold">{contract.customer?.name}</p>
+              <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                Nome
+              </p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {contract.customer?.name}
+              </p>
             </div>
             <div>
-              <p className="text-zinc-500 text-[10px] font-semibold uppercase">Telefone</p>
-              <p className="text-zinc-300 text-sm font-medium font-mono">{contract.customer?.phone}</p>
+              <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                Telefone
+              </p>
+              <p className="text-sm font-medium font-mono" style={{ color: 'var(--text-secondary)' }}>
+                {contract.customer?.phone}
+              </p>
             </div>
             {contract.customer?.email && (
               <div>
-                <p className="text-zinc-500 text-[10px] font-semibold uppercase">E-mail</p>
-                <p className="text-zinc-400 text-sm truncate">{contract.customer?.email}</p>
+                <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
+                  E-mail
+                </p>
+                <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+                  {contract.customer?.email}
+                </p>
               </div>
             )}
           </div>
@@ -288,16 +350,27 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       </div>
 
       {/* Histórico de Mensalidades */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 space-y-6">
+      <div
+        className="rounded-[4px] p-6 space-y-6"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+        }}
+      >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 
-              className="text-xl font-black text-white uppercase tracking-wider leading-none"
-              style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            <h3
+              className="text-xl font-black uppercase tracking-wider leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+                color: 'var(--text-primary)',
+              }}
             >
               Controle de Mensalidades
             </h3>
-            <p className="text-xs text-zinc-500">Histórico de faturamento do mensalista</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              Histórico de faturamento e pagamentos do mensalista
+            </p>
           </div>
           {isActive && (
             <button
@@ -305,7 +378,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
               id="btn-gerar-proxima-mensalidade"
               onClick={handleGenerateNextMonth}
               disabled={isPending}
-              className="btn-admin-primary px-4 py-2 text-xs font-bold rounded-[2px] hover:text-white"
+              className="btn-admin-primary px-4 py-2 text-xs font-bold rounded-[2px]"
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -319,7 +392,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
 
         <div className="pt-2">
           {payments.length === 0 ? (
-            <div className="text-center py-10 text-zinc-500 text-sm">
+            <div className="text-center py-10 text-sm" style={{ color: 'var(--text-muted)' }}>
               Nenhuma mensalidade gerada.
             </div>
           ) : (
@@ -328,7 +401,13 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-800 text-zinc-500 text-xs font-bold uppercase tracking-wider">
+                    <tr
+                      className="text-xs font-bold uppercase tracking-wider"
+                      style={{
+                        borderBottom: '1px solid var(--border)',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
                       <th className="pb-3">Mês de Referência</th>
                       <th className="pb-3">Valor</th>
                       <th className="pb-3">Status</th>
@@ -336,7 +415,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                       <th className="pb-3 text-right">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800/50 text-sm">
+                  <tbody className="text-sm">
                     {payments.map((p) => {
                       const amtFormatted = new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
@@ -346,43 +425,61 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                       const selectedMethod = selectedMethods[p.id] || 'PIX'
 
                       return (
-                        <tr key={p.id} className="hover:bg-zinc-800/10">
-                          <td className="py-4 font-semibold text-zinc-205">
+                        <tr
+                          key={p.id}
+                          className="transition-colors hover:bg-[var(--bg-subtle)]"
+                          style={{ borderBottom: '1px solid var(--border)' }}
+                        >
+                          <td className="py-4 font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                             {formatReferenceMonth(p.reference_month)}
                           </td>
-                          <td className="py-4 font-bold text-white font-mono">{amtFormatted}</td>
+                          <td className="py-4 font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+                            {amtFormatted}
+                          </td>
                           <td className="py-4">
                             {p.status === 'paid' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                                style={{
+                                  background: 'var(--brand-subtle)',
+                                  color: 'var(--brand)',
+                                  border: '1px solid var(--brand-ring)',
+                                }}
+                              >
                                 Pago
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                                 Pendente
                               </span>
                             )}
                           </td>
-                          <td className="py-4 text-xs text-zinc-400">
+                          <td className="py-4 text-xs">
                             {p.status === 'paid' ? (
                               <div className="space-y-0.5">
-                                <div className="font-semibold text-zinc-200 flex items-center gap-1">
-                                  <CreditCard className="w-3.5 h-3.5 text-zinc-500" />
+                                <div
+                                  className="font-semibold flex items-center gap-1"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  <CreditCard className="w-3.5 h-3.5 text-[var(--brand)]" />
                                   {p.payment_method}
                                 </div>
                                 {p.paid_at && (
-                                  <div className="text-zinc-500 font-mono">
+                                  <div className="font-mono text-[11px]" style={{ color: 'var(--text-muted)' }}>
                                     {new Date(p.paid_at).toLocaleString('pt-BR')}
                                   </div>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-zinc-600">—</span>
+                              <span style={{ color: 'var(--text-muted)' }}>—</span>
                             )}
                           </td>
                           <td className="py-4 text-right">
                             {p.status === 'pending' && (
                               <div className="inline-flex items-center gap-2">
-                                <label htmlFor={`method-select-${p.id}`} className="sr-only">Método de Pagamento</label>
+                                <label htmlFor={`method-select-${p.id}`} className="sr-only">
+                                  Método de Pagamento
+                                </label>
                                 <select
                                   id={`method-select-${p.id}`}
                                   value={selectedMethod}
@@ -392,7 +489,12 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                       [p.id]: e.target.value,
                                     }))
                                   }
-                                  className="px-2 py-1 bg-zinc-950 border border-zinc-800 rounded-[2px] text-xs text-zinc-300 focus:outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                                  className="px-2.5 py-1 rounded-[2px] text-xs font-semibold focus:outline-none"
+                                  style={{
+                                    background: 'var(--bg-subtle)',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--text-primary)',
+                                  }}
                                 >
                                   <option value="PIX">PIX</option>
                                   <option value="Dinheiro">Dinheiro</option>
@@ -403,7 +505,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                   id={`btn-receber-${p.id}`}
                                   onClick={() => handleMarkPaid(p.id)}
                                   disabled={isPending}
-                                  className="btn-admin-primary px-3 py-1 bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white text-xs font-bold rounded-[2px] transition-all cursor-pointer"
+                                  className="btn-admin-primary px-3 py-1 text-xs font-bold rounded-[2px] cursor-pointer"
                                 >
                                   Confirmar
                                 </button>
@@ -418,7 +520,14 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
               </div>
 
               {/* Mobile Card List View */}
-              <div className="md:hidden divide-y divide-zinc-800/50 bg-zinc-900/50 rounded-[4px] border border-zinc-800/60 overflow-hidden">
+              <div
+                className="md:hidden divide-y rounded-[4px] overflow-hidden"
+                style={{
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card-alt)',
+                  borderColor: 'var(--border)',
+                }}
+              >
                 {payments.map((p) => {
                   const amtFormatted = new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
@@ -431,32 +540,53 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                     <div key={p.id} className="p-4 space-y-3">
                       {/* Reference Month + Status */}
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-white">
+                        <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                           {formatReferenceMonth(p.reference_month)}
                         </span>
                         {p.status === 'paid' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase"
+                            style={{
+                              background: 'var(--brand-subtle)',
+                              color: 'var(--brand)',
+                              border: '1px solid var(--brand-ring)',
+                            }}
+                          >
                             Pago
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                             Pendente
                           </span>
                         )}
                       </div>
 
                       {/* Value + Payment details */}
-                      <div className="flex items-center justify-between text-xs bg-zinc-950/40 p-2.5 rounded-[2px] border border-zinc-800/60">
+                      <div
+                        className="flex items-center justify-between text-xs p-2.5 rounded-[2px]"
+                        style={{
+                          background: 'var(--bg-subtle)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
                         <div>
-                          <span className="text-zinc-500 block">Valor</span>
-                          <span className="text-sm font-bold text-white font-mono">{amtFormatted}</span>
+                          <span className="block" style={{ color: 'var(--text-muted)' }}>
+                            Valor
+                          </span>
+                          <span className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)' }}>
+                            {amtFormatted}
+                          </span>
                         </div>
                         {p.status === 'paid' && (
                           <div className="text-right">
-                            <span className="text-zinc-500 block">Método / Data</span>
-                            <span className="text-zinc-250 font-semibold">{p.payment_method}</span>
+                            <span className="block" style={{ color: 'var(--text-muted)' }}>
+                              Método / Data
+                            </span>
+                            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                              {p.payment_method}
+                            </span>
                             {p.paid_at && (
-                              <span className="text-zinc-500 font-mono block text-[9px]">
+                              <span className="font-mono block text-[9px]" style={{ color: 'var(--text-muted)' }}>
                                 {new Date(p.paid_at).toLocaleDateString('pt-BR')}
                               </span>
                             )}
@@ -468,7 +598,9 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                       {p.status === 'pending' && (
                         <div className="flex items-center justify-between gap-3 pt-1">
                           <div className="flex-1 flex items-center gap-1.5">
-                            <label htmlFor={`mobile-method-select-${p.id}`} className="sr-only">Método</label>
+                            <label htmlFor={`mobile-method-select-${p.id}`} className="sr-only">
+                              Método
+                            </label>
                             <select
                               id={`mobile-method-select-${p.id}`}
                               value={selectedMethod}
@@ -478,7 +610,12 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                   [p.id]: e.target.value,
                                 }))
                               }
-                              className="w-full px-2 py-1.5 bg-zinc-950 border border-zinc-800 rounded-[2px] text-xs text-zinc-300 focus:outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                              className="w-full px-2 py-1.5 rounded-[2px] text-xs font-semibold focus:outline-none"
+                              style={{
+                                background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--text-primary)',
+                              }}
                             >
                               <option value="PIX">PIX</option>
                               <option value="Dinheiro">Dinheiro</option>
@@ -490,7 +627,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                             id={`btn-mobile-receber-${p.id}`}
                             onClick={() => handleMarkPaid(p.id)}
                             disabled={isPending}
-                            className="btn-admin-primary px-4 py-1.5 bg-[var(--brand)] hover:bg-[var(--brand-dark)] text-white text-xs font-bold rounded-[2px] transition-all cursor-pointer flex-1 text-center justify-center"
+                            className="btn-admin-primary px-4 py-1.5 text-xs font-bold rounded-[2px] cursor-pointer flex-1 text-center justify-center"
                           >
                             Confirmar
                           </button>

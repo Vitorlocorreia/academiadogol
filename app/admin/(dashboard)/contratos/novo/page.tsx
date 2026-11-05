@@ -11,7 +11,8 @@ export default async function NovoContratoPage() {
       {/* Voltar */}
       <Link
         href="/admin/contratos"
-        className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-medium transition-colors"
+        className="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+        style={{ color: 'var(--text-secondary)' }}
       >
         <ArrowLeft className="w-4 h-4" />
         Voltar para Contratos
@@ -20,18 +21,27 @@ export default async function NovoContratoPage() {
       {/* Header */}
       <div>
         <h1 
-          className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+          className="text-3xl font-black uppercase tracking-wider leading-none"
+          style={{
+            fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+            color: 'var(--text-primary)',
+          }}
         >
           Registrar Contrato Fixo
         </h1>
-        <p className="text-zinc-400 text-sm mt-1">
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           Cadastre um mensalista. O sistema gerará bloqueios automáticos na agenda e a mensalidade do mês atual.
         </p>
       </div>
 
       {/* Form Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6 sm:p-8">
+      <div
+        className="rounded-[4px] p-6 sm:p-8"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+        }}
+      >
         <CreateContractForm fields={fields} />
       </div>
     </div>

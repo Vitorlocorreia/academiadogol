@@ -17,19 +17,22 @@ export default async function ConfiguracoesPage() {
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto space-y-6">
       <div>
         <h1 
-          className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+          className="text-3xl font-black uppercase tracking-wider leading-none"
+          style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif", color: 'var(--text-primary)' }}
         >
           Configurações
         </h1>
-        <p className="text-zinc-400 text-sm mt-1">Gerencie as preferências, notificações e regras do sistema</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Gerencie as preferências, notificações e regras do sistema</p>
       </div>
 
       {/* Card de Notificações Web Push no Dispositivo */}
       <PushNotificationCard />
 
       {/* Formulário Geral de Configurações */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6">
+      <div 
+        className="border rounded-[4px] p-6 shadow-sm"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
         <SaveSettingsForm settings={settings} />
       </div>
     </div>

@@ -28,17 +28,21 @@ export default async function EditarCampoPage({ params }: Props) {
       <div className="flex items-center gap-3 mb-6">
         <Link
           href="/admin/campos"
-          className="flex items-center justify-center w-9 h-9 rounded-[2px] bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-all"
+          className="flex items-center justify-center w-9 h-9 rounded-[4px] border transition-all"
+          style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">Editar Campo</h1>
-          <p className="text-zinc-400 text-sm mt-0.5">{field.name}</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Editar Campo</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{field.name}</p>
         </div>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] p-6">
+      <div 
+        className="border rounded-[4px] p-6 shadow-sm"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
         <EditCampoForm field={field} />
       </div>
     </div>

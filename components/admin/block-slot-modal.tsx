@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createManualBookingAction, createBlockedSlotAction } from '@/app/admin/(dashboard)/agenda/actions'
 
@@ -13,46 +13,48 @@ interface Props {
   startTime: string
 }
 
-export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, startTime }: Props) {
+export function BlockSlotModal({
+  isOpen,
+  onClose,
+  fieldId,
+  fieldName,
+  date,
+  startTime,
+}: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'booking' | 'block'>('booking')
-  const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-
-  // Estados dos inputs
-  const [duration, setDuration] = useState(90)
-  const [blockEndTime, setBlockEndTime] = useState('')
+  const [duration, setDuration] = useState(60)
+  const [blockEndTime, setBlockEndTime] = useState(() => {
+    const [h, m] = startTime.split(':').map(Number)
+    const endH = h + 1
+    return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  })
   const [isRecurring, setIsRecurring] = useState(false)
-
-  // Calcula o horário de fim padrão para bloqueio (1 hora depois)
-  useEffect(() => {
-    if (startTime) {
-      const [h, m] = startTime.split(':').map(Number)
-      const endMin = h * 60 + m + 60
-      const endH = String(Math.floor(endMin / 60)).padStart(2, '0')
-      const endM = String(endMin % 60).padStart(2, '0')
-      setBlockEndTime(`${endH}:${endM}`)
-    }
-  }, [startTime])
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   if (!isOpen) return null
 
-  // Dia da semana do bloqueio recorrente
-  const recurDayOfWeek = new Date(date + 'T12:00:00').getDay()
-  const dayName = new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' })
+  const dayOfWeek = new Date(date + 'T12:00:00').getDay()
+  const dayNames = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+  const dayName = dayNames[dayOfWeek]
 
   const handleSubmitBooking = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    const fd = new FormData(e.currentTarget)
-    
+    const formData = new FormData(e.currentTarget)
+    formData.append('field_id', fieldId)
+    formData.append('date', date)
+    formData.append('start_time', startTime)
+    formData.append('duration_minutes', String(duration))
+
     startTransition(async () => {
-      const res = await createManualBookingAction(null, fd)
-      if (res.error) {
+      const res = await createManualBookingAction(null, formData)
+      if (res?.error) {
         setError(res.error)
       } else {
-        onClose()
         router.refresh()
+        onClose()
       }
     })
   }
@@ -60,64 +62,91 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
   const handleSubmitBlock = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    const fd = new FormData(e.currentTarget)
-    fd.append('is_recurring', String(isRecurring))
-    fd.append('recur_day_of_week', String(recurDayOfWeek))
+    const formData = new FormData(e.currentTarget)
+    formData.append('field_id', fieldId)
+    formData.append('date', date)
+    formData.append('start_time', startTime)
+    formData.append('end_time', blockEndTime)
+    if (isRecurring) {
+      formData.append('is_recurring', 'true')
+      formData.append('recur_day_of_week', String(dayOfWeek))
+    }
 
     startTransition(async () => {
-      const res = await createBlockedSlotAction(null, fd)
-      if (res.error) {
+      const res = await createBlockedSlotAction(null, formData)
+      if (res?.error) {
         setError(res.error)
       } else {
-        onClose()
         router.refresh()
+        onClose()
       }
     })
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div
+        className="rounded-[4px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+        }}
+      >
         {/* Header */}
-        <div className="p-6 bg-zinc-950 border-b border-zinc-800 flex justify-between items-center">
+        <div
+          className="p-6 flex justify-between items-center"
+          style={{
+            background: 'var(--bg-subtle)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
           <div>
             <h2 
-              className="text-2xl font-black text-white uppercase tracking-wider"
-              style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+              className="text-2xl font-black uppercase tracking-wider"
+              style={{
+                fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+                color: 'var(--text-primary)',
+              }}
             >
               {fieldName}
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               Horário selecionado: <strong>{startTime}</strong> em <strong>{new Date(date + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-zinc-800 rounded-[2px] border border-zinc-800 transition-all cursor-pointer"
+            className="btn-admin-secondary text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-[2px]"
           >
             Fechar
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-zinc-950 border-b border-zinc-800 px-6">
+        <div
+          className="flex px-6"
+          style={{
+            background: 'var(--bg-subtle)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
           <button
             onClick={() => { setActiveTab('booking'); setError(null) }}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all mr-6 cursor-pointer ${
-              activeTab === 'booking'
-                ? 'border-[var(--brand)] text-[var(--brand)]'
-                : 'border-transparent text-zinc-400 hover:text-white'
-            }`}
+            className="py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all mr-6 cursor-pointer"
+            style={{
+              borderColor: activeTab === 'booking' ? 'var(--brand)' : 'transparent',
+              color: activeTab === 'booking' ? 'var(--brand)' : 'var(--text-secondary)',
+            }}
           >
             Reserva Manual
           </button>
           <button
             onClick={() => { setActiveTab('block'); setError(null) }}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-              activeTab === 'block'
-                ? 'border-[var(--brand)] text-[var(--brand)]'
-                : 'border-transparent text-zinc-400 hover:text-white'
-            }`}
+            className="py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer"
+            style={{
+              borderColor: activeTab === 'block' ? 'var(--brand)' : 'transparent',
+              color: activeTab === 'block' ? 'var(--brand)' : 'var(--text-secondary)',
+            }}
           >
             Bloquear Horário
           </button>
@@ -126,96 +155,83 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-[2px] text-red-400 text-xs">
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-[2px] text-red-500 text-xs">
               {error}
             </div>
           )}
 
           {activeTab === 'booking' ? (
-            /* Formulário de Reserva */
+            /* Formulário de Reserva Manual */
             <form onSubmit={handleSubmitBooking} className="space-y-4">
               <input type="hidden" name="field_id" value={fieldId} />
               <input type="hidden" name="date" value={date} />
               <input type="hidden" name="start_time" value={startTime} />
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                   Nome do Cliente
                 </label>
                 <input
                   name="customer_name"
                   type="text"
                   required
-                  placeholder="Nome completo"
+                  placeholder="Ex: Vitor Silva"
                   className="input-admin"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                  WhatsApp / Celular
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Telefone / WhatsApp
                 </label>
                 <input
                   name="customer_phone"
                   type="tel"
                   required
-                  placeholder="(81) 99999-9999"
-                  className="input-admin"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                  E-mail (Opcional)
-                </label>
-                <input
-                  name="customer_email"
-                  type="email"
-                  placeholder="cliente@email.com"
-                  className="input-admin"
+                  placeholder="Ex: 81999096142"
+                  className="input-admin font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                     Duração
                   </label>
                   <div className="relative">
                     <select
-                      name="duration_minutes"
                       value={duration}
                       onChange={(e) => setDuration(Number(e.target.value))}
                       className="input-admin appearance-none pr-8 cursor-pointer"
                     >
-                      <option value={60} className="bg-zinc-900">1h (60 min)</option>
-                      <option value={90} className="bg-zinc-900">1h30 (90 min)</option>
-                      <option value={120} className="bg-zinc-900">2h (120 min)</option>
-                      <option value={180} className="bg-zinc-900">3h (180 min)</option>
-                      <option value={240} className="bg-zinc-900">4h (240 min)</option>
+                      <option value={60}>1h (60 min)</option>
+                      <option value={90}>1h30 (90 min)</option>
+                      <option value={120}>2h (120 min)</option>
+                      <option value={180}>3h (180 min)</option>
+                      <option value={240}>4h (240 min)</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                       </svg>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                     Horário Início
                   </label>
                   <input
                     type="text"
                     disabled
                     value={startTime}
-                    className="input-admin bg-zinc-950 text-zinc-550 border border-zinc-800 cursor-not-allowed font-mono opacity-80"
+                    className="input-admin font-mono opacity-80 cursor-not-allowed"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                   Observações / Notas
                 </label>
                 <textarea
@@ -244,18 +260,18 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                     Início
                   </label>
                   <input
                     type="text"
                     disabled
                     value={startTime}
-                    className="input-admin bg-zinc-950 text-zinc-550 border border-zinc-800 cursor-not-allowed font-mono opacity-80"
+                    className="input-admin font-mono opacity-80 cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                     Término
                   </label>
                   <input
@@ -271,7 +287,7 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                   Motivo do Bloqueio
                 </label>
                 <input
@@ -283,21 +299,33 @@ export function BlockSlotModal({ isOpen, onClose, fieldId, fieldName, date, star
               </div>
 
               {/* Recorrência semanal */}
-              <div className="p-4 bg-zinc-950/45 rounded-[4px] border border-zinc-800 space-y-3">
+              <div
+                className="p-4 rounded-[4px] space-y-3"
+                style={{
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
+                }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-white block">Tornar Bloqueio Recorrente</span>
-                    <span className="text-[11px] text-zinc-500">Bloquear toda semana neste dia da semana</span>
+                    <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>
+                      Tornar Bloqueio Recorrente
+                    </span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                      Bloquear toda semana neste dia da semana
+                    </span>
                   </div>
                   
                   <button
                     type="button"
                     onClick={() => setIsRecurring(!isRecurring)}
-                    className={`w-12 h-6 rounded-full p-1 transition-all cursor-pointer ${
-                      isRecurring ? 'bg-[var(--brand)] flex justify-end' : 'bg-zinc-800 flex justify-start'
-                    }`}
+                    className="w-12 h-6 rounded-full p-1 transition-all cursor-pointer flex items-center"
+                    style={{
+                      background: isRecurring ? 'var(--brand)' : 'var(--border)',
+                      justifyContent: isRecurring ? 'flex-end' : 'flex-start',
+                    }}
                   >
-                    <span className="w-4 h-4 bg-white rounded-full"></span>
+                    <span className="w-4 h-4 bg-white rounded-full shadow-sm"></span>
                   </button>
                 </div>
 

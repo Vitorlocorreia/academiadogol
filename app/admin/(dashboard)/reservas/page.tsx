@@ -22,12 +22,15 @@ export default async function AdminReservasPage({ searchParams }: Props) {
         </div>
         <div>
           <h1 
-            className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            className="text-3xl font-black uppercase tracking-wider leading-none"
+            style={{
+              fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+              color: 'var(--text-primary)',
+            }}
           >
             Painel de Reservas
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             Pesquise por clientes, filtre por status de reservas e realize baixas financeiras ou cancelamentos.
           </p>
         </div>

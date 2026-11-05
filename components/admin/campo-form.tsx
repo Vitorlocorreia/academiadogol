@@ -90,13 +90,13 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
     <form action={formAction} className="space-y-8">
       {/* Informações básicas */}
       <section>
-        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text-secondary)' }}>
           Informações do Campo
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
-              Nome do Campo <span className="text-red-400">*</span>
+            <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Nome do Campo <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
@@ -110,7 +110,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label htmlFor="description" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Descrição
             </label>
             <textarea
@@ -124,7 +124,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           </div>
 
           <div>
-            <label htmlFor="photo_url" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label htmlFor="photo_url" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               URL da Foto do Campo
             </label>
             <input
@@ -139,10 +139,10 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                 Comodidades do Campo (Badges Editáveis)
               </label>
-              <span className="text-[11px] text-zinc-400 font-medium">
+              <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>
                 {amenities.length} {amenities.length === 1 ? 'item configurado' : 'itens configurados'}
               </span>
             </div>
@@ -151,9 +151,12 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
             <input type="hidden" name="amenities" value={amenities.join(', ')} />
 
             {/* Caixa de Badges Ativas */}
-            <div className="p-3.5 bg-zinc-950/70 border border-zinc-800 rounded-lg min-h-[56px] mb-3">
+            <div 
+              className="p-3.5 border rounded-lg min-h-[56px] mb-3"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
               {amenities.length === 0 ? (
-                <p className="text-xs text-zinc-400 italic py-1">
+                <p className="text-xs italic py-1" style={{ color: 'var(--text-muted)' }}>
                   Nenhuma comodidade adicionada ainda. Adicione uma nova ou clique nas sugestões rápidas abaixo.
                 </p>
               ) : (
@@ -161,13 +164,15 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                   {amenities.map((item, idx) => (
                     <span
                       key={`${item}-${idx}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-zinc-800 text-zinc-100 font-semibold text-xs rounded-full border border-zinc-700 shadow-sm hover:border-zinc-500 transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 font-semibold text-xs rounded-full border shadow-xs"
+                      style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     >
                       <span>{item}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveAmenity(idx)}
-                        className="text-zinc-400 hover:text-red-400 transition-colors p-0.5 rounded-full hover:bg-zinc-700 cursor-pointer"
+                        className="transition-colors p-0.5 rounded-full hover:bg-red-500/10 hover:text-red-500 cursor-pointer"
+                        style={{ color: 'var(--text-muted)' }}
                         title={`Remover ${item}`}
                       >
                         <X className="w-3.5 h-3.5" />
@@ -197,7 +202,8 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                 type="button"
                 onClick={() => handleAddAmenity(newAmenityInput)}
                 disabled={!newAmenityInput.trim()}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider rounded border border-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="px-4 py-2 disabled:opacity-40 font-bold text-xs uppercase tracking-wider rounded border transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', borderColor: 'var(--border)' }}
               >
                 <Plus className="w-3.5 h-3.5" /> Adicionar
               </button>
@@ -205,7 +211,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
             {/* Sugestões Rápidas (1 clique) */}
             <div className="pt-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2 flex items-center gap-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                 <Sparkles className="w-3.5 h-3.5 text-[var(--brand)]" />
                 Sugestões Rápidas (Clique para adicionar ou remover):
               </p>
@@ -230,11 +236,12 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                       }}
                       className={`text-xs px-2.5 py-1 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border-[var(--brand-ring)] font-bold shadow-sm'
-                          : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                          ? 'bg-[var(--brand-subtle)] text-[var(--brand)] border-[var(--brand-ring)] font-bold shadow-xs'
+                          : 'hover:opacity-80'
                       }`}
+                      style={!isSelected ? { background: 'var(--bg-subtle)', color: 'var(--text-secondary)', borderColor: 'var(--border)' } : undefined}
                     >
-                      {isSelected ? <CheckCircle className="w-3 h-3" /> : <Plus className="w-3 h-3 text-zinc-400" />}
+                      {isSelected ? <CheckCircle className="w-3 h-3" /> : <Plus className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />}
                       <span>{sug}</span>
                     </button>
                   )
@@ -244,7 +251,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
           </div>
 
           <div>
-            <label htmlFor="maps_url" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label htmlFor="maps_url" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Link de Localização (Google Maps / Waze)
             </label>
             <input
@@ -259,16 +266,16 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
         </div>
       </section>
 
-      <div className="border-t border-zinc-800" />
+      <div className="border-t" style={{ borderColor: 'var(--border)' }} />
 
       {/* PACOTES E PREÇOS FULL EDITÁVEIS */}
       <section className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
+            <h3 className="text-sm font-black uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
               Tabela de Pacotes & Preços (Full Editável)
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               Altere o valor total e o sinal PIX cobrado na hora da reserva para cada tipo e duração.
             </p>
           </div>
@@ -278,15 +285,18 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
         <input type="hidden" name="packages" value={JSON.stringify(packages)} />
 
         {/* 1. SEÇÃO DE JOGOS / ALUGUEL DE QUADRA NORMAL */}
-        <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60">
+        <div 
+          className="border rounded-xl p-4 sm:p-5 space-y-4"
+          style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
             <div className="flex items-center gap-2">
               <span className="text-lg">⚽</span>
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
                   Aluguel de Quadra (Horário Normal / Jogo)
                 </h4>
-                <p className="text-[11px] text-zinc-500">Partidas avulsas padrão (1h, 1h30, 2h)</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Partidas avulsas padrão (1h, 1h30, 2h)</p>
               </div>
             </div>
             <button
@@ -300,18 +310,19 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
           <div className="space-y-3">
             {jogosPackages.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-2 italic text-center">Nenhum pacote de jogo configurado.</p>
+              <p className="text-xs py-2 italic text-center" style={{ color: 'var(--text-muted)' }}>Nenhum pacote de jogo configurado.</p>
             ) : (
               jogosPackages.map((pkg) => (
                 <div
                   key={pkg.id}
                   className={`p-3 rounded-lg border transition-all ${
-                    pkg.is_active ? 'bg-zinc-900/90 border-zinc-800' : 'bg-zinc-900/40 border-zinc-850 opacity-60'
+                    pkg.is_active ? 'shadow-xs' : 'opacity-60'
                   }`}
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-3 items-center">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Nome do Pacote
                       </label>
                       <input
@@ -324,7 +335,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Duração (Min)
                       </label>
                       <input
@@ -338,7 +349,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Valor Total (R$)
                       </label>
                       <input
@@ -347,7 +358,8 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         step="1"
                         value={pkg.total_price}
                         onChange={(e) => handleUpdatePackage(pkg.id, { total_price: Number(e.target.value) })}
-                        className="input-admin text-xs py-1.5 font-bold text-white"
+                        className="input-admin text-xs py-1.5 font-bold"
+                        style={{ color: 'var(--text-primary)' }}
                       />
                     </div>
 
@@ -371,8 +383,9 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         onClick={() => handleUpdatePackage(pkg.id, { is_active: !pkg.is_active })}
                         title={pkg.is_active ? 'Desativar pacote' : 'Ativar pacote'}
                         className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all ${
-                          pkg.is_active ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-500 bg-zinc-800'
+                          pkg.is_active ? 'text-emerald-600 bg-emerald-500/10' : 'border'
                         }`}
+                        style={!pkg.is_active ? { background: 'var(--bg-subtle)', color: 'var(--text-muted)', borderColor: 'var(--border)' } : undefined}
                       >
                         {pkg.is_active ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                       </button>
@@ -380,7 +393,8 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         type="button"
                         onClick={() => handleRemovePackage(pkg.id)}
                         title="Remover pacote"
-                        className="p-1.5 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="p-1.5 rounded hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                        style={{ color: 'var(--text-muted)' }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -393,21 +407,24 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
         </div>
 
         {/* 2. SEÇÃO DE FESTAS DE ANIVERSÁRIO & EVENTOS */}
-        <div className="bg-zinc-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-zinc-800/60">
+        <div 
+          className="border rounded-xl p-4 sm:p-5 space-y-4"
+          style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
             <div className="flex items-center gap-2">
               <span className="text-lg">🎂</span>
               <div>
-                <h4 className="text-xs font-bold text-purple-300 uppercase tracking-wider">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300">
                   Festas de Aniversário & Eventos
                 </h4>
-                <p className="text-[11px] text-zinc-500">Pacotes estendidos com área de festa/churrasqueira (3h, 4h)</p>
+                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>Pacotes estendidos com área de festa/churrasqueira (3h, 4h)</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => handleAddPackage('festa')}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/30 rounded hover:opacity-90 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/30 rounded hover:opacity-90 transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Adicionar Festa
             </button>
@@ -415,18 +432,19 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
           <div className="space-y-3">
             {festasPackages.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-2 italic text-center">Nenhum pacote de festa configurado.</p>
+              <p className="text-xs py-2 italic text-center" style={{ color: 'var(--text-muted)' }}>Nenhum pacote de festa configurado.</p>
             ) : (
               festasPackages.map((pkg) => (
                 <div
                   key={pkg.id}
                   className={`p-3 rounded-lg border transition-all ${
-                    pkg.is_active ? 'bg-zinc-900/90 border-purple-950/60' : 'bg-zinc-900/40 border-zinc-850 opacity-60'
+                    pkg.is_active ? 'shadow-xs' : 'opacity-60'
                   }`}
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-3 items-center">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Nome do Pacote
                       </label>
                       <input
@@ -439,7 +457,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Duração (Min)
                       </label>
                       <input
@@ -453,7 +471,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                         Valor Total (R$)
                       </label>
                       <input
@@ -462,12 +480,13 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         step="1"
                         value={pkg.total_price}
                         onChange={(e) => handleUpdatePackage(pkg.id, { total_price: Number(e.target.value) })}
-                        className="input-admin text-xs py-1.5 font-bold text-white"
+                        className="input-admin text-xs py-1.5 font-bold"
+                        style={{ color: 'var(--text-primary)' }}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">
                         Sinal PIX (R$)
                       </label>
                       <input
@@ -476,7 +495,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         step="1"
                         value={pkg.deposit_price}
                         onChange={(e) => handleUpdatePackage(pkg.id, { deposit_price: Number(e.target.value) })}
-                        className="input-admin text-xs py-1.5 font-bold text-purple-400"
+                        className="input-admin text-xs py-1.5 font-bold text-purple-600 dark:text-purple-400"
                       />
                     </div>
 
@@ -486,8 +505,9 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         onClick={() => handleUpdatePackage(pkg.id, { is_active: !pkg.is_active })}
                         title={pkg.is_active ? 'Desativar pacote' : 'Ativar pacote'}
                         className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all ${
-                          pkg.is_active ? 'text-purple-400 bg-purple-500/10' : 'text-zinc-500 bg-zinc-800'
+                          pkg.is_active ? 'text-purple-600 dark:text-purple-400 bg-purple-500/10' : 'border'
                         }`}
+                        style={!pkg.is_active ? { background: 'var(--bg-subtle)', color: 'var(--text-muted)', borderColor: 'var(--border)' } : undefined}
                       >
                         {pkg.is_active ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                       </button>
@@ -495,7 +515,8 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
                         type="button"
                         onClick={() => handleRemovePackage(pkg.id)}
                         title="Remover pacote"
-                        className="p-1.5 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="p-1.5 rounded hover:text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                        style={{ color: 'var(--text-muted)' }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -508,14 +529,17 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
         </div>
 
         {/* Configurações Globais de Fallback */}
-        <details className="text-xs text-zinc-400 bg-zinc-950/40 border border-zinc-850 p-4 rounded-xl">
-          <summary className="font-bold uppercase tracking-wider cursor-pointer hover:text-zinc-200">
+        <details 
+          className="text-xs border p-4 rounded-xl"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+        >
+          <summary className="font-bold uppercase tracking-wider cursor-pointer" style={{ color: 'var(--text-primary)' }}>
             ⚙️ Configurações de Fallback (Durações avulsas / Valores padrão)
           </summary>
-          <div className="mt-4 pt-4 border-t border-zinc-800 space-y-4">
+          <div className="mt-4 pt-4 border-t space-y-4" style={{ borderColor: 'var(--border)' }}>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="hourly_rate" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <label htmlFor="hourly_rate" className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Valor Base por Hora (R$)
                 </label>
                 <input
@@ -531,7 +555,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               </div>
 
               <div>
-                <label htmlFor="duration_options" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <label htmlFor="duration_options" className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Durações Padrão (min)
                 </label>
                 <input
@@ -546,7 +570,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="deposit_type" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <label htmlFor="deposit_type" className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Tipo de Sinal Padrão
                 </label>
                 <select
@@ -561,7 +585,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
               </div>
 
               <div>
-                <label htmlFor="deposit_value" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                <label htmlFor="deposit_value" className="block text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-secondary)' }}>
                   Valor do Sinal Padrão
                 </label>
                 <input
@@ -582,7 +606,7 @@ export function CampoForm({ formAction, isPending, field }: CampoFormProps) {
         {/* Status (somente na edição) */}
         {field && (
           <div>
-            <label htmlFor="is_active" className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+            <label htmlFor="is_active" className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Status do Campo
             </label>
             <select

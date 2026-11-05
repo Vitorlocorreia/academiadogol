@@ -30,12 +30,15 @@ export default async function AdminFinanceiroPage({ searchParams }: Props) {
         </div>
         <div>
           <h1 
-            className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            className="text-3xl font-black uppercase tracking-wider leading-none"
+            style={{
+              fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+              color: 'var(--text-primary)',
+            }}
           >
             Financeiro
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             Acompanhe o faturamento, pagamentos recebidos e pendências por quadra e período.
           </p>
         </div>

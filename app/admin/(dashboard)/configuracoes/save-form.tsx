@@ -22,7 +22,6 @@ interface Props {
 type FormState = { error: string; success: boolean }
 const initialState: FormState = { error: '', success: false }
 
-
 export function SaveSettingsForm({ settings }: Props) {
   const [state, formAction, isPending] = useActionState(
     async (_prev: FormState, formData: FormData): Promise<FormState> => {
@@ -39,7 +38,7 @@ export function SaveSettingsForm({ settings }: Props) {
 
       {/* Feedback */}
       {state?.error && (
-        <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-[4px] text-red-400 text-sm">
+        <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-[4px] text-red-500 text-sm">
           {state.error}
         </div>
       )}
@@ -52,13 +51,13 @@ export function SaveSettingsForm({ settings }: Props) {
 
       {/* Dados do negócio */}
       <section>
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
           Dados do Negócio
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="business_name" className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Nome do Negócio <span className="text-red-400">*</span>
+            <label htmlFor="business_name" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Nome do Negócio <span className="text-red-500">*</span>
             </label>
             <input
               id="business_name"
@@ -70,7 +69,7 @@ export function SaveSettingsForm({ settings }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="business_phone" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="business_phone" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Telefone do Negócio (WhatsApp)
             </label>
             <input
@@ -85,12 +84,12 @@ export function SaveSettingsForm({ settings }: Props) {
         </div>
       </section>
 
-      <div className="border-t border-zinc-800" />
+      <div className="border-t" style={{ borderColor: 'var(--border)' }} />
 
       {/* Notificações do Administrador */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
+          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
             Notificações por E-mail (Admin)
           </h3>
           <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
@@ -100,7 +99,7 @@ export function SaveSettingsForm({ settings }: Props) {
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="admin_notification_email" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="admin_notification_email" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               E-mail de Notificações
             </label>
             <input
@@ -111,36 +110,45 @@ export function SaveSettingsForm({ settings }: Props) {
               placeholder="admin@academiadogol.com.br"
               className="input-admin"
             />
-            <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed">
+            <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               Você receberá avisos automáticos instantâneos sempre que uma reserva for paga via PIX, cancelada ou quando o resumo matinal for gerado.
             </p>
           </div>
 
           {/* Cards informativos dos alertas configurados */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
-              <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+            <div 
+              className="p-3 border rounded-[4px] space-y-1"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
+              <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <span>⚡</span> Nova Reserva
               </div>
-              <p className="text-[11px] text-zinc-400 leading-tight">
+              <p className="text-[11px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
                 Alerta no mesmo segundo em que o sinal PIX é compensado.
               </p>
             </div>
 
-            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
-              <div className="text-xs font-bold text-red-400 flex items-center gap-1.5">
+            <div 
+              className="p-3 border rounded-[4px] space-y-1"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
+              <div className="text-xs font-bold text-red-500 flex items-center gap-1.5">
                 <span>❌</span> Horário Liberado
               </div>
-              <p className="text-[11px] text-zinc-400 leading-tight">
+              <p className="text-[11px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
                 Aviso imediato quando expirar o PIX de 15min ou houver cancelamento.
               </p>
             </div>
 
-            <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-[4px] space-y-1">
-              <div className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+            <div 
+              className="p-3 border rounded-[4px] space-y-1"
+              style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+            >
+              <div className="text-xs font-bold text-blue-500 flex items-center gap-1.5">
                 <span>☀️</span> Resumo Diário
               </div>
-              <p className="text-[11px] text-zinc-400 leading-tight">
+              <p className="text-[11px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
                 Escala completa de partidas todo dia às 07:00 da manhã.
               </p>
             </div>
@@ -148,17 +156,17 @@ export function SaveSettingsForm({ settings }: Props) {
         </div>
       </section>
 
-      <div className="border-t border-zinc-800" />
+      <div className="border-t" style={{ borderColor: 'var(--border)' }} />
 
       {/* Horário de funcionamento */}
       <section>
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
           Horário de Funcionamento
         </h3>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label htmlFor="open_time" className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Abertura <span className="text-red-400">*</span>
+            <label htmlFor="open_time" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Abertura <span className="text-red-500">*</span>
             </label>
             <input
               id="open_time"
@@ -170,8 +178,8 @@ export function SaveSettingsForm({ settings }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="close_time" className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Fechamento <span className="text-red-400">*</span>
+            <label htmlFor="close_time" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Fechamento <span className="text-red-500">*</span>
             </label>
             <input
               id="close_time"
@@ -186,7 +194,7 @@ export function SaveSettingsForm({ settings }: Props) {
 
         {/* Dias da semana */}
         <div>
-          <p className="block text-sm font-medium text-zinc-300 mb-3">
+          <p className="block text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
             Dias de Funcionamento
           </p>
           <div className="flex gap-2 flex-wrap">
@@ -199,9 +207,10 @@ export function SaveSettingsForm({ settings }: Props) {
                   defaultChecked={activeDays.includes(value)}
                   className="sr-only peer"
                 />
-                <span className="flex items-center justify-center w-12 h-10 rounded-[2px] text-sm font-bold border transition-all
-                  peer-checked:bg-[var(--brand)] peer-checked:border-[var(--brand)] peer-checked:text-white
-                  border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300">
+                <span 
+                  className="flex items-center justify-center w-12 h-10 rounded-[2px] text-sm font-bold border transition-all peer-checked:bg-[var(--brand)] peer-checked:border-[var(--brand)] peer-checked:text-white"
+                  style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                >
                   {label}
                 </span>
               </label>
@@ -210,16 +219,16 @@ export function SaveSettingsForm({ settings }: Props) {
         </div>
       </section>
 
-      <div className="border-t border-zinc-800" />
+      <div className="border-t" style={{ borderColor: 'var(--border)' }} />
 
       {/* Regras de reserva */}
       <section>
-        <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider mb-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-primary)' }}>
           Regras de Reserva
         </h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label htmlFor="advance_booking_days" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="advance_booking_days" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Antecedência máxima (dias)
             </label>
             <input
@@ -233,7 +242,7 @@ export function SaveSettingsForm({ settings }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="min_advance_hours" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="min_advance_hours" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Antecedência mínima (h)
             </label>
             <input
@@ -247,7 +256,7 @@ export function SaveSettingsForm({ settings }: Props) {
             />
           </div>
           <div>
-            <label htmlFor="cancellation_hours" className="block text-sm font-medium text-zinc-300 mb-1.5">
+            <label htmlFor="cancellation_hours" className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Prazo para estorno do sinal (h)
             </label>
             <input

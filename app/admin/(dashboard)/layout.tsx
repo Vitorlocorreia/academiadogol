@@ -15,9 +15,12 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-zinc-950 overflow-hidden">
+    <div
+      className="flex flex-col md:flex-row h-screen overflow-hidden transition-colors duration-200"
+      style={{ background: 'var(--bg)', color: 'var(--text-primary)' }}
+    >
       <AdminSidebar userEmail={user.email ?? ''} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto" style={{ background: 'var(--bg)' }}>
         {children}
       </main>
     </div>

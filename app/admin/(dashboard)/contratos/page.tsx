@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus, User, Calendar, Clock, DollarSign, ArrowRight, Ban, CheckCircle, HelpCircle } from 'lucide-react'
+import { Plus, User, Calendar, Clock, ArrowRight, Ban, CheckCircle } from 'lucide-react'
 import { getContracts } from './actions'
 
 // Função auxiliar para traduzir o dia da semana
@@ -22,19 +22,22 @@ export default async function ContratosPage() {
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div>
           <h1 
-            className="text-3xl font-black text-white uppercase tracking-wider leading-none"
-            style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+            className="text-3xl font-black uppercase tracking-wider leading-none"
+            style={{
+              fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+              color: 'var(--text-primary)',
+            }}
           >
             Contratos Fixos
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             Gerencie os clientes mensalistas, seus horários fixos e controle o pagamento das mensalidades.
           </p>
         </div>
         <Link
           href="/admin/contratos/novo"
           id="btn-novo-contrato"
-          className="btn-admin-primary px-4 py-2.5 text-sm font-semibold rounded-[2px] hover:text-white w-full sm:w-auto text-center justify-center"
+          className="btn-admin-primary px-4 py-2.5 text-sm font-semibold rounded-[2px] w-full sm:w-auto text-center justify-center"
         >
           <Plus className="w-4 h-4" />
           Novo Contrato
@@ -42,14 +45,30 @@ export default async function ContratosPage() {
       </div>
 
       {/* Lista de Contratos */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[4px] overflow-hidden">
+      <div
+        className="rounded-[4px] overflow-hidden"
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+        }}
+      >
         {contracts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-[4px] bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-4">
-              <Calendar className="w-8 h-8 text-zinc-500" />
+            <div
+              className="w-16 h-16 rounded-[4px] flex items-center justify-center mb-4"
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <Calendar className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
             </div>
-            <p className="text-zinc-400 font-medium">Nenhum contrato fixo registrado</p>
-            <p className="text-zinc-600 text-sm mt-1">Clique em "Novo Contrato" para registrar o primeiro mensalista.</p>
+            <p className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+              Nenhum contrato fixo registrado
+            </p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+              Clique em &quot;Novo Contrato&quot; para registrar o primeiro mensalista.
+            </p>
           </div>
         ) : (
           <>
@@ -57,7 +76,14 @@ export default async function ContratosPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-wider bg-zinc-900/50">
+                  <tr
+                    className="text-xs font-bold uppercase tracking-wider"
+                    style={{
+                      borderBottom: '1px solid var(--border)',
+                      background: 'var(--bg-subtle)',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
                     <th className="px-6 py-4">Cliente</th>
                     <th className="px-6 py-4">Campo</th>
                     <th className="px-6 py-4">Horário Fixo</th>
@@ -67,7 +93,7 @@ export default async function ContratosPage() {
                     <th className="px-6 py-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/50">
+                <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
                   {contracts.map((contract) => {
                     const dayName = DAYS_OF_WEEK[contract.day_of_week]
                     const formattedValue = new Intl.NumberFormat('pt-BR', {
@@ -85,61 +111,90 @@ export default async function ContratosPage() {
                     return (
                       <tr
                         key={contract.id}
-                        className="hover:bg-zinc-800/20 transition-colors"
+                        className="transition-colors hover:bg-[var(--bg-subtle)]"
+                        style={{ borderBottom: '1px solid var(--border)' }}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-[2px] bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
+                            <div
+                              className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0"
+                              style={{
+                                background: 'var(--bg-subtle)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--brand)',
+                              }}
+                            >
                               <User className="w-4 h-4" />
                             </div>
                             <div>
-                              <div className="text-sm font-semibold text-white">
+                              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                                 {contract.customer?.name}
                               </div>
-                              <div className="text-xs text-zinc-500 font-mono">
+                              <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                                 {contract.customer?.phone}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                            style={{
+                              background: 'var(--bg-subtle)',
+                              color: 'var(--text-primary)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
                             {contract.field?.name}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1">
-                            <div className="text-sm text-zinc-300 font-medium">
+                            <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                               {dayName}
                             </div>
-                            <div className="text-xs text-zinc-500 flex items-center gap-1 font-mono">
-                              <Clock className="w-3 h-3 text-zinc-600" />
+                            <div className="text-xs flex items-center gap-1 font-mono" style={{ color: 'var(--text-muted)' }}>
+                              <Clock className="w-3 h-3" />
                               {contract.start_time.substring(0, 5)} às {contract.end_time.substring(0, 5)} ({contract.duration_minutes} min)
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-[var(--brand)] font-mono">
+                          <div className="text-sm font-bold font-mono" style={{ color: 'var(--brand)' }}>
                             {formattedValue}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-xs text-zinc-300 font-mono">
-                            De: <span className="font-semibold text-zinc-100">{startsAtFormatted}</span>
+                          <div className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
+                            De: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{startsAtFormatted}</span>
                           </div>
-                          <div className="text-xs text-zinc-500 font-mono">
-                            Até: <span className="font-semibold text-zinc-400">{endsAtFormatted}</span>
+                          <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                            Até: <span className="font-semibold">{endsAtFormatted}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           {contract.is_active ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                              style={{
+                                background: 'var(--brand-subtle)',
+                                color: 'var(--brand)',
+                                border: '1px solid var(--brand-ring)',
+                              }}
+                            >
                               <CheckCircle className="w-3 h-3 text-[var(--brand)]" />
                               Ativo
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-zinc-850 text-zinc-500 border border-zinc-800">
-                              <Ban className="w-3 h-3 text-zinc-600" />
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                              style={{
+                                background: 'var(--bg-subtle)',
+                                color: 'var(--text-muted)',
+                                border: '1px solid var(--border)',
+                              }}
+                            >
+                              <Ban className="w-3 h-3" />
                               Finalizado
                             </span>
                           )}
@@ -162,7 +217,13 @@ export default async function ContratosPage() {
             </div>
 
             {/* Mobile Card List View */}
-            <div className="md:hidden divide-y divide-zinc-800/50 bg-zinc-900">
+            <div
+              className="md:hidden divide-y"
+              style={{
+                borderColor: 'var(--border)',
+                background: 'var(--bg-card)',
+              }}
+            >
               {contracts.map((contract) => {
                 const dayName = DAYS_OF_WEEK[contract.day_of_week]
                 const formattedValue = new Intl.NumberFormat('pt-BR', {
@@ -182,25 +243,46 @@ export default async function ContratosPage() {
                     {/* Top: Cliente + Status */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-[2px] bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 shrink-0">
+                        <div
+                          className="w-9 h-9 rounded-[2px] flex items-center justify-center shrink-0"
+                          style={{
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--brand)',
+                          }}
+                        >
                           <User className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-white">
+                          <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                             {contract.customer?.name}
                           </div>
-                          <div className="text-xs text-zinc-500 font-mono">
+                          <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                             {contract.customer?.phone}
                           </div>
                         </div>
                       </div>
                       <div>
                         {contract.is_active ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase"
+                            style={{
+                              background: 'var(--brand-subtle)',
+                              color: 'var(--brand)',
+                              border: '1px solid var(--brand-ring)',
+                            }}
+                          >
                             Ativo
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-zinc-800 text-zinc-500 border border-zinc-700">
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase"
+                            style={{
+                              background: 'var(--bg-subtle)',
+                              color: 'var(--text-muted)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
                             Finalizado
                           </span>
                         )}
@@ -208,21 +290,40 @@ export default async function ContratosPage() {
                     </div>
 
                     {/* Middle: Campo + Horário + Vigência */}
-                    <div className="grid grid-cols-2 gap-3 text-xs bg-zinc-950/40 p-3 rounded-[2px] border border-zinc-800/60">
+                    <div
+                      className="grid grid-cols-2 gap-3 text-xs p-3 rounded-[2px]"
+                      style={{
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
                       <div>
-                        <span className="text-zinc-500 font-medium block">Campo</span>
-                        <span className="text-zinc-200 font-semibold">{contract.field?.name}</span>
+                        <span className="font-medium block" style={{ color: 'var(--text-muted)' }}>
+                          Campo
+                        </span>
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                          {contract.field?.name}
+                        </span>
                       </div>
                       <div>
-                        <span className="text-zinc-500 font-medium block">Horário Fixo</span>
-                        <span className="text-zinc-200 font-semibold block">{dayName}</span>
-                        <span className="text-zinc-400 text-[10px] font-mono">
+                        <span className="font-medium block" style={{ color: 'var(--text-muted)' }}>
+                          Horário Fixo
+                        </span>
+                        <span className="font-semibold block" style={{ color: 'var(--text-primary)' }}>
+                          {dayName}
+                        </span>
+                        <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
                           {contract.start_time.substring(0, 5)} - {contract.end_time.substring(0, 5)}
                         </span>
                       </div>
-                      <div className="col-span-2 border-t border-zinc-800/40 pt-2 mt-1">
-                        <span className="text-zinc-500 font-medium block">Vigência</span>
-                        <span className="text-zinc-300 font-mono">
+                      <div
+                        className="col-span-2 pt-2 mt-1"
+                        style={{ borderTop: '1px solid var(--border)' }}
+                      >
+                        <span className="font-medium block" style={{ color: 'var(--text-muted)' }}>
+                          Vigência
+                        </span>
+                        <span className="font-mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>
                           {startsAtFormatted} até {endsAtFormatted}
                         </span>
                       </div>
@@ -231,8 +332,12 @@ export default async function ContratosPage() {
                     {/* Bottom: Valor + Ações */}
                     <div className="flex items-center justify-between pt-1">
                       <div>
-                        <span className="text-[10px] text-zinc-500 block uppercase font-bold tracking-wide">Valor Mensal</span>
-                        <span className="text-base font-bold text-[var(--brand)] font-mono">{formattedValue}</span>
+                        <span className="text-[10px] block uppercase font-bold tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                          Valor Mensal
+                        </span>
+                        <span className="text-base font-bold font-mono" style={{ color: 'var(--brand)' }}>
+                          {formattedValue}
+                        </span>
                       </div>
                       <Link
                         href={`/admin/contratos/${contract.id}`}
