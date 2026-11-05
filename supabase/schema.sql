@@ -93,6 +93,8 @@ CREATE TABLE IF NOT EXISTS public.fixed_contracts (
   monthly_amount numeric(10,2) NOT NULL,
   starts_at date NOT NULL,
   ends_at date,
+  secondary_organizer_name text,
+  secondary_organizer_phone text,
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
 );

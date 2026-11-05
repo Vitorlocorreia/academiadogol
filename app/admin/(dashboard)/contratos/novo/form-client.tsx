@@ -2,7 +2,7 @@
 
 import { useActionState, startTransition } from 'react'
 import { createContractAction } from '../actions'
-import { CalendarDays, Clock, DollarSign, Loader2 } from 'lucide-react'
+import { CalendarDays, Clock, DollarSign, Loader2, User, Users } from 'lucide-react'
 import Link from 'next/link'
 
 interface FieldOption {
@@ -45,65 +45,130 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
       )}
 
       {/* Seção: Cliente */}
-      <div>
-        <h3
-          className="text-sm font-bold uppercase tracking-wider mb-4"
-          style={{ color: 'var(--text-primary)' }}
+      {/* Seção: Organizadores do Contrato */}
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <User className="w-4 h-4 text-[var(--brand)]" />
+            <h3
+              className="text-sm font-bold uppercase tracking-wider"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              1º Organizador (Responsável Principal / Titular)
+            </h3>
+          </div>
+          <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+            Contato principal da turma para cobranças, lembretes e avisos do campo.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="customer_name"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Nome do 1º Organizador *
+              </label>
+              <input
+                type="text"
+                id="customer_name"
+                name="customer_name"
+                required
+                className="input-admin"
+                placeholder="Ex: João da Silva"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="customer_phone"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Telefone / WhatsApp (Titular) *
+              </label>
+              <input
+                type="text"
+                id="customer_phone"
+                name="customer_phone"
+                required
+                className="input-admin font-mono"
+                placeholder="Ex: (81) 9 9999-9999"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label
+                htmlFor="customer_email"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                E-mail (opcional)
+              </label>
+              <input
+                type="email"
+                id="customer_email"
+                name="customer_email"
+                className="input-admin"
+                placeholder="Ex: mensalista@email.com"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2º Organizador (Opcional) */}
+        <div
+          className="p-4 rounded-[4px] border"
+          style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
         >
-          Informações do Mensalista
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="customer_name"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
+          <div className="flex items-center gap-2 mb-1">
+            <Users className="w-4 h-4 text-[var(--brand)]" />
+            <h3
+              className="text-sm font-bold uppercase tracking-wider"
+              style={{ color: 'var(--text-primary)' }}
             >
-              Nome Completo
-            </label>
-            <input
-              type="text"
-              id="customer_name"
-              name="customer_name"
-              required
-              className="input-admin"
-              placeholder="Ex: João da Silva"
-            />
+              2º Organizador (Co-responsável / Contato Reserva) — Opcional
+            </h3>
           </div>
+          <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+            Segundo responsável pelo jogo para contato caso o titular não responda.
+          </p>
 
-          <div>
-            <label
-              htmlFor="customer_phone"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Telefone / WhatsApp
-            </label>
-            <input
-              type="text"
-              id="customer_phone"
-              name="customer_phone"
-              required
-              className="input-admin font-mono"
-              placeholder="Ex: (81) 9 9999-9999"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="secondary_name"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Nome do 2º Organizador
+              </label>
+              <input
+                type="text"
+                id="secondary_name"
+                name="secondary_name"
+                className="input-admin"
+                placeholder="Ex: Pedro Henrique (Co-organizador)"
+              />
+            </div>
 
-          <div className="md:col-span-2">
-            <label
-              htmlFor="customer_email"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              E-mail (opcional)
-            </label>
-            <input
-              type="email"
-              id="customer_email"
-              name="customer_email"
-              className="input-admin"
-              placeholder="Ex: mensalista@email.com"
-            />
+            <div>
+              <label
+                htmlFor="secondary_phone"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Telefone / WhatsApp (2º Organizador)
+              </label>
+              <input
+                type="text"
+                id="secondary_phone"
+                name="secondary_phone"
+                className="input-admin font-mono"
+                placeholder="Ex: (81) 9 8888-8888"
+              />
+            </div>
           </div>
         </div>
       </div>

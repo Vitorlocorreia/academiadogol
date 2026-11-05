@@ -11,6 +11,8 @@ const contractSchema = z.object({
   customer_name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
   customer_phone: z.string().min(8, 'Telefone inválido').transform((val) => val.replace(/\D/g, '')),
   customer_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  secondary_name: z.string().optional().or(z.literal('')),
+  secondary_phone: z.string().optional().or(z.literal('')).transform((val) => (val ? val.replace(/\D/g, '') : '')),
   field_id: z.string().uuid('Campo obrigatório'),
   day_of_week: z.coerce.number().int().min(0).max(6),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
@@ -203,6 +205,8 @@ export async function createContractAction(
     customer_name: formData.get('customer_name'),
     customer_phone: formData.get('customer_phone'),
     customer_email: formData.get('customer_email') ?? '',
+    secondary_name: formData.get('secondary_name') ?? '',
+    secondary_phone: formData.get('secondary_phone') ?? '',
     field_id: formData.get('field_id'),
     day_of_week: formData.get('day_of_week'),
     start_time: formData.get('start_time'),
@@ -221,6 +225,8 @@ export async function createContractAction(
     customer_name,
     customer_phone,
     customer_email,
+    secondary_name,
+    secondary_phone,
     field_id,
     day_of_week,
     start_time,
@@ -268,6 +274,8 @@ export async function createContractAction(
       monthly_amount,
       starts_at,
       ends_at: endsAtValue,
+      secondary_organizer_name: secondary_name ? secondary_name.trim() : null,
+      secondary_organizer_phone: secondary_phone ? secondary_phone.trim() : null,
       is_active: true,
     })
     .select('id')
@@ -403,5 +411,66 @@ export async function generateNextMonthPaymentAction(
   if (error) return { error: error.message }
 
   revalidatePath(`/admin/contratos/${contractId}`)
+  return { success: true }
+}
+
+// Atualiza organizadores do contrato (1º e 2º organizador)
+export async function updateContractOrganizersAction(
+  contractId: string,
+  data: {
+    customer_name: string
+    customer_phone: string
+    customer_email?: string
+    secondary_name?: string
+    secondary_phone?: string
+  }
+) {
+  const { supabase } = await requireAdmin()
+
+  // 1. Obtém o contrato para identificar o customer_id
+  const { data: contract, error: contractErr } = await supabase
+    .from('fixed_contracts')
+    .select('customer_id')
+    .eq('id', contractId)
+    .single()
+
+  if (contractErr || !contract) {
+    return { error: 'Contrato não encontrado.' }
+  }
+
+  // 2. Atualiza os dados do 1º Organizador (cliente titular)
+  const cleanPhone = data.customer_phone.replace(/\D/g, '')
+  if (contract.customer_id) {
+    const { error: custErr } = await supabase
+      .from('customers')
+      .update({
+        name: data.customer_name.trim(),
+        phone: cleanPhone,
+        email: data.customer_email?.trim() || null,
+      })
+      .eq('id', contract.customer_id)
+
+    if (custErr) {
+      return { error: 'Erro ao atualizar titular: ' + custErr.message }
+    }
+  }
+
+  // 3. Atualiza os dados do 2º Organizador no contrato
+  const cleanSecPhone = data.secondary_phone ? data.secondary_phone.replace(/\D/g, '') : null
+  const { error: updErr } = await supabase
+    .from('fixed_contracts')
+    .update({
+      secondary_organizer_name: data.secondary_name?.trim() || null,
+      secondary_organizer_phone: cleanSecPhone || null,
+    })
+    .eq('id', contractId)
+
+  if (updErr) {
+    return { error: 'Erro ao atualizar segundo organizador: ' + updErr.message }
+  }
+
+  revalidatePath(`/admin/contratos/${contractId}`)
+  revalidatePath('/admin/contratos')
+  revalidatePath('/admin/agenda')
   return { success: true }
 }

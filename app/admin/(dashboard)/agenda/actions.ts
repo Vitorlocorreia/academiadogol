@@ -75,7 +75,7 @@ export async function getAgendaData(dateStr: string) {
   // 6. Contratos fixos de mensalistas ativos para este dia da semana e vigência
   const { data: fixedContracts } = await supabase
     .from('fixed_contracts')
-    .select('id, field_id, start_time, end_time, starts_at, ends_at, customer:customers(name, phone)')
+    .select('id, field_id, start_time, end_time, starts_at, ends_at, secondary_organizer_name, secondary_organizer_phone, customer:customers(name, phone)')
     .eq('day_of_week', dayOfWeek)
     .eq('is_active', true)
 
@@ -107,6 +107,8 @@ export async function getAgendaData(dateStr: string) {
     is_contract: true,
     contract_id: c.id,
     customer: c.customer,
+    secondary_organizer_name: c.secondary_organizer_name,
+    secondary_organizer_phone: c.secondary_organizer_phone,
   }))
 
   return {

@@ -43,6 +43,8 @@ interface BlockedSlot {
   is_recurring: boolean
   is_contract?: boolean
   contract_id?: string
+  secondary_organizer_name?: string | null
+  secondary_organizer_phone?: string | null
   customer?: {
     name: string
     phone: string
@@ -330,6 +332,11 @@ export function AgendaGrid({
                           /* Mensalista Contrato Fixo */
                           <div
                             className="w-full h-full rounded-[2px] p-2 text-xs flex flex-col justify-between border transition-all"
+                            title={
+                              occupant.data.secondary_organizer_name
+                                ? `1º Org: ${occupant.data.customer?.name} (${occupant.data.customer?.phone || ''})\n2º Org: ${occupant.data.secondary_organizer_name} (${occupant.data.secondary_organizer_phone || ''})`
+                                : undefined
+                            }
                             style={{
                               background: 'var(--brand-subtle)',
                               borderColor: 'var(--brand-ring)',
@@ -352,7 +359,13 @@ export function AgendaGrid({
                               )}
                             </div>
                             <div className="text-[10px] font-medium truncate" style={{ color: 'var(--text-muted)' }}>
-                              {occupant.data.customer?.phone || `${occupant.data.start_time} - ${occupant.data.end_time}`}
+                              {occupant.data.secondary_organizer_name ? (
+                                <span title={`2º Org: ${occupant.data.secondary_organizer_name}`}>
+                                  {occupant.data.customer?.phone || 'Fixo'} <span className="font-bold text-[var(--brand)]">• 2 Org.</span>
+                                </span>
+                              ) : (
+                                occupant.data.customer?.phone || `${occupant.data.start_time} - ${occupant.data.end_time}`
+                              )}
                             </div>
                           </div>
                         ) : (
@@ -500,6 +513,12 @@ export function AgendaGrid({
                           <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
                             {occupant.data.customer?.phone || `${occupant.data.start_time} às ${occupant.data.end_time}`}
                           </div>
+                          {occupant.data.secondary_organizer_name && (
+                            <div className="text-[10px] font-medium pt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                              <span className="font-bold text-[var(--brand)]">2º Org:</span> {occupant.data.secondary_organizer_name}
+                              {occupant.data.secondary_organizer_phone && ` (${occupant.data.secondary_organizer_phone})`}
+                            </div>
+                          )}
                         </div>
 
                         {occupant.data.contract_id && (

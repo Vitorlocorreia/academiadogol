@@ -5,9 +5,11 @@ import {
   deactivateContractAction,
   markPaymentPaidAction,
   generateNextMonthPaymentAction,
+  updateContractOrganizersAction,
 } from '../actions'
 import {
   User,
+  Users,
   Calendar,
   Clock,
   DollarSign,
@@ -16,6 +18,9 @@ import {
   Loader2,
   FileText,
   CreditCard,
+  Edit2,
+  Phone,
+  MessageCircle,
 } from 'lucide-react'
 
 // Tradução de dias da semana
@@ -78,6 +83,8 @@ interface Contract {
   monthly_amount: number
   starts_at: string
   ends_at: string | null
+  secondary_organizer_name?: string | null
+  secondary_organizer_phone?: string | null
   is_active: boolean
   customer: Customer | null
   field: Field | null
@@ -105,6 +112,42 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
   const [successMsg, setSuccessMsg] = useState('')
   const [selectedMethods, setSelectedMethods] = useState<Record<string, string>>({})
   const [isPending, startTransition] = useTransition()
+
+  // Estados dos Organizadores
+  const [primaryName, setPrimaryName] = useState(contract.customer?.name || '')
+  const [primaryPhone, setPrimaryPhone] = useState(contract.customer?.phone || '')
+  const [primaryEmail, setPrimaryEmail] = useState(contract.customer?.email || '')
+  const [secondaryName, setSecondaryName] = useState(contract.secondary_organizer_name || '')
+  const [secondaryPhone, setSecondaryPhone] = useState(contract.secondary_organizer_phone || '')
+  const [isEditingOrganizers, setIsEditingOrganizers] = useState(false)
+  const [isSavingOrganizers, setIsSavingOrganizers] = useState(false)
+
+  // Salvar organizadores
+  const handleSaveOrganizers = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSavingOrganizers(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const res = await updateContractOrganizersAction(contract.id, {
+        customer_name: primaryName,
+        customer_phone: primaryPhone,
+        customer_email: primaryEmail,
+        secondary_name: secondaryName,
+        secondary_phone: secondaryPhone,
+      })
+      if (res?.error) {
+        setErrorMsg('Erro ao salvar organizadores: ' + res.error)
+      } else {
+        setSuccessMsg('Organizadores atualizados com sucesso!')
+        setIsEditingOrganizers(false)
+      }
+    } catch (err: any) {
+      setErrorMsg('Erro: ' + (err.message || 'Falha ao salvar'))
+    } finally {
+      setIsSavingOrganizers(false)
+    }
+  }
 
   // Desativar Contrato
   const handleDeactivate = async () => {
@@ -304,7 +347,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
           )}
         </div>
 
-        {/* Card Cliente */}
+        {/* Card Organizadores */}
         <div
           className="rounded-[4px] p-6 space-y-4"
           style={{
@@ -312,40 +355,215 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
             border: '1px solid var(--border)',
           }}
         >
-          <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-            <User className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
-              Cliente Mensalista
-            </h3>
-          </div>
-          <div className="space-y-3 pt-2">
-            <div>
-              <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
-                Nome
-              </p>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {contract.customer?.name}
-              </p>
+          <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-2" style={{ color: 'var(--brand)' }}>
+              <Users className="w-4 h-4 text-[var(--brand)]" />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                Organizadores da Turma
+              </h3>
             </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
-                Telefone
-              </p>
-              <p className="text-sm font-medium font-mono" style={{ color: 'var(--text-secondary)' }}>
-                {contract.customer?.phone}
-              </p>
-            </div>
-            {contract.customer?.email && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
-                  E-mail
-                </p>
-                <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
-                  {contract.customer?.email}
-                </p>
-              </div>
+            {!isEditingOrganizers && (
+              <button
+                type="button"
+                onClick={() => setIsEditingOrganizers(true)}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--brand)] hover:underline cursor-pointer"
+              >
+                <Edit2 className="w-3 h-3" />
+                Editar
+              </button>
             )}
           </div>
+
+          {isEditingOrganizers ? (
+            <form onSubmit={handleSaveOrganizers} className="space-y-4 text-xs">
+              <div className="space-y-2">
+                <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--brand)' }}>
+                  1º Organizador (Titular)
+                </p>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Nome *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={primaryName}
+                    onChange={(e) => setPrimaryName(e.target.value)}
+                    className="input-admin py-1.5 text-xs w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Telefone / WhatsApp *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={primaryPhone}
+                    onChange={(e) => setPrimaryPhone(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    E-mail (opcional)
+                  </label>
+                  <input
+                    type="email"
+                    value={primaryEmail}
+                    onChange={(e) => setPrimaryEmail(e.target.value)}
+                    className="input-admin py-1.5 text-xs w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
+                <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--brand)' }}>
+                  2º Organizador (Co-responsável)
+                </p>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Nome do 2º Organizador
+                  </label>
+                  <input
+                    type="text"
+                    value={secondaryName}
+                    onChange={(e) => setSecondaryName(e.target.value)}
+                    placeholder="Ex: Pedro Henrique"
+                    className="input-admin py-1.5 text-xs w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Telefone / WhatsApp (2º Org)
+                  </label>
+                  <input
+                    type="text"
+                    value={secondaryPhone}
+                    onChange={(e) => setSecondaryPhone(e.target.value)}
+                    placeholder="Ex: 81 9 8888-8888"
+                    className="input-admin py-1.5 text-xs font-mono w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSavingOrganizers}
+                  className="btn-admin-primary py-1.5 px-3 text-xs font-bold rounded-[2px] flex items-center gap-1"
+                >
+                  {isSavingOrganizers ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrimaryName(contract.customer?.name || '')
+                    setPrimaryPhone(contract.customer?.phone || '')
+                    setPrimaryEmail(contract.customer?.email || '')
+                    setSecondaryName(contract.secondary_organizer_name || '')
+                    setSecondaryPhone(contract.secondary_organizer_phone || '')
+                    setIsEditingOrganizers(false)
+                  }}
+                  className="btn-admin-secondary py-1.5 px-3 text-xs font-bold rounded-[2px]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4 pt-1">
+              {/* 1º Organizador */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[var(--brand)]">
+                    1º Organizador (Titular)
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                    Principal
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {primaryName}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-medium font-mono" style={{ color: 'var(--text-secondary)' }}>
+                      {primaryPhone}
+                    </span>
+                    {primaryPhone && (
+                      <a
+                        href={`https://wa.me/55${primaryPhone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline"
+                        title="Conversar no WhatsApp"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+                {primaryEmail && (
+                  <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                    {primaryEmail}
+                  </p>
+                )}
+              </div>
+
+              {/* Divisor */}
+              <div className="border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                    2º Organizador (Co-responsável)
+                  </span>
+                  {secondaryName && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-[var(--bg-subtle)] border text-[var(--text-secondary)]">
+                      Reserva
+                    </span>
+                  )}
+                </div>
+
+                {secondaryName ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      {secondaryName}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium font-mono" style={{ color: 'var(--text-secondary)' }}>
+                        {secondaryPhone || 'Sem telefone cadastrado'}
+                      </span>
+                      {secondaryPhone && (
+                        <a
+                          href={`https://wa.me/55${secondaryPhone.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline"
+                          title="Conversar no WhatsApp"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs py-1" style={{ color: 'var(--text-muted)' }}>
+                    <span>Nenhum 2º organizador cadastrado.</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingOrganizers(true)}
+                      className="block text-[11px] font-bold text-[var(--brand)] hover:underline mt-1 cursor-pointer"
+                    >
+                      + Adicionar 2º Organizador
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

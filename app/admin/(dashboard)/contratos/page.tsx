@@ -501,15 +501,39 @@ export default async function ContratosPage({ searchParams }: Props) {
                                 color: 'var(--brand)',
                               }}
                             >
-                              <User className="w-4 h-4" />
+                              {contract.secondary_organizer_name ? (
+                                <Users className="w-4 h-4" />
+                              ) : (
+                                <User className="w-4 h-4" />
+                              )}
                             </div>
-                            <div>
-                              <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                {contract.customer?.name}
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                  {contract.customer?.name}
+                                </span>
+                                {contract.secondary_organizer_name && (
+                                  <span
+                                    className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]"
+                                    title={`2º Organizador: ${contract.secondary_organizer_name}`}
+                                  >
+                                    2 Org.
+                                  </span>
+                                )}
                               </div>
                               <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                                 {contract.customer?.phone}
                               </div>
+                              {contract.secondary_organizer_name && (
+                                <div className="text-[11px] font-medium pt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                  <span className="text-[10px] uppercase font-bold text-[var(--brand)]">2º Org:</span> {contract.secondary_organizer_name}
+                                  {contract.secondary_organizer_phone && (
+                                    <span className="font-mono text-[10px] ml-1" style={{ color: 'var(--text-muted)' }}>
+                                      ({contract.secondary_organizer_phone})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -628,15 +652,34 @@ export default async function ContratosPage({ searchParams }: Props) {
                             color: 'var(--brand)',
                           }}
                         >
-                          <User className="w-4 h-4" />
+                          {contract.secondary_organizer_name ? (
+                            <Users className="w-4 h-4" />
+                          ) : (
+                            <User className="w-4 h-4" />
+                          )}
                         </div>
-                        <div>
-                          <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                            {contract.customer?.name}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                              {contract.customer?.name}
+                            </span>
+                            {contract.secondary_organizer_name && (
+                              <span
+                                className="text-[8px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]"
+                              >
+                                2 Org.
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                             {contract.customer?.phone}
                           </div>
+                          {contract.secondary_organizer_name && (
+                            <div className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                              <span className="font-bold text-[var(--brand)]">2º:</span> {contract.secondary_organizer_name}
+                              {contract.secondary_organizer_phone && ` (${contract.secondary_organizer_phone})`}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
