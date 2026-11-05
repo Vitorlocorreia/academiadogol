@@ -1,8 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
+import Image from 'next/image'
 import { loginAction } from '../actions'
-import { Shield } from 'lucide-react'
 
 const initialState = { error: '' }
 
@@ -19,9 +19,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[4px] bg-[var(--brand-subtle)] border border-[var(--brand-ring)] mb-4">
-            <Shield className="w-8 h-8 text-[var(--brand)]" />
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 border border-white/10 mb-4 p-1 shadow-2xl backdrop-blur-sm">
+            <Image
+              src="/logo.png"
+              alt="Academia do Gol"
+              width={72}
+              height={72}
+              className="rounded-full object-contain"
+              priority
+            />
           </div>
           <h1 
             className="text-4xl font-black text-white uppercase tracking-wider leading-none"

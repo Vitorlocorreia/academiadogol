@@ -9,6 +9,11 @@ const BEBAS_NEUE_URL = 'https://fonts.googleapis.com/css2?family=Bebas+Neue&disp
 export const metadata: Metadata = {
   title: 'Academia do Gol | Aluguel de Campos de Futebol',
   description: 'Reserve seu campo de futebol online com facilidade. 7 campos disponíveis, horários flexíveis e pagamento via PIX.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -22,6 +27,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href={BEBAS_NEUE_URL} rel="stylesheet" />
+        <link rel="icon" href="/logo.png" type="image/png" />
       </head>
       <body
         className="min-h-full flex flex-col antialiased"
