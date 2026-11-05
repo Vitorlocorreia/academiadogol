@@ -72,11 +72,48 @@ export async function getAgendaData(dateStr: string) {
     return b.recur_ends_at >= dateStr
   })
 
+  // 6. Contratos fixos de mensalistas ativos para este dia da semana e vigência
+  const { data: fixedContracts } = await supabase
+    .from('fixed_contracts')
+    .select('id, field_id, start_time, end_time, starts_at, ends_at, customer:customers(name, phone)')
+    .eq('day_of_week', dayOfWeek)
+    .eq('is_active', true)
+
+  const activeFixedContracts = (fixedContracts ?? []).filter((c) => {
+    if (c.starts_at && c.starts_at > dateStr) return false
+    if (c.ends_at && c.ends_at < dateStr) return false
+    return true
+  })
+
+  // Filtra bloqueios pontuais que sejam duplicatas de contratos fixos já carregados dinamicamente
+  const nonContractPointBlocks = (pointBlocks ?? []).filter((b) => {
+    const isDup = activeFixedContracts.some(
+      (c) =>
+        c.field_id === b.field_id &&
+        b.start_time >= c.start_time &&
+        b.end_time <= c.end_time
+    )
+    return !isDup
+  })
+
+  const contractBlocks = activeFixedContracts.map((c: any) => ({
+    id: `contract_${c.id}`,
+    field_id: c.field_id,
+    date: dateStr,
+    start_time: c.start_time,
+    end_time: c.end_time,
+    reason: `Mensalista: ${c.customer?.name || 'Cliente'}`,
+    is_recurring: true,
+    is_contract: true,
+    contract_id: c.id,
+    customer: c.customer,
+  }))
+
   return {
     settings: settings ?? null,
     fields: fields ?? [],
     bookings: bookings ?? [],
-    blockedSlots: [...(pointBlocks ?? []), ...activeRecurBlocks],
+    blockedSlots: [...nonContractPointBlocks, ...activeRecurBlocks, ...contractBlocks],
   }
 }
 

@@ -251,6 +251,8 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 id="starts_at"
                 name="starts_at"
                 required
+                min="2024-01-01"
+                defaultValue={new Date().toISOString().split('T')[0]}
                 className="input-admin pl-12 font-mono"
               />
             </div>
@@ -272,6 +274,7 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 type="date"
                 id="ends_at"
                 name="ends_at"
+                min="2024-01-01"
                 className="input-admin pl-12 font-mono"
               />
             </div>

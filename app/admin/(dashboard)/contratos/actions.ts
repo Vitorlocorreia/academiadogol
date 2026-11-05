@@ -16,8 +16,27 @@ const contractSchema = z.object({
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
   monthly_amount: z.coerce.number().positive('Valor mensal obrigatório'),
-  starts_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de início inválida'),
-  ends_at: z.string().optional().or(z.literal('')),
+  starts_at: z.string().transform((val) => {
+    const parts = val.trim().split('-')
+    if (parts.length === 3) {
+      let year = parseInt(parts[0], 10)
+      if (year < 100) year += 2000
+      else if (year < 2000) year = 2026
+      return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+    }
+    return val
+  }),
+  ends_at: z.string().optional().or(z.literal('')).transform((val) => {
+    if (!val) return ''
+    const parts = val.trim().split('-')
+    if (parts.length === 3) {
+      let year = parseInt(parts[0], 10)
+      if (year < 100) year += 2000
+      else if (year < 2000) year = 2026
+      return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+    }
+    return val
+  }),
 })
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

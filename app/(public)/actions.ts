@@ -162,6 +162,20 @@ export async function getOccupiedSlots(
       return b.recur_ends_at >= date
     })
 
+    // Contratos fixos de mensalistas ativos para este dia da semana e vigência
+    const { data: fixedContracts } = await supabase
+      .from('fixed_contracts')
+      .select('start_time, end_time, starts_at, ends_at')
+      .eq('field_id', fieldId)
+      .eq('day_of_week', dayOfWeek)
+      .eq('is_active', true)
+
+    const activeContractSlots = (fixedContracts ?? []).filter((c) => {
+      if (c.starts_at && c.starts_at > date) return false
+      if (c.ends_at && c.ends_at < date) return false
+      return true
+    })
+
     // Se a data consultada for hoje no fuso de Brasília, bloqueia os horários que já passaram
     const { todayStr, nextHalfHourSlot } = getBrazilNow()
     const pastTodayBlocks =
@@ -173,6 +187,7 @@ export async function getOccupiedSlots(
       ...activeBookings,
       ...(pointBlocks ?? []),
       ...activeRecurBlocks,
+      ...activeContractSlots,
       ...pastTodayBlocks,
     ]
 

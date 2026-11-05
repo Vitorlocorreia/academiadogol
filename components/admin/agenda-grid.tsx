@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Calendar,
   Clock,
@@ -40,6 +41,12 @@ interface BlockedSlot {
   end_time: string
   reason: string | null
   is_recurring: boolean
+  is_contract?: boolean
+  contract_id?: string
+  customer?: {
+    name: string
+    phone: string
+  }
 }
 
 interface Settings {
@@ -319,8 +326,37 @@ export function AgendaGrid({
                               {occupant.data.customer?.phone}
                             </div>
                           </div>
+                        ) : occupant.data.is_contract ? (
+                          /* Mensalista Contrato Fixo */
+                          <div
+                            className="w-full h-full rounded-[2px] p-2 text-xs flex flex-col justify-between border transition-all"
+                            style={{
+                              background: 'var(--brand-subtle)',
+                              borderColor: 'var(--brand-ring)',
+                              color: 'var(--brand)',
+                            }}
+                          >
+                            <div className="flex items-center justify-between font-bold">
+                              <span className="truncate max-w-[85px] flex items-center gap-1">
+                                <span className="text-[8px] px-1 py-0.2 rounded bg-[var(--brand)] text-white font-black tracking-wider">FIXO</span>
+                                <span className="truncate">{occupant.data.customer?.name || occupant.data.reason?.replace('Mensalista: ', '')}</span>
+                              </span>
+                              {occupant.data.contract_id && (
+                                <Link
+                                  href={`/admin/contratos/${occupant.data.contract_id}`}
+                                  className="text-[10px] text-[var(--brand)] hover:underline shrink-0"
+                                  title="Ver Contrato"
+                                >
+                                  Ver
+                                </Link>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-medium truncate" style={{ color: 'var(--text-muted)' }}>
+                              {occupant.data.customer?.phone || `${occupant.data.start_time} - ${occupant.data.end_time}`}
+                            </div>
+                          </div>
                         ) : (
-                          /* Bloqueio de horário */
+                          /* Bloqueio de horário padrão */
                           <div
                             className="w-full h-full rounded-[2px] p-2 text-xs flex flex-col justify-between"
                             style={{
@@ -443,6 +479,37 @@ export function AgendaGrid({
                         >
                           <Trash2 className="w-4 h-4 hover:text-red-500" />
                         </button>
+                      </div>
+                    ) : occupant.data.is_contract ? (
+                      /* Mensalista Contrato Fixo */
+                      <div
+                        className="rounded-[2px] p-3 text-xs flex items-center justify-between border"
+                        style={{
+                          background: 'var(--brand-subtle)',
+                          borderColor: 'var(--brand-ring)',
+                          color: 'var(--brand)',
+                        }}
+                      >
+                        <div className="space-y-0.5">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--brand)] text-white font-black tracking-wider">MENSALISTA</span>
+                            <span style={{ color: 'var(--text-primary)' }}>
+                              {occupant.data.customer?.name || occupant.data.reason?.replace('Mensalista: ', '')}
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
+                            {occupant.data.customer?.phone || `${occupant.data.start_time} às ${occupant.data.end_time}`}
+                          </div>
+                        </div>
+
+                        {occupant.data.contract_id && (
+                          <Link
+                            href={`/admin/contratos/${occupant.data.contract_id}`}
+                            className="btn-admin-secondary text-[11px] font-bold py-1 px-2.5 rounded-[2px]"
+                          >
+                            Ver Contrato
+                          </Link>
+                        )}
                       </div>
                     ) : (
                       <div
