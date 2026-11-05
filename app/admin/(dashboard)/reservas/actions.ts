@@ -180,3 +180,105 @@ export async function adminCancelBookingAction(bookingId: string) {
   revalidatePath('/admin/agenda')
   return { success: true }
 }
+
+
+// Estornar sinal da reserva via PIX no Asaas e cancelar reserva
+export async function refundBookingDepositAction(
+  bookingId: string,
+  options?: { forceOverride?: boolean; reason?: string }
+) {
+  const { supabase } = await requireAdmin()
+
+  // 1. Busca os dados completos da reserva
+  const { data: booking, error: fetchErr } = await supabase
+    .from('bookings')
+    .select('*, field:fields(*), customer:customers(*)')
+    .eq('id', bookingId)
+    .single()
+
+  if (fetchErr || !booking) {
+    return { error: 'Reserva não encontrada.' }
+  }
+
+  if (booking.deposit_status === 'refunded') {
+    return { error: 'O sinal desta reserva já foi estornado.' }
+  }
+
+  // 2. Validação da antecedência de 48 horas (fuso horário de Brasília UTC-3)
+  const [hh, mm] = (booking.start_time || '00:00').split(':').map(Number)
+  const [year, month, day] = booking.date.split('-').map(Number)
+  const bookingTimeMs = new Date(Date.UTC(year, month - 1, day, hh + 3, mm || 0)).getTime()
+  const nowMs = Date.now()
+  const hoursLeft = (bookingTimeMs - nowMs) / (1000 * 60 * 60)
+
+  const { data: settings } = await supabase
+    .from('settings')
+    .select('cancellation_hours')
+    .single()
+  const cancellationHours = settings?.cancellation_hours ?? 48
+
+  if (hoursLeft < cancellationHours && !options?.forceOverride) {
+    return {
+      error: `Prazo expirado: esta partida acontece em menos de ${cancellationHours}h (${Math.max(0, hoursLeft).toFixed(1)}h restantes). Pela política oficial da arena, o estorno só é permitido com antecedência mínima de ${cancellationHours}h. Para autorizar em caráter de exceção, confirme a autorização de Gerente.`,
+      requiresOverride: true,
+      hoursLeft: Math.max(0, hoursLeft),
+      cancellationHours,
+    }
+  }
+
+  // 3. Executa o estorno no gateway Asaas se houver cobrança registrada
+  if (booking.asaas_charge_id) {
+    const { refundAsaasPayment } = await import('@/lib/asaas/client')
+    const refundRes = await refundAsaasPayment({
+      chargeId: booking.asaas_charge_id,
+      value: Number(booking.deposit_amount),
+      description: options?.reason || `Estorno de reserva - ${booking.field?.name || 'Academia do Gol'}`,
+    })
+
+    if (!refundRes.success) {
+      return {
+        error: `Falha no gateway Asaas: ${refundRes.error}`,
+      }
+    }
+  }
+
+  // 4. Atualiza os status no banco de dados
+  const { error: updateErr } = await supabase
+    .from('bookings')
+    .update({
+      status: 'cancelled',
+      deposit_status: 'refunded',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId)
+
+  if (updateErr) {
+    return { error: 'Erro ao registrar estorno no banco: ' + updateErr.message }
+  }
+
+  // 5. Notificações automáticas
+  try {
+    const { sendBookingCancelledPush } = await import('@/lib/web-push/push')
+    await sendBookingCancelledPush(booking, 'Sinal PIX estornado e horário liberado')
+  } catch (pushErr) {
+    console.error('Erro ao enviar push de estorno:', pushErr)
+  }
+
+  try {
+    const { sendRefundConfirmationEmail } = await import('@/lib/resend/emails')
+    booking.status = 'cancelled'
+    booking.deposit_status = 'refunded'
+    await sendRefundConfirmationEmail(booking)
+  } catch (emailErr) {
+    console.error('Erro ao enviar e-mail de estorno ao cliente:', emailErr)
+  }
+
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/agenda')
+  revalidatePath('/admin/financeiro')
+
+  return {
+    success: true,
+    message: `Sinal de R$ ${Number(booking.deposit_amount).toFixed(2).replace('.', ',')} estornado com sucesso via PIX para ${booking.customer?.name || 'o cliente'}. O horário foi liberado na agenda.`,
+  }
+}

@@ -340,3 +340,60 @@ export async function checkAsaasPaymentStatus(
     return { isPaid: false, asaasStatus: null }
   }
 }
+
+/**
+ * Solicita o estorno imediato de uma cobrança PIX via API v3 do Asaas.
+ * O Asaas devolve o valor do sinal diretamente para a conta bancária de origem do cliente.
+ */
+export async function refundAsaasPayment({
+  chargeId,
+  value,
+  description,
+}: {
+  chargeId: string
+  value?: number
+  description?: string
+}): Promise<{ success: boolean; error?: string; status?: string }> {
+  const apiKey = getAsaasApiKey()
+  if (!apiKey) {
+    return { success: false, error: 'Chave de API do Asaas não configurada.' }
+  }
+
+  try {
+    const baseUrl = getBaseUrl(apiKey)
+    const headers = getAsaasHeaders(apiKey)
+    const payload: Record<string, unknown> = {
+      description: description || 'Estorno de sinal de reserva - Academia do Gol',
+    }
+    if (value && value > 0) {
+      payload.value = Number(value)
+    }
+
+    const res = await fetch(`${baseUrl}/payments/${chargeId}/refund`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      const errMsg =
+        data?.errors?.[0]?.description ||
+        data?.message ||
+        `Erro do Asaas (${res.status}) ao processar estorno.`
+      return { success: false, error: errMsg }
+    }
+
+    return {
+      success: true,
+      status: data?.status || 'REFUNDED',
+    }
+  } catch (err: any) {
+    console.error('[Asaas] Falha ao processar estorno:', err)
+    return {
+      success: false,
+      error: err?.message || 'Falha de comunicação com o gateway bancário.',
+    }
+  }
+}

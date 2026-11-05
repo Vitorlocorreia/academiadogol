@@ -429,6 +429,88 @@ Assunto: ${subject}
 }
 
 /**
+ * 3.1. Envia e-mail ao CLIENTE confirmando o estorno do sinal PIX
+ */
+export async function sendRefundConfirmationEmail(booking: any) {
+  const customerEmail = booking.customer?.email
+  if (!customerEmail) {
+    return { success: false, error: 'Cliente sem e-mail' }
+  }
+
+  const dateDisplay = new Date(booking.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const subject = `↩️ [Sinal Estornado] Devolução de R$ ${Number(booking.deposit_amount).toFixed(2)} - Academia do Gol`
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #fafafa; padding: 32px 16px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #27272a;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;">
+          ↩️ Estorno de Pagamento PIX Concluído
+        </span>
+      </div>
+
+      <h2 style="color: #ffffff; font-size: 22px; font-weight: 900; margin-bottom: 8px; text-align: center; letter-spacing: -0.02em;">
+        Estorno Realizado com Sucesso
+      </h2>
+      <p style="color: #a1a1aa; font-size: 14px; text-align: center; margin-top: 0; line-height: 1.5;">
+        Olá, <strong>${booking.customer?.name}</strong>. O estorno do sinal da sua reserva na <strong>Academia do Gol</strong> foi efetuado. O valor foi creditado de volta na mesma conta bancária de onde você realizou o PIX.
+      </p>
+
+      <div style="background-color: #18181b; padding: 18px; border-radius: 12px; margin: 20px 0; border: 1px solid #27272a;">
+        <h3 style="color: #f59e0b; font-size: 13px; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
+          Dados da Reserva Cancelada
+        </h3>
+        <table style="width: 100%; font-size: 14px; color: #d4d4d8; border-collapse: collapse;">
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Quadra / Campo:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 700;">${booking.field?.name}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Data da Partida:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600; text-transform: capitalize;">${dateDisplay}</td>
+          </tr>
+          <tr style="height: 28px;">
+            <td style="color: #71717a;">Horário:</td>
+            <td style="text-align: right; color: #ffffff; font-weight: 600;">${booking.start_time?.slice(0, 5)}</td>
+          </tr>
+          <tr style="height: 36px; border-top: 1px solid #27272a;">
+            <td style="color: #f59e0b; font-weight: 700;">Valor Devolvido via PIX:</td>
+            <td style="text-align: right; color: #f59e0b; font-weight: 800; font-size: 16px;">R$ ${Number(booking.deposit_amount).toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color: #71717a; font-size: 12px; text-align: center; margin-top: 24px; line-height: 1.4;">
+        Agradecemos sua atenção e ficamos à disposição no WhatsApp. Até a próxima partida na Academia do Gol! ⚽
+      </p>
+    </div>
+  `
+
+  if (!resend) {
+    console.log(`[MOCK EMAIL CLIENTE] ESTORNO DE RESERVA: ${customerEmail} - R$ ${booking.deposit_amount}`)
+    return { success: true, mock: true }
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: EMAIL_SENDER,
+      to: customerEmail,
+      subject,
+      html,
+    })
+    return { success: true, response }
+  } catch (error: any) {
+    console.error('[Resend] Erro ao enviar e-mail de estorno ao cliente:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * 4. Envia o e-mail de expiração ao CLIENTE
  */
 export async function sendExpirationEmail(booking: any) {

@@ -6,11 +6,13 @@ import {
   confirmDepositManuallyAction,
   confirmRemainingPaymentAction, 
   completeBookingAction, 
-  adminCancelBookingAction 
+  adminCancelBookingAction,
+  refundBookingDepositAction
 } from './actions'
 import { 
   Search, DollarSign, X, CheckSquare, Calendar, Clock, 
-  ChevronDown, ChevronUp, Phone, Mail, User, Hash, MessageCircle
+  ChevronDown, ChevronUp, Phone, Mail, User, Hash, MessageCircle,
+  RotateCcw, AlertTriangle
 } from 'lucide-react'
 
 interface BookingListProps {
@@ -53,6 +55,10 @@ export function BookingList({ initialBookings }: BookingListProps) {
   const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [selectedBookingForRefund, setSelectedBookingForRefund] = useState<any | null>(null)
+  const [forceOverride, setForceOverride] = useState(false)
+  const [refundReason, setRefundReason] = useState('')
+  const [isRefunding, setIsRefunding] = useState(false)
 
   const filteredBookings = initialBookings.filter(b => {
     const s = search.toLowerCase()
@@ -118,7 +124,50 @@ export function BookingList({ initialBookings }: BookingListProps) {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const calculateHoursLeft = (date: string, startTime: string) => {
+    try {
+      const [hh, mm] = (startTime || '00:00').split(':').map(Number)
+      const [y, m, d] = date.split('-').map(Number)
+      const bookingMs = new Date(Date.UTC(y, m - 1, d, hh + 3, mm || 0)).getTime()
+      const nowMs = Date.now()
+      return (bookingMs - nowMs) / (1000 * 60 * 60)
+    } catch {
+      return 0
+    }
+  }
+
+  const handleRefundSinal = async () => {
+    if (!selectedBookingForRefund) return
+    setIsRefunding(true)
+    try {
+      const res = await refundBookingDepositAction(selectedBookingForRefund.id, {
+        forceOverride,
+        reason: refundReason.trim() || undefined,
+      })
+      if (res.success) {
+        alert(res.message || 'Sinal estornado com sucesso!')
+        setSelectedBookingForRefund(null)
+        setForceOverride(false)
+        setRefundReason('')
+        router.refresh()
+      } else {
+        alert(res.error || 'Erro ao estornar sinal.')
+      }
+    } catch (err: any) {
+      alert('Erro inesperado: ' + (err?.message || err))
+    } finally {
+      setIsRefunding(false)
+    }
+  }
+
+  const getStatusBadge = (status: string, depositStatus?: string) => {
+    if (depositStatus === 'refunded') {
+      return (
+        <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
+          Estornado
+        </span>
+      )
+    }
     switch (status) {
       case 'pending':
         return <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>
@@ -229,7 +278,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   {/* Mobile Row Layout (Visible below sm) */}
                   <div className="flex sm:hidden items-center justify-between">
                     <div className="font-bold text-white text-sm">{b.customer?.name}</div>
-                    <div>{getStatusBadge(b.status)}</div>
+                    <div>{getStatusBadge(b.status, b.deposit_status)}</div>
                   </div>
                   
                   <div className="flex sm:hidden items-center justify-between text-xs text-zinc-400">
@@ -312,7 +361,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   </div>
 
                   {/* Status */}
-                  <div className="hidden sm:block">{getStatusBadge(b.status)}</div>
+                  <div className="hidden sm:block">{getStatusBadge(b.status, b.deposit_status)}</div>
 
                   {/* Botão rápido WhatsApp */}
                   <div className="hidden sm:block">
@@ -452,6 +501,21 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             <CheckSquare className="w-3.5 h-3.5" />
                             Concluir Partida
                           </button>
+                          {/* Estornar Sinal PIX direto no Asaas */}
+                          {(b.deposit_status === 'paid' || b.status === 'confirmed') && b.deposit_status !== 'refunded' && (
+                            <button
+                              onClick={() => {
+                                setSelectedBookingForRefund(b)
+                                setForceOverride(false)
+                                setRefundReason('')
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                              title="Estornar sinal PIX de volta para a conta do cliente via Asaas"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Estornar Sinal PIX
+                            </button>
+                          )}
                           <button
                             onClick={() => handleCancelReserva(b.id)}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
@@ -530,6 +594,120 @@ export function BookingList({ initialBookings }: BookingListProps) {
           </div>
         </div>
       )}
+
+      {/* Modal de Confirmação de Estorno PIX com Trava de 48h */}
+      {selectedBookingForRefund && (() => {
+        const hoursLeft = calculateHoursLeft(selectedBookingForRefund.date, selectedBookingForRefund.start_time)
+        const isWithinPolicy = hoursLeft >= 48
+        const depositFmt = Number(selectedBookingForRefund.deposit_amount).toFixed(2).replace('.', ',')
+
+        return (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full space-y-5 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 
+                    className="text-2xl font-black text-white uppercase tracking-wider leading-none"
+                    style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
+                  >
+                    Estornar Sinal PIX
+                  </h3>
+                  <p className="text-zinc-400 text-xs mt-0.5">Devolução imediata para a conta bancária do cliente</p>
+                </div>
+              </div>
+
+              {/* Detalhes da Reserva */}
+              <div className="bg-zinc-950/70 border border-zinc-800 rounded-lg p-4 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 font-medium">Cliente:</span>
+                  <span className="text-white font-bold">{selectedBookingForRefund.customer?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 font-medium">Campo:</span>
+                  <span className="text-zinc-200">{selectedBookingForRefund.field?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400 font-medium">Data e Horário:</span>
+                  <span className="text-zinc-200">
+                    {new Date(selectedBookingForRefund.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {selectedBookingForRefund.start_time?.slice(0, 5)}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-zinc-800">
+                  <span className="text-amber-400 font-bold uppercase tracking-wider">Valor do Sinal a Devolver:</span>
+                  <span className="text-amber-400 font-black text-sm">R$ {depositFmt}</span>
+                </div>
+              </div>
+
+              {/* Status do Prazo das 48 Horas */}
+              {isWithinPolicy ? (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-md flex items-start gap-2 text-xs text-emerald-300">
+                  <CheckSquare className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+                  <div>
+                    <span className="font-bold uppercase tracking-wider block">Dentro do Prazo Oficial (48h)</span>
+                    Faltam <strong>{hoursLeft.toFixed(1)} horas</strong> para a partida. O estorno está em conformidade com as regras da arena.
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-md space-y-2 text-xs text-amber-300">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                    <div>
+                      <span className="font-bold uppercase tracking-wider block text-amber-400">Fora do Prazo Oficial</span>
+                      Faltam apenas <strong>{Math.max(0, hoursLeft).toFixed(1)} horas</strong> para a partida (o prazo mínimo é 48h).
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 pt-1.5 border-t border-amber-500/20 cursor-pointer text-[11px] text-zinc-200">
+                    <input
+                      type="checkbox"
+                      checked={forceOverride}
+                      onChange={(e) => setForceOverride(e.target.checked)}
+                      className="rounded border-zinc-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>Autorizar estorno excepcional como Gerente</span>
+                  </label>
+                </div>
+              )}
+
+              {/* Motivo opcional */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
+                  Motivo do Estorno (Opcional):
+                </label>
+                <input
+                  type="text"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Ex: Cancelamento solicitado pelo cliente, chuva forte..."
+                  className="input-admin py-1.5 text-xs"
+                />
+              </div>
+
+              {/* Ações */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBookingForRefund(null)}
+                  disabled={isRefunding}
+                  className="btn-admin-secondary flex-1 text-center justify-center rounded-[2px]"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefundSinal}
+                  disabled={isRefunding || (!isWithinPolicy && !forceOverride)}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-black text-xs uppercase tracking-wider rounded-[2px] flex-1 text-center justify-center flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+                >
+                  {isRefunding ? 'Processando PIX...' : 'Confirmar Estorno'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

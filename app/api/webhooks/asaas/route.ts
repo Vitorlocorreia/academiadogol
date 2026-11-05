@@ -112,6 +112,22 @@ export async function POST(request: Request) {
 
         console.log(`[Asaas Webhook] Reserva ${booking.id} confirmada com sucesso via PIX automático.`)
       }
+
+      // O Asaas envia 'PAYMENT_REFUNDED' quando um estorno é processado
+      if (body?.event === 'PAYMENT_REFUNDED') {
+        const chargeId = body.payment?.id || body.payment?.invoiceId
+        if (chargeId) {
+          await supabase
+            .from('bookings')
+            .update({
+              status: 'cancelled',
+              deposit_status: 'refunded',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('asaas_charge_id', chargeId)
+          console.log(`[Asaas Webhook] Reserva com chargeId ${chargeId} marcada como estornada.`)
+        }
+      }
     }
 
     return NextResponse.json({ success: true, processed: events.length })
