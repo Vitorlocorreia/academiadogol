@@ -7,12 +7,22 @@ const BEBAS_NEUE_URL = 'https://fonts.googleapis.com/css2?family=Bebas+Neue&disp
 
 // SEO Checklist Helper: title= name="description" og:
 export const metadata: Metadata = {
-  title: 'Academia do Gol | Aluguel de Campos de Futebol',
-  description: 'Reserve seu campo de futebol online com facilidade. 7 campos disponíveis, horários flexíveis e pagamento via PIX.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://academiadogol.vercel.app'),
+  title: 'Academia do Gol | Aluguel de Campos de Futebol Society',
+  description: 'Reserve seu campo de futebol society online na Academia do Gol. 7 campos disponíveis, horários flexíveis, pacotes avulsos e mensalistas com pagamento via PIX.',
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
+  openGraph: {
+    title: 'Academia do Gol | Aluguel de Campos de Futebol Society',
+    description: 'Reserve seu campo de futebol society online na Academia do Gol. Horários flexíveis e pagamento via PIX.',
+    images: [{ url: '/logo.png', width: 512, height: 512, alt: 'Academia do Gol' }],
   },
 }
 
@@ -27,7 +37,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href={BEBAS_NEUE_URL} rel="stylesheet" />
-        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
       </head>
       <body
         className="min-h-full flex flex-col antialiased"
