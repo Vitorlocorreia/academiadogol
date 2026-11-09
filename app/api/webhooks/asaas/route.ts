@@ -60,6 +60,52 @@ export async function POST(request: Request) {
           continue
         }
 
+        const externalRef = String(body.payment?.externalReference || '')
+
+        // ── VERIFICA SE É UMA MENSALIDADE DE CONTRATO FIXO ──
+        if (externalRef.startsWith('fixed_payment_')) {
+          const paymentId = externalRef.replace('fixed_payment_', '')
+          const { data: updatedPayment, error: payErr } = await supabase
+            .from('fixed_payments')
+            .update({
+              status: 'paid',
+              payment_method: 'PIX (Asaas)',
+              paid_at: new Date().toISOString(),
+              asaas_charge_id: chargeId,
+            })
+            .eq('id', paymentId)
+            .select('id, contract_id, amount, reference_month')
+            .single()
+
+          if (payErr) {
+            console.error('[Asaas Webhook] Erro ao dar baixa na mensalidade:', payErr)
+          } else {
+            console.log(`[Asaas Webhook] Mensalidade ${paymentId} confirmada com sucesso via PIX!`)
+          }
+          continue
+        }
+
+        // Verifica também por asaas_charge_id na tabela fixed_payments caso externalRef não tenha o prefixo
+        const { data: fixedPayMatch } = await supabase
+          .from('fixed_payments')
+          .select('id, contract_id')
+          .eq('asaas_charge_id', chargeId)
+          .single()
+
+        if (fixedPayMatch) {
+          await supabase
+            .from('fixed_payments')
+            .update({
+              status: 'paid',
+              payment_method: 'PIX (Asaas)',
+              paid_at: new Date().toISOString(),
+            })
+            .eq('id', fixedPayMatch.id)
+          console.log(`[Asaas Webhook] Mensalidade ${fixedPayMatch.id} confirmada via chargeId ${chargeId}!`)
+          continue
+        }
+
+        // ── FLUXO DE RESERVA AVULSA (BOOKINGS) ──
         // 1. Busca a reserva correspondente pelo asaas_charge_id ou externalReference
         let { data: booking, error: fetchErr } = await supabase
           .from('bookings')

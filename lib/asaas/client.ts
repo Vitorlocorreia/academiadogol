@@ -220,6 +220,7 @@ export async function createAsaasPixCharge({
     pixQrCode: qrImage,
     pixCopyPaste: qrData.payload,
     expirationDate: qrData.expirationDate,
+    invoiceUrl: paymentData.invoiceUrl || null,
   }
 }
 
@@ -299,6 +300,136 @@ export async function getOrGenerateBookingPix(booking: any) {
       pixCopyPaste: fallbackCopyPaste,
       isReal: false,
       error: error.message,
+    }
+  }
+}
+
+/**
+ * Orquestra a geração do PIX para uma mensalidade de contrato fixo:
+ * Se já existir cobrança salva, reutiliza para não duplicar.
+ * Se o Asaas estiver configurado, cria o PIX real e salva no Supabase.
+ * Se não houver ASAAS_API_KEY configurada, gera dados de simulação.
+ */
+export async function getOrGenerateContractPix(paymentId: string) {
+  const supabase = createAdminClient()
+
+  // 1. Busca os dados da mensalidade com contrato, cliente e campo
+  const { data: payment, error } = await supabase
+    .from('fixed_payments')
+    .select(`
+      id,
+      contract_id,
+      reference_month,
+      amount,
+      status,
+      asaas_charge_id,
+      pix_copy_paste,
+      pix_qr_code_url,
+      invoice_url,
+      contract:fixed_contracts(
+        id,
+        day_of_week,
+        start_time,
+        end_time,
+        secondary_organizer_name,
+        secondary_organizer_phone,
+        customer:customers(id, name, phone, email, cpf),
+        field:fields(id, name)
+      )
+    `)
+    .eq('id', paymentId)
+    .single()
+
+  if (error || !payment) {
+    throw new Error('Mensalidade não encontrada.')
+  }
+
+  // Se já tiver cobrança e PIX salvos, retorna diretamente
+  if (payment.asaas_charge_id && payment.pix_copy_paste) {
+    return {
+      chargeId: payment.asaas_charge_id,
+      pixQrCode: payment.pix_qr_code_url,
+      pixCopyPaste: payment.pix_copy_paste,
+      invoiceUrl: payment.invoice_url,
+      isReal: true,
+      payment,
+    }
+  }
+
+  const apiKey = getAsaasApiKey()
+
+  // Formata o mês de referência (Ex: "Novembro/2026")
+  const refParts = payment.reference_month.split('-')
+  const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ]
+  const monthLabel = `${monthNames[Number(refParts[1]) - 1]}/${refParts[0]}`
+
+  // Se não houver Asaas configurado, gera simulação
+  if (!apiKey) {
+    const mockCopyPaste = `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/mensalidade_${payment.id}5204000053039865405${Number(payment.amount).toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
+    return {
+      chargeId: null,
+      pixQrCode: null,
+      pixCopyPaste: mockCopyPaste,
+      invoiceUrl: null,
+      isReal: false,
+      payment,
+    }
+  }
+
+  try {
+    const customer = (payment.contract as any)?.customer
+    const field = (payment.contract as any)?.field
+
+    const asaasCustomerId = await getOrCreateAsaasCustomer({
+      name: customer?.name || 'Mensalista Academia do Gol',
+      phone: customer?.phone || '',
+      cpfCnpj: customer?.cpf || null,
+      email: customer?.email || null,
+    })
+
+    const pixDetails = await createAsaasPixCharge({
+      customerId: asaasCustomerId,
+      amount: Number(payment.amount),
+      description: `Mensalidade ${monthLabel} - ${field?.name || 'Campo'} - Academia do Gol`,
+      externalReference: `fixed_payment_${payment.id}`,
+    })
+
+    // Salva na tabela fixed_payments
+    await supabase
+      .from('fixed_payments')
+      .update({
+        asaas_charge_id: pixDetails.chargeId,
+        pix_copy_paste: pixDetails.pixCopyPaste,
+        pix_qr_code_url: pixDetails.pixQrCode,
+        invoice_url: (pixDetails as any).invoiceUrl || null,
+      })
+      .eq('id', payment.id)
+
+    return {
+      ...pixDetails,
+      isReal: true,
+      payment: {
+        ...payment,
+        asaas_charge_id: pixDetails.chargeId,
+        pix_copy_paste: pixDetails.pixCopyPaste,
+        pix_qr_code_url: pixDetails.pixQrCode,
+        invoice_url: (pixDetails as any).invoiceUrl || null,
+      },
+    }
+  } catch (err: any) {
+    console.error('[Asaas] Erro ao gerar PIX para mensalidade:', err)
+    const fallbackCopyPaste = `00020101021226830014br.gov.bcb.pix2561pix.academiadogol.com.br/qr/mensalidade_${payment.id}5204000053039865405${Number(payment.amount).toFixed(2)}5802BR5916Academia do Gol6009Sao Paulo62070503***6304`
+    return {
+      chargeId: null,
+      pixQrCode: null,
+      pixCopyPaste: fallbackCopyPaste,
+      invoiceUrl: null,
+      isReal: false,
+      error: err.message,
+      payment,
     }
   }
 }

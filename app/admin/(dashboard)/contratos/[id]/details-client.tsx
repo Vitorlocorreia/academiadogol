@@ -21,6 +21,11 @@ import {
   Edit2,
   Phone,
   MessageCircle,
+  QrCode,
+  ExternalLink,
+  Link2,
+  Copy,
+  Check,
 } from 'lucide-react'
 
 // Tradução de dias da semana
@@ -121,6 +126,19 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
   const [secondaryPhone, setSecondaryPhone] = useState(contract.secondary_organizer_phone || '')
   const [isEditingOrganizers, setIsEditingOrganizers] = useState(false)
   const [isSavingOrganizers, setIsSavingOrganizers] = useState(false)
+  const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null)
+
+  const handleCopyPaymentLink = async (paymentId: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://academiadogol.vercel.app'
+    const url = `${origin}/mensalidade/${paymentId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedPaymentId(paymentId)
+      setTimeout(() => setCopiedPaymentId(null), 2500)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   // Salvar organizadores
   const handleSaveOrganizers = async (e: React.FormEvent) => {
@@ -695,6 +713,52 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                           <td className="py-4 text-right">
                             {p.status === 'pending' && (
                               <div className="inline-flex items-center gap-2">
+                                {/* Cobrar no WhatsApp */}
+                                <a
+                                  href={`https://wa.me/55${(primaryPhone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                                    `Olá ${primaryName || 'Amigo'}! Segue o link para pagamento da mensalidade de ${formatReferenceMonth(p.reference_month)} do racha no ${contract.field?.name || 'campo'} (Academia do Gol):\n\n💰 Valor: ${amtFormatted}\n🔗 Pague via PIX com baixa automática no link:\n${typeof window !== 'undefined' ? window.location.origin : 'https://academiadogol.vercel.app'}/mensalidade/${p.id}`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-[2px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all"
+                                  title="Enviar cobrança PIX no WhatsApp do titular"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  Cobrar no Zap
+                                </a>
+
+                                {/* Copiar Link */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyPaymentLink(p.id)}
+                                  className="btn-admin-secondary px-2.5 py-1 text-xs font-bold rounded-[2px] inline-flex items-center gap-1"
+                                  title="Copiar Link de Pagamento da Mensalidade"
+                                >
+                                  {copiedPaymentId === p.id ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                      Copiado!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Link2 className="w-3.5 h-3.5" />
+                                      Copiar Link
+                                    </>
+                                  )}
+                                </button>
+
+                                {/* Ver página do PIX */}
+                                <a
+                                  href={`/mensalidade/${p.id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1 rounded-[2px] border text-[var(--text-muted)] hover:text-[var(--brand)] hover:border-[var(--brand)] transition-colors"
+                                  title="Abrir Tela de Pagamento PIX"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+
+                                {/* Baixa manual */}
                                 <label htmlFor={`method-select-${p.id}`} className="sr-only">
                                   Método de Pagamento
                                 </label>
@@ -707,7 +771,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                       [p.id]: e.target.value,
                                     }))
                                   }
-                                  className="px-2.5 py-1 rounded-[2px] text-xs font-semibold focus:outline-none"
+                                  className="px-2 py-1 rounded-[2px] text-xs font-semibold focus:outline-none"
                                   style={{
                                     background: 'var(--bg-subtle)',
                                     border: '1px solid var(--border)',
@@ -725,7 +789,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                   disabled={isPending}
                                   className="btn-admin-primary px-3 py-1 text-xs font-bold rounded-[2px] cursor-pointer"
                                 >
-                                  Confirmar
+                                  Baixa
                                 </button>
                               </div>
                             )}
@@ -814,41 +878,79 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
 
                       {/* Actions if pending */}
                       {p.status === 'pending' && (
-                        <div className="flex items-center justify-between gap-3 pt-1">
-                          <div className="flex-1 flex items-center gap-1.5">
-                            <label htmlFor={`mobile-method-select-${p.id}`} className="sr-only">
-                              Método
-                            </label>
-                            <select
-                              id={`mobile-method-select-${p.id}`}
-                              value={selectedMethod}
-                              onChange={(e) =>
-                                setSelectedMethods((prev) => ({
-                                  ...prev,
-                                  [p.id]: e.target.value,
-                                }))
-                              }
-                              className="w-full px-2 py-1.5 rounded-[2px] text-xs font-semibold focus:outline-none"
-                              style={{
-                                background: 'var(--bg-subtle)',
-                                border: '1px solid var(--border)',
-                                color: 'var(--text-primary)',
-                              }}
+                        <div className="space-y-2 pt-1">
+                          {/* Botões de Ação Online */}
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`https://wa.me/55${(primaryPhone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                                `Olá ${primaryName || 'Amigo'}! Segue o link para pagamento da mensalidade de ${formatReferenceMonth(p.reference_month)} do racha no ${contract.field?.name || 'campo'} (Academia do Gol):\n\n💰 Valor: ${amtFormatted}\n🔗 Pague via PIX com baixa automática no link:\n${typeof window !== 'undefined' ? window.location.origin : 'https://academiadogol.vercel.app'}/mensalidade/${p.id}`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[2px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
                             >
-                              <option value="PIX">PIX</option>
-                              <option value="Dinheiro">Dinheiro</option>
-                              <option value="Cartão">Cartão</option>
-                            </select>
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              Cobrar no Zap
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopyPaymentLink(p.id)}
+                              className="btn-admin-secondary px-3 py-1.5 text-xs font-bold rounded-[2px] inline-flex items-center gap-1"
+                            >
+                              {copiedPaymentId === p.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              ) : (
+                                <Link2 className="w-3.5 h-3.5" />
+                              )}
+                              {copiedPaymentId === p.id ? 'Copiado!' : 'Link'}
+                            </button>
+
+                            <a
+                              href={`/mensalidade/${p.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 rounded-[2px] border text-[var(--text-muted)] hover:text-[var(--brand)]"
+                              title="Ver Tela de Pagamento"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
                           </div>
-                          <button
-                            type="button"
-                            id={`btn-mobile-receber-${p.id}`}
-                            onClick={() => handleMarkPaid(p.id)}
-                            disabled={isPending}
-                            className="btn-admin-primary px-4 py-1.5 text-xs font-bold rounded-[2px] cursor-pointer flex-1 text-center justify-center"
-                          >
-                            Confirmar
-                          </button>
+
+                          {/* Baixa Manual */}
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+                            <div className="flex-1">
+                              <select
+                                id={`mobile-method-select-${p.id}`}
+                                value={selectedMethod}
+                                onChange={(e) =>
+                                  setSelectedMethods((prev) => ({
+                                    ...prev,
+                                    [p.id]: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-2 py-1.5 rounded-[2px] text-xs font-semibold focus:outline-none"
+                                style={{
+                                  background: 'var(--bg-subtle)',
+                                  border: '1px solid var(--border)',
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                <option value="PIX">PIX</option>
+                                <option value="Dinheiro">Dinheiro</option>
+                                <option value="Cartão">Cartão</option>
+                              </select>
+                            </div>
+                            <button
+                              type="button"
+                              id={`btn-mobile-receber-${p.id}`}
+                              onClick={() => handleMarkPaid(p.id)}
+                              disabled={isPending}
+                              className="btn-admin-primary px-4 py-1.5 text-xs font-bold rounded-[2px] cursor-pointer text-center justify-center"
+                            >
+                              Baixa Manual
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

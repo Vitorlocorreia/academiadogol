@@ -253,6 +253,55 @@ export default async function CampoDetailPage({ params }: Props) {
             )}
           </div>
 
+          {/* Card Especial: Quer ser Mensalista? */}
+          <div
+            className="p-6 rounded-[4px] border space-y-4 shadow-sm"
+            style={{
+              background: 'var(--bg-card)',
+              borderColor: 'var(--brand-ring)',
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[2px] bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)] inline-block">
+                  Contratos Fixos
+                </span>
+                <h3
+                  className="text-xl font-black uppercase tracking-wider"
+                  style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Quer ser mensalista no {field.name}?
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Garanta o mesmo dia e horário fixo para a sua turma toda semana, sem risco de perder a vaga. Descontos especiais na mensalidade e controle online.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <a
+                href={`https://wa.me/5581999096142?text=${encodeURIComponent(
+                  `Olá! Tenho interesse em ser mensalista no campo ${field.name} da Academia do Gol toda semana. Quais horários fixos estão disponíveis?`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-admin-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-[2px] inline-flex items-center gap-2"
+              >
+                <span>Solicitar Vaga de Mensalista no Zap</span>
+              </a>
+
+              <a
+                href="/reserva/consultar"
+                className="btn-admin-secondary px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-[2px] inline-flex items-center gap-1.5"
+              >
+                <span>Já sou mensalista • Pagar Mensalidade</span>
+              </a>
+            </div>
+          </div>
+
           {/* Localização do Campo */}
           {field.maps_url && (
             <FieldLocation mapsUrl={field.maps_url} name={field.name} />

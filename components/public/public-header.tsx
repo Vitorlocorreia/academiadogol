@@ -27,7 +27,7 @@ function Instagram({ className }: { className?: string }) {
 const NAV_LINKS = [
   { href: '/#campos', label: 'Campos' },
   { href: '/campos', label: 'Ver Todos os Campos' },
-  { href: '/reserva/consultar', label: 'Minha Reserva' },
+  { href: '/reserva/consultar', label: 'Reservas & Mensalistas' },
 ]
 
 const CONTACT_LINKS = [
@@ -146,10 +146,10 @@ export function PublicHeader() {
               </Link>
               <Link
                 href="/reserva/consultar"
-                className="text-sm font-medium transition-opacity hover:opacity-70"
-                style={{ color: 'var(--text-secondary)' }}
+                className="text-sm font-semibold transition-opacity hover:opacity-70 flex items-center gap-1.5"
+                style={{ color: 'var(--brand)' }}
               >
-                Minha Reserva
+                <span>Reservas & Mensalidades</span>
               </Link>
             </nav>
 

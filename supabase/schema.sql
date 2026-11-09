@@ -108,10 +108,16 @@ CREATE TABLE IF NOT EXISTS public.fixed_payments (
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
   payment_method text,
   paid_at timestamptz,
+  asaas_charge_id text,
+  pix_copy_paste text,
+  pix_qr_code_url text,
+  invoice_url text,
+  due_date date,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_fixed_payments_contract ON public.fixed_payments(contract_id);
+CREATE INDEX IF NOT EXISTS idx_fixed_payments_asaas ON public.fixed_payments(asaas_charge_id);
 
 -- 7. Settings
 CREATE TABLE IF NOT EXISTS public.settings (

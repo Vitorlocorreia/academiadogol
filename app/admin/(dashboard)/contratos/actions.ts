@@ -474,3 +474,48 @@ export async function updateContractOrganizersAction(
   revalidatePath('/admin/agenda')
   return { success: true }
 }
+
+// Gera cobrança e PIX online no Asaas para uma mensalidade
+export async function generateContractPaymentPixAction(paymentId: string) {
+  try {
+    const { getOrGenerateContractPix } = await import('@/lib/asaas/client')
+    const pix = await getOrGenerateContractPix(paymentId)
+    return { success: true, pix }
+  } catch (err: any) {
+    return { error: err.message || 'Erro ao gerar PIX da mensalidade' }
+  }
+}
+
+// Verifica ativamente o status de pagamento da mensalidade no Asaas
+export async function checkContractPaymentStatusAction(paymentId: string) {
+  const { supabase } = await requireAdmin()
+  const { data: payment } = await supabase
+    .from('fixed_payments')
+    .select('id, status, asaas_charge_id, contract_id')
+    .eq('id', paymentId)
+    .single()
+
+  if (!payment) return { error: 'Mensalidade não encontrada' }
+  if (payment.status === 'paid') return { isPaid: true }
+
+  if (payment.asaas_charge_id) {
+    const { checkAsaasPaymentStatus } = await import('@/lib/asaas/client')
+    const check = await checkAsaasPaymentStatus(payment.asaas_charge_id)
+    if (check.isPaid) {
+      await supabase
+        .from('fixed_payments')
+        .update({
+          status: 'paid',
+          payment_method: 'PIX (Asaas)',
+          paid_at: new Date().toISOString(),
+        })
+        .eq('id', paymentId)
+
+      revalidatePath(`/admin/contratos/${payment.contract_id}`)
+      revalidatePath('/admin/financeiro')
+      return { isPaid: true }
+    }
+  }
+
+  return { isPaid: false }
+}

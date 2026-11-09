@@ -460,7 +460,36 @@ export async function consultBookingAction(
     .order('date', { ascending: false })
     .limit(10)
 
-  return { error: '', bookings: bookings ?? [] }
+  // Busca contratos fixos de mensalista e suas mensalidades
+  const { data: contracts } = await supabase
+    .from('fixed_contracts')
+    .select(`
+      id,
+      day_of_week,
+      start_time,
+      end_time,
+      duration_minutes,
+      monthly_amount,
+      is_active,
+      field:fields(name),
+      payments:fixed_payments(
+        id,
+        reference_month,
+        amount,
+        status,
+        paid_at,
+        payment_method
+      )
+    `)
+    .in('customer_id', customerIds)
+    .order('created_at', { ascending: false })
+
+  const hasAny = (bookings && bookings.length > 0) || (contracts && contracts.length > 0)
+  if (!hasAny) {
+    return { error: 'Nenhuma reserva ou contrato de mensalista encontrado para este telefone.', bookings: [], contracts: [] }
+  }
+
+  return { error: '', bookings: bookings ?? [], contracts: contracts ?? [] }
 }
 
 // Busca uma reserva específica pelo ID (com joins de campo e cliente)
@@ -600,4 +629,41 @@ export async function checkBookingStatusAction(bookingId: string) {
     status: data.status,
     depositStatus: data.deposit_status,
   }
+}
+
+// Consulta em tempo real o status de pagamento de uma mensalidade de mensalista
+export async function checkContractPaymentPublicAction(paymentId: string) {
+  const supabase = createAdminClient()
+  const { data: payment, error } = await supabase
+    .from('fixed_payments')
+    .select('id, status, paid_at, payment_method, asaas_charge_id')
+    .eq('id', paymentId)
+    .single()
+
+  if (error || !payment) return { isPaid: false }
+  if (payment.status === 'paid') return { isPaid: true, paidAt: payment.paid_at }
+
+  if (payment.asaas_charge_id) {
+    try {
+      const { checkAsaasPaymentStatus } = await import('@/lib/asaas/client')
+      const check = await checkAsaasPaymentStatus(payment.asaas_charge_id)
+      if (check.isPaid) {
+        await supabase
+          .from('fixed_payments')
+          .update({
+            status: 'paid',
+            payment_method: 'PIX (Asaas)',
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', paymentId)
+
+        revalidatePath(`/mensalidade/${paymentId}`)
+        return { isPaid: true, paidAt: new Date().toISOString() }
+      }
+    } catch (err) {
+      console.error('[checkContractPaymentPublicAction] Erro Asaas:', err)
+    }
+  }
+
+  return { isPaid: false }
 }

@@ -23,10 +23,10 @@ export default function ConsultarReservasPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Minhas Reservas
+            Minhas Reservas & Mensalidades
           </h1>
           <p className="text-xs font-semibold uppercase tracking-wider mt-2" style={{ color: 'var(--text-secondary)' }}>
-            Digite seu telefone cadastrado para consultar e acessar os detalhes de suas reservas.
+            Digite seu telefone cadastrado para consultar reservas avulsas e pagar a mensalidade do seu racha via PIX.
           </p>
         </div>
 

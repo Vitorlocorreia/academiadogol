@@ -396,15 +396,19 @@ export function AgendaGrid({
                           </div>
                         )
                       ) : (
-                        /* Botão para criar */
+                        /* Botão para criar reserva rápida ou bloqueio */
                         <button
                           onClick={() => openModal(f.id, slotTime)}
-                          className="w-full h-full rounded-[2px] border border-dashed transition-all flex items-center justify-center cursor-pointer text-transparent hover:text-[var(--brand)]"
+                          className="w-full h-full rounded-[2px] border border-dashed transition-all flex items-center justify-center cursor-pointer hover:bg-[var(--brand-subtle)] hover:border-[var(--brand)] group/slot py-2"
                           style={{
                             borderColor: 'var(--border)',
                           }}
+                          title={`Agendar ou bloquear no ${f.name} às ${slotTime}`}
                         >
-                          <Plus className="w-4 h-4" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] group-hover/slot:text-[var(--brand)] flex items-center gap-1 opacity-60 group-hover/slot:opacity-100 transition-opacity">
+                            <Plus className="w-3.5 h-3.5" />
+                            Livre
+                          </span>
                         </button>
                       )}
                     </td>

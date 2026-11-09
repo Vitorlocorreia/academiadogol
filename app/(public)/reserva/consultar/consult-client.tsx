@@ -4,7 +4,9 @@ import { useActionState } from 'react'
 import { consultBookingAction } from '@/app/(public)/actions'
 import Link from 'next/link'
 
-const INIT = { error: '', bookings: [] as any[] }
+const INIT = { error: '', bookings: [] as any[], contracts: [] as any[] }
+
+const DAYS_OF_WEEK_SHORT = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
 export function ConsultClient() {
   const [state, formAction, isPending] = useActionState(
@@ -13,6 +15,7 @@ export function ConsultClient() {
       return {
         error: res.error,
         bookings: (res.bookings as any[]) ?? [],
+        contracts: (res.contracts as any[]) ?? [],
       }
     },
     INIT
@@ -140,7 +143,117 @@ export function ConsultClient() {
         </div>
       )}
 
-      {/* Lista de Reservas */}
+      {/* Lista de Contratos de Mensalistas */}
+      {!isPending && state.contracts && state.contracts.length > 0 && (
+        <div className="space-y-4">
+          <h3
+            className="uppercase tracking-wider font-bold flex items-center gap-2"
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: '1.4rem',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span>Seus Horários Fixos (Mensalista)</span>
+            <span className="text-xs px-2 py-0.5 rounded-[2px] bg-[var(--brand-subtle)] text-[var(--brand)] font-sans font-bold border border-[var(--brand-ring)]">
+              {state.contracts.length} {state.contracts.length === 1 ? 'Contrato' : 'Contratos'}
+            </span>
+          </h3>
+
+          <div className="grid grid-cols-1 gap-4 animate-fade-in">
+            {state.contracts.map((c: any) => {
+              const pendingPayment = c.payments?.find((p: any) => p.status === 'pending')
+              const latestPaid = c.payments?.find((p: any) => p.status === 'paid')
+              const dayName = DAYS_OF_WEEK_SHORT[c.day_of_week] || 'Dia'
+
+              return (
+                <div
+                  key={c.id}
+                  className="p-5 flex flex-col justify-between gap-4"
+                  style={{
+                    background: 'var(--bg-card-alt)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="uppercase tracking-wide font-black"
+                          style={{
+                            fontFamily: "'Bebas Neue', sans-serif",
+                            fontSize: '1.35rem',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {c.field?.name}
+                        </span>
+                        <span className="px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider rounded-[2px] bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                          Mensalista
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] mt-1">
+                        <span>Toda {dayName}</span>
+                        <span>•</span>
+                        <span className="font-mono">{c.start_time.substring(0, 5)} às {c.end_time.substring(0, 5)} ({c.duration_minutes} min)</span>
+                      </div>
+                    </div>
+
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] uppercase font-bold block" style={{ color: 'var(--text-muted)' }}>
+                        Mensalidade
+                      </span>
+                      <span className="text-lg font-black font-mono text-[var(--brand)]">
+                        R$ {Number(c.monthly_amount).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bloco de Mensalidade do Mês */}
+                  {pendingPayment ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-[2px] bg-amber-500/10 border border-amber-500/30">
+                      <div>
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block">
+                          Mensalidade Aberta ({pendingPayment.reference_month})
+                        </span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                          Valor a pagar: R$ {Number(pendingPayment.amount).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                      <Link
+                        href={`/mensalidade/${pendingPayment.id}`}
+                        className="btn-admin-primary px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-[2px] text-center"
+                      >
+                        Pagar Mensalidade via PIX →
+                      </Link>
+                    </div>
+                  ) : latestPaid ? (
+                    <div className="flex items-center justify-between p-3 rounded-[2px] bg-[var(--brand-subtle)] border border-[var(--brand-ring)]">
+                      <span className="text-xs font-bold text-[var(--brand)]">
+                        ✓ Mensalidade de {latestPaid.reference_month} quitada!
+                      </span>
+                      <Link
+                        href={`/mensalidade/${latestPaid.id}`}
+                        className="text-xs font-bold text-[var(--brand)] hover:underline"
+                      >
+                        Ver Quitação →
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-xs italic" style={{ color: 'var(--text-muted)' }}>
+                      Nenhuma mensalidade pendente no momento.
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Lista de Reservas Avulsas */}
       {!isPending && state.bookings.length > 0 && (
         <div className="space-y-4">
           <h3
