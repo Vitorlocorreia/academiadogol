@@ -152,16 +152,16 @@ export default async function CampoDetailPage({ params }: Props) {
           >
             <div>
               <h2
-                className="uppercase tracking-wider font-bold"
+                className="uppercase tracking-wider font-bold text-black"
                 style={{
                   fontFamily: "'Bebas Neue', sans-serif",
                   fontSize: '1.35rem',
-                  color: 'var(--text-primary)',
+                  color: '#000000',
                 }}
               >
                 Tabela de Valores & Pacotes
               </h2>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-black font-medium mt-1" style={{ color: '#000000' }}>
                 Garantia imediata do horário pagando apenas o sinal via PIX no site.
               </p>
             </div>
@@ -169,9 +169,9 @@ export default async function CampoDetailPage({ params }: Props) {
             {/* 1. Aluguel de Quadra Normal */}
             {jogoPackages.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-zinc-800">
+                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200">
                   <span className="text-sm">⚽</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-white">
+                  <span className="text-xs font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                     Aluguel de Quadra (Horário Normal / Jogo)
                   </span>
                 </div>
@@ -179,27 +179,28 @@ export default async function CampoDetailPage({ params }: Props) {
                   {jogoPackages.map((pkg) => (
                     <div
                       key={pkg.id}
-                      className="flex items-center justify-between pb-2.5 border-b border-zinc-800/40"
+                      className="flex items-center justify-between pb-2.5 border-b border-zinc-200/60"
                     >
                       <div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+                        <span className="text-sm font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                           {pkg.name}
                         </span>
-                        <span className="block text-[11px] text-zinc-500 font-medium">
+                        <span className="block text-[11px] text-black font-medium" style={{ color: '#000000' }}>
                           {pkg.duration_minutes} minutos de jogo
                         </span>
                       </div>
                       <div className="text-right">
                         <span
-                          className="font-black text-white"
+                          className="font-black text-black"
                           style={{
                             fontFamily: "'Bebas Neue', sans-serif",
                             fontSize: '1.4rem',
+                            color: '#000000',
                           }}
                         >
                           R$ {Number(pkg.total_price).toFixed(0)}
                         </span>
-                        <span className="block text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">
+                        <span className="block text-[11px] font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                           Sinal: R$ {Number(pkg.deposit_price).toFixed(0)}
                         </span>
                       </div>
@@ -212,9 +213,9 @@ export default async function CampoDetailPage({ params }: Props) {
             {/* 2. Festas de Aniversário & Eventos */}
             {festaPackages.length > 0 && (
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-2 pb-2 border-b border-purple-900/40">
+                <div className="flex items-center gap-2 pb-2 border-b border-zinc-200">
                   <span className="text-sm">🎂</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-purple-300">
+                  <span className="text-xs font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                     Festas de Aniversário & Eventos
                   </span>
                 </div>
@@ -222,27 +223,28 @@ export default async function CampoDetailPage({ params }: Props) {
                   {festaPackages.map((pkg) => (
                     <div
                       key={pkg.id}
-                      className="flex items-center justify-between pb-2.5 border-b border-zinc-800/40"
+                      className="flex items-center justify-between pb-2.5 border-b border-zinc-200/60"
                     >
                       <div>
-                        <span className="text-sm font-bold uppercase tracking-wider text-purple-200">
+                        <span className="text-sm font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                           {pkg.name}
                         </span>
-                        <span className="block text-[11px] text-zinc-500 font-medium">
+                        <span className="block text-[11px] text-black font-medium" style={{ color: '#000000' }}>
                           {pkg.duration_minutes / 60} horas de estrutura completa
                         </span>
                       </div>
                       <div className="text-right">
                         <span
-                          className="font-black text-white"
+                          className="font-black text-black"
                           style={{
                             fontFamily: "'Bebas Neue', sans-serif",
                             fontSize: '1.4rem',
+                            color: '#000000',
                           }}
                         >
                           R$ {Number(pkg.total_price).toFixed(0)}
                         </span>
-                        <span className="block text-[11px] font-bold uppercase tracking-wider text-purple-400">
+                        <span className="block text-[11px] font-black uppercase tracking-wider text-black" style={{ color: '#000000' }}>
                           Sinal: R$ {Number(pkg.deposit_price).toFixed(0)}
                         </span>
                       </div>
@@ -263,19 +265,22 @@ export default async function CampoDetailPage({ params }: Props) {
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[2px] bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)] inline-block">
+                <span 
+                  className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-[2px] bg-zinc-100 text-black border border-zinc-300 inline-block"
+                  style={{ color: '#000000' }}
+                >
                   Contratos Fixos
                 </span>
                 <h3
-                  className="text-xl font-black uppercase tracking-wider"
+                  className="text-xl font-black uppercase tracking-wider text-black"
                   style={{
                     fontFamily: "'Bebas Neue', sans-serif",
-                    color: 'var(--text-primary)',
+                    color: '#000000',
                   }}
                 >
                   Quer ser mensalista no {field.name}?
                 </h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-xs leading-relaxed text-black font-medium" style={{ color: '#000000' }}>
                   Garanta o mesmo dia e horário fixo para a sua turma toda semana, sem risco de perder a vaga. Descontos especiais na mensalidade e controle online.
                 </p>
               </div>
