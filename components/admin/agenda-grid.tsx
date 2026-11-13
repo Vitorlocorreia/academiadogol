@@ -304,19 +304,25 @@ export function AgendaGrid({
                             className="w-full h-full rounded-[2px] p-2 text-xs flex flex-col justify-between border transition-all"
                             style={{
                               background:
-                                occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
+                                occupant.data.notes?.includes('[REPOSIÇÃO]')
+                                  ? 'rgba(59, 130, 246, 0.12)'
+                                  : occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
                                   ? 'rgba(147, 51, 234, 0.12)'
                                   : occupant.data.status === 'pending'
                                   ? 'rgba(245, 158, 11, 0.12)'
                                   : 'var(--brand-subtle)',
                               borderColor:
-                                occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
+                                occupant.data.notes?.includes('[REPOSIÇÃO]')
+                                  ? 'rgba(59, 130, 246, 0.35)'
+                                  : occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
                                   ? 'rgba(147, 51, 234, 0.35)'
                                   : occupant.data.status === 'pending'
                                   ? 'rgba(245, 158, 11, 0.3)'
                                   : 'var(--brand-ring)',
                               color:
-                                occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
+                                occupant.data.notes?.includes('[REPOSIÇÃO]')
+                                  ? '#2563eb'
+                                  : occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0
                                   ? '#9333ea'
                                   : occupant.data.status === 'pending'
                                   ? '#d97706'
@@ -325,9 +331,11 @@ export function AgendaGrid({
                           >
                             <div className="flex items-center justify-between font-bold">
                               <span className="truncate max-w-[80px] flex items-center gap-1">
-                                {(occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0) && (
+                                {occupant.data.notes?.includes('[REPOSIÇÃO]') ? (
+                                  <span className="text-[8px] px-1 py-0.2 rounded bg-blue-600 text-white font-black tracking-wider">REPOSIÇÃO</span>
+                                ) : (occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0) ? (
                                   <span className="text-[8px] px-1 py-0.2 rounded bg-purple-600 text-white font-black tracking-wider">CORTESIA</span>
-                                )}
+                                ) : null}
                                 <span className="truncate">{occupant.data.customer?.name}</span>
                               </span>
                               <button
@@ -488,7 +496,9 @@ export function AgendaGrid({
                         <div className="space-y-0.5">
                           <div className="font-bold flex items-center gap-1.5">
                             <span>{occupant.data.customer?.name}</span>
-                            {(occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0) ? (
+                            {occupant.data.notes?.includes('[REPOSIÇÃO]') ? (
+                              <span className="text-[9px] bg-blue-600 px-1 py-0.5 rounded-[2px] text-white font-black tracking-wider">REPOSIÇÃO</span>
+                            ) : (occupant.data.remaining_payment_method === 'Cortesia' || occupant.data.notes?.includes('[CORTESIA]') || Number(occupant.data.total_amount) === 0) ? (
                               <span className="text-[9px] bg-purple-600 px-1 py-0.5 rounded-[2px] text-white font-black tracking-wider">CORTESIA</span>
                             ) : occupant.data.status === 'pending' ? (
                               <span className="text-[9px] bg-amber-500/20 px-1 py-0.5 rounded-[2px] text-amber-600 dark:text-amber-400 border border-amber-500/30">Pend.</span>

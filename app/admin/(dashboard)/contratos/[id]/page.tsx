@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { getContractById, getContractPayments } from '../actions'
+import { getContractById, getContractPayments, getActiveFieldsForContract } from '../actions'
 import { ContractDetailsClient } from './details-client'
 
 interface Props {
@@ -18,7 +18,10 @@ export default async function ContratoDetalhesPage({ params }: Props) {
     notFound()
   }
 
-  const payments = await getContractPayments(id)
+  const [payments, fields] = await Promise.all([
+    getContractPayments(id),
+    getActiveFieldsForContract(),
+  ])
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -33,7 +36,7 @@ export default async function ContratoDetalhesPage({ params }: Props) {
       </Link>
 
       {/* Client Panel */}
-      <ContractDetailsClient contract={contract} initialPayments={payments} />
+      <ContractDetailsClient contract={contract} initialPayments={payments} fields={fields} />
     </div>
   )
 }

@@ -170,13 +170,40 @@ export async function createManualBookingAction(
   if (endMinutes > 24 * 60) {
     return { error: 'O horário de término não pode ultrapassar 00:00.' }
   }
-  const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+  const end_time = endMinutes === 24 * 60
+    ? '24:00'
+    : `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
 
   const isCourtesy = formData.get('is_courtesy') === 'true' || formData.get('is_courtesy') === 'on'
-  const total_amount = isCourtesy ? 0 : getFieldPrice(field.name, duration_minutes, field.hourly_rate)
-  const notesCombined = isCourtesy
-    ? `[CORTESIA] ${notes || 'Reserva gratuita concedida como cortesia.'}`.trim()
-    : (notes || null)
+  const isReposition = formData.get('is_reposition') === 'true' || formData.get('is_reposition') === 'on'
+
+  // Suporte a customização livre de valores pelo admin
+  const customTotal = formData.get('total_amount')
+  const customDeposit = formData.get('deposit_amount')
+  const isDepositPaid = formData.get('deposit_paid') !== 'false'
+
+  let total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
+  if (isCourtesy || isReposition) {
+    total_amount = 0
+  } else if (customTotal !== null && customTotal !== '') {
+    total_amount = Math.max(0, Number(customTotal))
+  }
+
+  let deposit_amount = total_amount
+  if (isCourtesy || isReposition) {
+    deposit_amount = 0
+  } else if (customDeposit !== null && customDeposit !== '') {
+    deposit_amount = Math.max(0, Math.min(total_amount, Number(customDeposit)))
+  }
+
+  const remaining_amount = Math.max(0, total_amount - deposit_amount)
+
+  let notesCombined = notes || ''
+  if (isCourtesy) {
+    notesCombined = `[CORTESIA] ${notesCombined || 'Reserva gratuita concedida como cortesia.'}`.trim()
+  } else if (isReposition) {
+    notesCombined = `[REPOSIÇÃO] ${notesCombined || 'Reserva gratuita concedida como reposição de pelada.'}`.trim()
+  }
 
   // Verifica conflito de horário na grade antes de inserir
   const occupied = await getOccupiedSlots(field_id, date)
@@ -200,7 +227,8 @@ export async function createManualBookingAction(
     return { error: 'Erro ao registrar cliente: ' + (custError?.message ?? 'erro desconhecido') }
   }
 
-  // Insere a reserva (em cortesia total_amount=0 e notes contendo [CORTESIA], remaining_payment_method nulo para respeitar a constraint do banco)
+  // Insere a reserva
+  const isFullPaid = remaining_amount === 0
   const { error: bookingError } = await supabase
     .from('bookings')
     .insert({
@@ -211,13 +239,13 @@ export async function createManualBookingAction(
       end_time,
       duration_minutes,
       total_amount,
-      deposit_amount: total_amount,
-      remaining_amount: 0,
+      deposit_amount,
+      remaining_amount,
       status: 'confirmed',
-      deposit_status: 'paid',
-      remaining_status: 'paid',
+      deposit_status: (isDepositPaid || isCourtesy || isReposition) ? 'paid' : 'pending',
+      remaining_status: isFullPaid ? 'paid' : 'pending',
       remaining_payment_method: null,
-      notes: notesCombined,
+      notes: notesCombined || null,
     })
 
   if (bookingError) {
@@ -236,11 +264,16 @@ export async function createBlockedSlotAction(
   const { supabase } = await requireAdmin()
 
   const is_recurring = formData.get('is_recurring') === 'true'
+  let rawEndTime = String(formData.get('end_time') || '')
+  if (rawEndTime === '00:00') {
+    rawEndTime = '24:00'
+  }
+
   const raw = {
     field_id: formData.get('field_id'),
     date: is_recurring ? null : formData.get('date'),
     start_time: formData.get('start_time'),
-    end_time: formData.get('end_time'),
+    end_time: rawEndTime,
     reason: formData.get('reason') ?? '',
     is_recurring,
     recur_day_of_week: is_recurring ? Number(formData.get('recur_day_of_week')) : null,

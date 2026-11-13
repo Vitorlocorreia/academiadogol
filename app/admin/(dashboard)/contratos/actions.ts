@@ -10,6 +10,7 @@ import { z } from 'zod'
 const contractSchema = z.object({
   customer_name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
   customer_phone: z.string().min(8, 'Telefone inválido').transform((val) => val.replace(/\D/g, '')),
+  customer_cpf: z.string().optional().or(z.literal('')).transform((val) => (val ? val.replace(/\D/g, '') : '')),
   customer_email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   secondary_name: z.string().optional().or(z.literal('')),
   secondary_phone: z.string().optional().or(z.literal('')).transform((val) => (val ? val.replace(/\D/g, '') : '')),
@@ -43,10 +44,19 @@ const contractSchema = z.object({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-// Calcula duração em minutos entre dois horários HH:MM
+// Normaliza horário de término tratando 00:00 como meia-noite (24:00)
+function normalizeEndTime(endTime: string): string {
+  if (endTime === '00:00') return '24:00'
+  return endTime
+}
+
+// Calcula duração em minutos entre dois horários HH:MM com suporte a meia-noite
 function calcDuration(start: string, end: string): number {
   const [sh, sm] = start.split(':').map(Number)
-  const [eh, em] = end.split(':').map(Number)
+  let [eh, em] = end.split(':').map(Number)
+  if (eh === 0 && em === 0 && (sh > 0 || sm > 0)) {
+    eh = 24
+  }
   return (eh * 60 + em) - (sh * 60 + sm)
 }
 
@@ -298,6 +308,7 @@ export async function createContractAction(
   const raw = {
     customer_name: formData.get('customer_name'),
     customer_phone: formData.get('customer_phone'),
+    customer_cpf: formData.get('customer_cpf') ?? '',
     customer_email: formData.get('customer_email') ?? '',
     secondary_name: formData.get('secondary_name') ?? '',
     secondary_phone: formData.get('secondary_phone') ?? '',
@@ -318,17 +329,20 @@ export async function createContractAction(
   const {
     customer_name,
     customer_phone,
+    customer_cpf,
     customer_email,
     secondary_name,
     secondary_phone,
     field_id,
     day_of_week,
     start_time,
-    end_time,
+    end_time: rawEndTime,
     monthly_amount,
     starts_at,
     ends_at,
   } = parsed.data
+
+  const end_time = rawEndTime === '00:00' ? '24:00' : rawEndTime
 
   if (start_time >= end_time) {
     return { error: 'O horário de início do 1º slot deve ser menor que o horário de término.' }
@@ -353,15 +367,16 @@ export async function createContractAction(
           if (!item.field_id || item.day_of_week === undefined || !item.start_time || !item.end_time) {
             return { error: `Preencha todos os campos da pelada adicional nº ${i + 2}.` }
           }
-          if (item.start_time >= item.end_time) {
+          const itemEnd = item.end_time === '00:00' ? '24:00' : item.end_time
+          if (item.start_time >= itemEnd) {
             return { error: `Na pelada adicional nº ${i + 2}, o início deve ser menor que o término.` }
           }
           additionalSlots.push({
             field_id: String(item.field_id),
             day_of_week: Number(item.day_of_week),
             start_time: String(item.start_time),
-            end_time: String(item.end_time),
-            duration_minutes: calcDuration(item.start_time, item.end_time),
+            end_time: itemEnd,
+            duration_minutes: calcDuration(item.start_time, itemEnd),
           })
         }
       }
@@ -390,6 +405,7 @@ export async function createContractAction(
       {
         phone: customer_phone,
         name: customer_name,
+        cpf: customer_cpf || null,
         email: customer_email || null,
       },
       { onConflict: 'phone' }
@@ -615,12 +631,13 @@ export async function generateNextMonthPaymentAction(
   return { success: true }
 }
 
-// Atualiza organizadores do contrato (1º e 2º organizador)
+// Atualiza organizadores do contrato (1º e 2º organizador, incluindo CPF/CNPJ)
 export async function updateContractOrganizersAction(
   contractId: string,
   data: {
     customer_name: string
     customer_phone: string
+    customer_cpf?: string
     customer_email?: string
     secondary_name?: string
     secondary_phone?: string
@@ -647,6 +664,7 @@ export async function updateContractOrganizersAction(
       .update({
         name: data.customer_name.trim(),
         phone: cleanPhone,
+        cpf: data.customer_cpf?.trim() || null,
         email: data.customer_email?.trim() || null,
       })
       .eq('id', contract.customer_id)
@@ -682,6 +700,103 @@ export async function updateContractOrganizersAction(
 
   if (updErr) {
     return { error: 'Erro ao atualizar segundo organizador: ' + updErr.message }
+  }
+
+  revalidatePath(`/admin/contratos/${contractId}`)
+  revalidatePath('/admin/contratos')
+  revalidatePath('/admin/agenda')
+  return { success: true }
+}
+
+// Atualiza detalhes contratuais (vigência, valor e horários) e sincroniza bloqueios
+export async function updateContractDetailsAction(
+  contractId: string,
+  data: {
+    monthly_amount: number
+    starts_at: string
+    ends_at?: string | null
+    field_id?: string
+    day_of_week?: number
+    start_time?: string
+    end_time?: string
+  }
+) {
+  const { supabase } = await requireAdmin()
+
+  const { data: contract, error: fetchErr } = await supabase
+    .from('fixed_contracts')
+    .select('*, customer:customers(name)')
+    .eq('id', contractId)
+    .single()
+
+  if (fetchErr || !contract) {
+    return { error: 'Contrato não encontrado.' }
+  }
+
+  const starts_at = data.starts_at || contract.starts_at
+  const ends_at = data.ends_at !== undefined ? (data.ends_at || null) : contract.ends_at
+  const monthly_amount = Number(data.monthly_amount) >= 0 ? Number(data.monthly_amount) : contract.monthly_amount
+  const field_id = data.field_id || contract.field_id
+  const day_of_week = data.day_of_week !== undefined ? Number(data.day_of_week) : contract.day_of_week
+  let start_time = data.start_time || contract.start_time
+  let end_time = data.end_time || contract.end_time
+
+  if (end_time === '00:00') {
+    end_time = '24:00'
+  }
+
+  const duration_minutes = calcDuration(start_time, end_time)
+
+  // 1. Atualiza registro do contrato
+  const updatePayload: Record<string, any> = {
+    starts_at,
+    ends_at,
+    monthly_amount,
+    field_id,
+    day_of_week,
+    start_time,
+    end_time,
+    duration_minutes,
+  }
+
+  const { error: updErr } = await supabase
+    .from('fixed_contracts')
+    .update(updatePayload)
+    .eq('id', contractId)
+
+  if (updErr) {
+    return { error: 'Erro ao atualizar contrato: ' + updErr.message }
+  }
+
+  // 2. Sincroniza os bloqueios pontuais futuros correspondentes a este contrato
+  const todayBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+
+  // Remove bloqueios futuros antigos do cliente/contrato
+  if (contract.customer?.name) {
+    await supabase
+      .from('blocked_slots')
+      .delete()
+      .ilike('reason', `%Contrato Fixo%${contract.customer.name}%`)
+      .gte('date', todayBrt)
+  }
+
+  // Se o contrato estiver ativo, regera os bloqueios a partir da nova vigência
+  if (contract.is_active) {
+    const effectiveStart = starts_at > todayBrt ? starts_at : todayBrt
+    const dates = generateFutureDates(day_of_week, effectiveStart, ends_at)
+    const newBlocks = dates.map((d) => ({
+      field_id,
+      date: d,
+      start_time,
+      end_time,
+      reason: `Contrato Fixo — cliente ${contract.customer?.name || 'Mensalista'}`,
+      is_recurring: false,
+    }))
+
+    for (let i = 0; i < newBlocks.length; i += 100) {
+      const batch = newBlocks.slice(i, i + 100)
+      await supabase.from('blocked_slots').insert(batch)
+    }
   }
 
   revalidatePath(`/admin/contratos/${contractId}`)

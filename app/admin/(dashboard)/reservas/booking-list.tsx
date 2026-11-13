@@ -8,12 +8,14 @@ import {
   completeBookingAction, 
   adminCancelBookingAction,
   refundBookingDepositAction,
-  markBookingAsCortesiaAction
+  markBookingAsCortesiaAction,
+  markBookingAsReposicaoAction,
+  updateBookingAmountsAction,
 } from './actions'
 import { 
   Search, DollarSign, X, CheckSquare, Calendar, Clock, 
   ChevronDown, ChevronUp, Phone, Mail, User, Hash, MessageCircle,
-  RotateCcw, AlertTriangle
+  RotateCcw, AlertTriangle, Edit2, Loader2, Check
 } from 'lucide-react'
 
 interface BookingListProps {
@@ -64,6 +66,62 @@ export function BookingList({ initialBookings }: BookingListProps) {
   const [forceOverride, setForceOverride] = useState(false)
   const [refundReason, setRefundReason] = useState('')
   const [isRefunding, setIsRefunding] = useState(false)
+
+  // Estado para Edição de Valores e Sinal da Reserva
+  const [editingBooking, setEditingBooking] = useState<any | null>(null)
+  const [editTotalAmount, setEditTotalAmount] = useState('')
+  const [editDepositAmount, setEditDepositAmount] = useState('')
+  const [editDepositStatus, setEditDepositStatus] = useState<'pending' | 'paid'>('pending')
+  const [editRemainingStatus, setEditRemainingStatus] = useState<'pending' | 'paid'>('pending')
+  const [editPaymentMethod, setEditPaymentMethod] = useState<string>('pix_manual')
+  const [isSavingBooking, setIsSavingBooking] = useState(false)
+
+  const handleOpenEditBooking = (b: any) => {
+    setEditingBooking(b)
+    setEditTotalAmount(String(b.total_amount ?? 0))
+    setEditDepositAmount(String(b.deposit_amount ?? 0))
+    setEditDepositStatus(b.deposit_status === 'paid' ? 'paid' : 'pending')
+    setEditRemainingStatus(b.remaining_status === 'paid' ? 'paid' : 'pending')
+    setEditPaymentMethod(b.remaining_payment_method || 'pix_manual')
+  }
+
+  const handleSaveBookingAmounts = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingBooking) return
+    setIsSavingBooking(true)
+    try {
+      const res = await updateBookingAmountsAction(editingBooking.id, {
+        total_amount: Number(editTotalAmount) || 0,
+        deposit_amount: Number(editDepositAmount) || 0,
+        deposit_status: editDepositStatus,
+        remaining_status: editRemainingStatus,
+        remaining_payment_method: editRemainingStatus === 'paid' ? editPaymentMethod : null,
+      })
+      if (res?.error) {
+        alert(res.error)
+      } else {
+        setEditingBooking(null)
+        router.refresh()
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao atualizar valores da reserva.')
+    } finally {
+      setIsSavingBooking(false)
+    }
+  }
+
+  const handleMarkAsReposicao = (bookingId: string) => {
+    if (confirm('Deseja transformar esta reserva em REPOSIÇÃO DE PELADA (R$ 0,00)? O valor será zerado e ela ficará confirmada como Reposição.')) {
+      startTransition(async () => {
+        const res = await markBookingAsReposicaoAction(bookingId)
+        if (res.success) {
+          router.refresh()
+        } else {
+          alert(res.error)
+        }
+      })
+    }
+  }
 
   const filteredBookings = initialBookings.filter(b => {
     const s = search.toLowerCase()
@@ -179,6 +237,13 @@ export function BookingList({ initialBookings }: BookingListProps) {
   }
 
   const getStatusBadge = (status: string, depositStatus?: string, booking?: any) => {
+    if (booking?.notes?.includes('[REPOSIÇÃO]')) {
+      return (
+        <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-500 border border-blue-500/30">
+          🔄 Reposição
+        </span>
+      )
+    }
     if (booking?.remaining_payment_method === 'Cortesia' || booking?.remaining_payment_method === 'cortesia' || (Number(booking?.total_amount) === 0 && (status === 'confirmed' || status === 'completed'))) {
       return (
         <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
@@ -591,6 +656,28 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             <CheckSquare className="w-3.5 h-3.5" />
                             Concluir Partida
                           </button>
+                          {/* Editar Valores / Sinal / Pagamento */}
+                          <button
+                            onClick={() => handleOpenEditBooking(b)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--brand)] transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            title="Editar valor total, sinal ou registrar pagamento"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-[var(--brand)]" />
+                            Editar Valores / Pagamento
+                          </button>
+
+                          {b.status !== 'cancelled' && b.status !== 'completed' && !b.notes?.includes('[REPOSIÇÃO]') && (
+                            <button
+                              onClick={() => handleMarkAsReposicao(b.id)}
+                              disabled={isPending}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-blue-500/15 border border-blue-500/30 text-blue-500 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                              title="Marcar como reposição de pelada (R$ 0,00)"
+                            >
+                              <span>🔄</span>
+                              Marcar Reposição
+                            </button>
+                          )}
+
                           {b.status !== 'cancelled' && b.status !== 'completed' && b.remaining_payment_method !== 'Cortesia' && (
                             <button
                               onClick={() => handleMarkAsCortesia(b.id)}
@@ -839,6 +926,201 @@ export function BookingList({ initialBookings }: BookingListProps) {
           </div>
         )
       })()}
+
+      {/* Modal de Edição de Valores e Pagamento */}
+      {editingBooking && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div
+            className="rounded-lg p-6 max-w-md w-full space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]"
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div className="flex items-center justify-between pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
+                  <Edit2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 
+                    className="text-2xl font-black uppercase tracking-wider leading-none"
+                    style={{
+                      fontFamily: "'Bebas Neue', Arial Black, sans-serif",
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    Editar Valores / Pagamento
+                  </h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {editingBooking.customer?.name} • {editingBooking.field?.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingBooking(null)}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBookingAmounts} className="space-y-4">
+              {/* Data e hora */}
+              <div className="p-3 rounded text-xs flex justify-between" style={{ background: 'var(--bg-subtle)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Horário agendado:</span>
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {new Date(editingBooking.date + 'T12:00:00').toLocaleDateString('pt-BR')} das {editingBooking.start_time?.slice(0, 5)} às {editingBooking.end_time?.slice(0, 5)}
+                </span>
+              </div>
+
+              {/* Valores */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Valor Total (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editTotalAmount}
+                    onChange={(e) => setEditTotalAmount(e.target.value)}
+                    className="input-admin py-2 text-sm w-full font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Valor do Sinal (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editDepositAmount}
+                    onChange={(e) => setEditDepositAmount(e.target.value)}
+                    className="input-admin py-2 text-sm w-full font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Status do Sinal */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                  Status do Sinal (R$ {Number(editDepositAmount || 0).toFixed(2)})
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditDepositStatus('pending')}
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-all text-center ${
+                      editDepositStatus === 'pending'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                    }`}
+                  >
+                    ⏳ Pendente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditDepositStatus('paid')}
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-all text-center ${
+                      editDepositStatus === 'paid'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                    }`}
+                  >
+                    ✅ Sinal Pago
+                  </button>
+                </div>
+              </div>
+
+              {/* Status do Saldo Restante */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                  Saldo Restante (R$ {Math.max(0, (Number(editTotalAmount || 0) - Number(editDepositAmount || 0))).toFixed(2)})
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditRemainingStatus('pending')}
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-all text-center ${
+                      editRemainingStatus === 'pending'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                    }`}
+                  >
+                    ⏳ A Pagar no Balcão
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditRemainingStatus('paid')}
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-all text-center ${
+                      editRemainingStatus === 'paid'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                    }`}
+                  >
+                    ✅ Total Quitado
+                  </button>
+                </div>
+              </div>
+
+              {/* Forma de Pagamento se Restante Pago */}
+              {editRemainingStatus === 'paid' && (
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                    Forma de Pagamento do Saldo
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {[
+                      { id: 'pix_manual', label: '⚡ PIX' },
+                      { id: 'cash', label: '💵 Dinheiro' },
+                      { id: 'card_machine', label: '💳 Cartão' },
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setEditPaymentMethod(m.id)}
+                        className={`py-2 px-2 font-bold rounded border transition-all text-center ${
+                          editPaymentMethod === m.id
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500'
+                            : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ações */}
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingBooking(null)}
+                  disabled={isSavingBooking}
+                  className="btn-admin-secondary flex-1 text-center justify-center rounded-[2px]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingBooking}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-950 font-black text-xs uppercase tracking-wider rounded-[2px] flex-1 text-center justify-center flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+                >
+                  {isSavingBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>{isSavingBooking ? 'Salvando...' : 'Salvar Alterações'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

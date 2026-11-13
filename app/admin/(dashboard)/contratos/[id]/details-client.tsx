@@ -6,6 +6,7 @@ import {
   markPaymentPaidAction,
   generateNextMonthPaymentAction,
   updateContractOrganizersAction,
+  updateContractDetailsAction,
 } from '../actions'
 import {
   User,
@@ -26,6 +27,7 @@ import {
   Link2,
   Copy,
   Check,
+  Settings,
 } from 'lucide-react'
 
 // Tradução de dias da semana
@@ -69,6 +71,7 @@ interface Customer {
   id: string
   name: string
   phone: string
+  cpf?: string | null
   email: string | null
 }
 
@@ -116,9 +119,10 @@ interface Payment {
 interface Props {
   contract: Contract
   initialPayments: Payment[]
+  fields?: Field[]
 }
 
-export function ContractDetailsClient({ contract, initialPayments }: Props) {
+export function ContractDetailsClient({ contract, initialPayments, fields = [] }: Props) {
   const [payments, setPayments] = useState<Payment[]>(initialPayments)
   const [isActive, setIsActive] = useState(contract.is_active)
   const [errorMsg, setErrorMsg] = useState('')
@@ -129,12 +133,24 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
   // Estados dos Organizadores
   const [primaryName, setPrimaryName] = useState(contract.customer?.name || '')
   const [primaryPhone, setPrimaryPhone] = useState(contract.customer?.phone || '')
+  const [primaryCpf, setPrimaryCpf] = useState(contract.customer?.cpf || '')
   const [primaryEmail, setPrimaryEmail] = useState(contract.customer?.email || '')
   const [secondaryName, setSecondaryName] = useState(contract.secondary_organizer_name || '')
   const [secondaryPhone, setSecondaryPhone] = useState(contract.secondary_organizer_phone || '')
   const [isEditingOrganizers, setIsEditingOrganizers] = useState(false)
   const [isSavingOrganizers, setIsSavingOrganizers] = useState(false)
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null)
+
+  // Estados para Edição de Vigência e Horários
+  const [isEditingContract, setIsEditingContract] = useState(false)
+  const [isSavingContract, setIsSavingContract] = useState(false)
+  const [editStartsAt, setEditStartsAt] = useState(contract.starts_at || '')
+  const [editEndsAt, setEditEndsAt] = useState(contract.ends_at || '')
+  const [editMonthlyAmount, setEditMonthlyAmount] = useState(String(contract.monthly_amount ?? 0))
+  const [editFieldId, setEditFieldId] = useState(contract.field_id || '')
+  const [editDayOfWeek, setEditDayOfWeek] = useState(Number(contract.day_of_week ?? 0))
+  const [editStartTime, setEditStartTime] = useState(contract.start_time?.slice(0, 5) || '19:00')
+  const [editEndTime, setEditEndTime] = useState(contract.end_time?.slice(0, 5) || '20:30')
 
   const handleCopyPaymentLink = async (paymentId: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://academiadogol.vercel.app'
@@ -158,6 +174,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       const res = await updateContractOrganizersAction(contract.id, {
         customer_name: primaryName,
         customer_phone: primaryPhone,
+        customer_cpf: primaryCpf,
         customer_email: primaryEmail,
         secondary_name: secondaryName,
         secondary_phone: secondaryPhone,
@@ -172,6 +189,36 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
       setErrorMsg('Erro: ' + (err.message || 'Falha ao salvar'))
     } finally {
       setIsSavingOrganizers(false)
+    }
+  }
+
+  // Salvar vigência / horários do contrato
+  const handleSaveContractDetails = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSavingContract(true)
+    setErrorMsg('')
+    setSuccessMsg('')
+    try {
+      const res = await updateContractDetailsAction(contract.id, {
+        monthly_amount: Number(editMonthlyAmount) || 0,
+        starts_at: editStartsAt,
+        ends_at: editEndsAt || null,
+        field_id: editFieldId,
+        day_of_week: editDayOfWeek,
+        start_time: editStartTime,
+        end_time: editEndTime === '00:00' ? '24:00' : editEndTime,
+      })
+      if (res?.error) {
+        setErrorMsg('Erro ao salvar contrato: ' + res.error)
+      } else {
+        setSuccessMsg('Contrato atualizado com sucesso!')
+        setIsEditingContract(false)
+        window.location.reload()
+      }
+    } catch (err: any) {
+      setErrorMsg('Erro: ' + (err.message || 'Falha ao salvar'))
+    } finally {
+      setIsSavingContract(false)
     }
   }
 
@@ -285,32 +332,186 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                   : `Toda ${DAYS_OF_WEEK[contract.day_of_week]} no ${contract.field?.name}`}
               </h2>
             </div>
-            {isActive ? (
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
-                style={{
-                  background: 'var(--brand-subtle)',
-                  color: 'var(--brand)',
-                  border: '1px solid var(--brand-ring)',
-                }}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingContract(!isEditingContract)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[2px] text-xs font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)] hover:bg-[var(--brand)] hover:text-white transition-all cursor-pointer"
               >
-                <CheckCircle className="w-3 h-3 text-[var(--brand)]" />
-                Vigente
-              </span>
-            ) : (
-              <span
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
-                style={{
-                  background: 'var(--bg-subtle)',
-                  color: 'var(--text-muted)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <Ban className="w-3 h-3" />
-                Encerrado
-              </span>
-            )}
+                <Edit2 className="w-3.5 h-3.5" />
+                {isEditingContract ? 'Fechar Edição' : 'Editar Prazos / Valores'}
+              </button>
+
+              {isActive ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                  style={{
+                    background: 'var(--brand-subtle)',
+                    color: 'var(--brand)',
+                    border: '1px solid var(--brand-ring)',
+                  }}
+                >
+                  <CheckCircle className="w-3 h-3 text-[var(--brand)]" />
+                  Vigente
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                  style={{
+                    background: 'var(--bg-subtle)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <Ban className="w-3 h-3" />
+                  Encerrado
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Formulário de Edição de Prazos, Vigência e Horários */}
+          {isEditingContract && (
+            <form onSubmit={handleSaveContractDetails} className="p-4 rounded-[4px] border space-y-4 bg-[var(--bg-subtle)] border-[var(--brand-ring)]">
+              <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border)' }}>
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--brand)] flex items-center gap-1.5">
+                  <Settings className="w-4 h-4" />
+                  Editar Vigência, Prazos e Condições do Contrato
+                </span>
+                <span className="text-[11px] text-[var(--text-muted)]">
+                  Os bloqueios futuros da agenda serão sincronizados automaticamente
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Data de Início (Vigência) *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editStartsAt}
+                    onChange={(e) => setEditStartsAt(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Data de Término (Opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={editEndsAt}
+                    onChange={(e) => setEditEndsAt(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono"
+                  />
+                  <span className="text-[10px] text-[var(--text-muted)] block mt-0.5">Vazio = indeterminado</span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Valor Mensal (R$) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editMonthlyAmount}
+                    onChange={(e) => setEditMonthlyAmount(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono font-bold"
+                  />
+                  <span className="text-[10px] text-[var(--text-muted)] block mt-0.5">0 = cortesia</span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Campo Principal
+                  </label>
+                  <select
+                    value={editFieldId}
+                    onChange={(e) => setEditFieldId(e.target.value)}
+                    className="input-admin py-1.5 text-xs"
+                  >
+                    {fields.length > 0 ? (
+                      fields.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={contract.field_id}>{contract.field?.name || 'Campo atual'}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-1">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Dia da Semana *
+                  </label>
+                  <select
+                    value={editDayOfWeek}
+                    onChange={(e) => setEditDayOfWeek(Number(e.target.value))}
+                    className="input-admin py-1.5 text-xs"
+                  >
+                    {DAYS_OF_WEEK.map((label, idx) => (
+                      <option key={idx} value={idx}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Horário Início *
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    Horário Término * (suporta 00:00)
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    className="input-admin py-1.5 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={isSavingContract}
+                  className="btn-admin-primary py-1.5 px-4 text-xs font-bold rounded-[2px] flex items-center gap-1.5"
+                >
+                  {isSavingContract ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                  Salvar Alterações do Contrato
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingContract(false)}
+                  className="btn-admin-secondary py-1.5 px-3 text-xs font-bold rounded-[2px]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
 
           <div
             className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 text-sm"
@@ -486,6 +687,18 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
+                    CPF ou CNPJ (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={primaryCpf}
+                    onChange={(e) => setPrimaryCpf(e.target.value)}
+                    placeholder="Ex: 000.000.000-00 ou CNPJ"
+                    className="input-admin py-1.5 text-xs font-mono w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>
                     E-mail (opcional)
                   </label>
                   <input
@@ -572,6 +785,11 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                     <span className="text-xs font-medium font-mono" style={{ color: 'var(--text-secondary)' }}>
                       {primaryPhone}
                     </span>
+                    {primaryCpf && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--bg-subtle)] border text-[var(--text-muted)]">
+                        CPF/CNPJ: {primaryCpf}
+                      </span>
+                    )}
                     {primaryPhone && (
                       <a
                         href={`https://wa.me/55${primaryPhone.replace(/\D/g, '')}`}

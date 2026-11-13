@@ -149,7 +149,24 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
+              <label
+                htmlFor="customer_cpf"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                CPF ou CNPJ (opcional)
+              </label>
+              <input
+                type="text"
+                id="customer_cpf"
+                name="customer_cpf"
+                className="input-admin font-mono"
+                placeholder="Ex: 000.000.000-00 ou CNPJ"
+              />
+            </div>
+
+            <div>
               <label
                 htmlFor="customer_email"
                 className="block text-xs font-semibold uppercase mb-1.5"

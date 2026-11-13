@@ -3,7 +3,7 @@
 import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-const ALLOWED_METHODS = ['pix_manual', 'cash', 'card_machine', 'cortesia'] as const
+const ALLOWED_METHODS = ['pix_manual', 'cash', 'card_machine', 'cortesia', 'reposicao'] as const
 
 // Marcar reserva como cortesia (100% gratuita)
 export async function markBookingAsCortesiaAction(bookingId: string) {
@@ -36,6 +36,107 @@ export async function markBookingAsCortesiaAction(bookingId: string) {
     .eq('id', bookingId)
 
   if (error) return { error: error.message }
+
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/agenda')
+  return { success: true }
+}
+
+// Marcar reserva como reposição de pelada (100% gratuita)
+export async function markBookingAsReposicaoAction(bookingId: string) {
+  const { supabase } = await requireAdmin()
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('notes')
+    .eq('id', bookingId)
+    .single()
+
+  const existingNotes = booking?.notes || ''
+  const updatedNotes = existingNotes.includes('[REPOSIÇÃO]')
+    ? existingNotes
+    : `[REPOSIÇÃO] ${existingNotes}`.trim()
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      total_amount: 0,
+      deposit_amount: 0,
+      remaining_amount: 0,
+      status: 'confirmed',
+      deposit_status: 'paid',
+      remaining_status: 'paid',
+      remaining_payment_method: null,
+      notes: updatedNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/agenda')
+  return { success: true }
+}
+
+// Atualizar valores ou pagamentos de uma reserva pelo admin
+export async function updateBookingAmountsAction(
+  bookingId: string,
+  data: {
+    total_amount?: number
+    deposit_amount?: number
+    deposit_status?: 'pending' | 'paid'
+    remaining_status?: 'pending' | 'paid'
+    remaining_payment_method?: string | null
+    notes?: string
+  }
+) {
+  const { supabase } = await requireAdmin()
+
+  const { data: current, error: fetchErr } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .single()
+
+  if (fetchErr || !current) {
+    return { error: 'Reserva não encontrada.' }
+  }
+
+  const total_amount = data.total_amount !== undefined ? Math.max(0, Number(data.total_amount)) : Number(current.total_amount)
+  const deposit_amount = data.deposit_amount !== undefined ? Math.max(0, Math.min(total_amount, Number(data.deposit_amount))) : Number(current.deposit_amount)
+  const remaining_amount = Math.max(0, total_amount - deposit_amount)
+
+  const deposit_status = data.deposit_status ?? current.deposit_status
+  const remaining_status = remaining_amount === 0 ? 'paid' : (data.remaining_status ?? current.remaining_status)
+
+  let remaining_payment_method = data.remaining_payment_method !== undefined ? data.remaining_payment_method : current.remaining_payment_method
+  if (!['pix_manual', 'cash', 'card_machine'].includes(remaining_payment_method as any)) {
+    remaining_payment_method = null
+  }
+
+  const payload: Record<string, any> = {
+    total_amount,
+    deposit_amount,
+    remaining_amount,
+    deposit_status,
+    remaining_status,
+    remaining_payment_method,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (data.notes !== undefined) {
+    payload.notes = data.notes.trim() || null
+  }
+
+  const { error: updErr } = await supabase
+    .from('bookings')
+    .update(payload)
+    .eq('id', bookingId)
+
+  if (updErr) {
+    return { error: 'Erro ao atualizar reserva: ' + updErr.message }
+  }
 
   revalidatePath('/admin/reservas')
   revalidatePath('/admin/agenda')
