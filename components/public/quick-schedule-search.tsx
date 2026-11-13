@@ -166,16 +166,6 @@ export function QuickScheduleSearch() {
                   >
                     Encontre um Campo Livre
                   </h2>
-                  <span
-                    className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] text-[10px] font-bold uppercase tracking-widest"
-                    style={{
-                      background: 'var(--brand-subtle)',
-                      color: 'var(--brand)',
-                    }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-                    Tempo real
-                  </span>
                 </div>
                 <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                   Escolha o dia, o horário e a duração para ver na hora quais campos estão disponíveis.
