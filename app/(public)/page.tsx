@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { getActiveFields } from './actions'
 import { CampoCard } from '@/components/public/campo-card'
 import { QuickScheduleSearch } from '@/components/public/quick-schedule-search'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Search } from 'lucide-react'
 
 function Instagram({ className }: { className?: string }) {
   return (
@@ -120,7 +120,7 @@ export default async function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <a
               href="#busca-rapida"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:opacity-90 hover:-translate-y-px"
+              className="inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:opacity-90 hover:-translate-y-px"
               style={{
                 background: 'var(--brand)',
                 borderRadius: '2px',
@@ -128,7 +128,8 @@ export default async function HomePage() {
                 boxShadow: '0 8px 32px rgba(26,107,46,0.4)',
               }}
             >
-              ⚡ Buscar Horário Rápido
+              <Search className="w-4 h-4" />
+              Buscar Horário Rápido
             </a>
             <a
               href="#campos"
@@ -140,7 +141,7 @@ export default async function HomePage() {
                 letterSpacing: '0.1em',
               }}
             >
-              ⚽ Ver Todos os Campos
+              Ver Todos os Campos →
             </a>
           </div>
 
