@@ -40,7 +40,7 @@ export default async function HomePage() {
       {/* ─── HERO ─────────────────────────────────────────────────── */}
       <section
         className="relative overflow-hidden flex items-center"
-        style={{ height: 'calc(100svh - 64px)', minHeight: '500px' }}
+        style={{ minHeight: 'calc(100svh - 64px)' }}
       >
         {/* Imagem de fundo */}
         <div className="absolute inset-0 z-0">
@@ -69,7 +69,7 @@ export default async function HomePage() {
           </svg>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 w-full py-24">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 w-full pt-12 pb-28 sm:pt-16 sm:pb-32">
           {/* Pré-título */}
           <div
             className="inline-flex items-center gap-2 mb-4 px-3 py-1"
@@ -147,7 +147,7 @@ export default async function HomePage() {
 
           {/* Stats */}
           <div
-            className="flex gap-8 mt-12 pt-6"
+            className="flex gap-8 mt-8 sm:mt-10 pt-6"
             style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
           >
             {[

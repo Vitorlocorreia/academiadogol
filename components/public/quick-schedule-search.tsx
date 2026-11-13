@@ -129,7 +129,7 @@ export function QuickScheduleSearch() {
     <section
       id="busca-rapida"
       aria-label="Busca rápida de horários disponíveis"
-      className="relative z-20 -mt-10 sm:-mt-14 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
+      className="relative z-20 -mt-8 sm:-mt-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
     >
       <div
         className="rounded-[4px] border overflow-hidden transition-all"
