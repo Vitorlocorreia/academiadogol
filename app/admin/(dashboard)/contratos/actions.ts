@@ -293,6 +293,8 @@ export async function createContractAction(
 ) {
   const { supabase } = await requireAdmin()
 
+  const isCourtesyInput = formData.get('is_courtesy') === 'true' || formData.get('is_courtesy') === 'on'
+
   const raw = {
     customer_name: formData.get('customer_name'),
     customer_phone: formData.get('customer_phone'),
@@ -303,7 +305,7 @@ export async function createContractAction(
     day_of_week: formData.get('day_of_week'),
     start_time: formData.get('start_time'),
     end_time: formData.get('end_time'),
-    monthly_amount: formData.get('monthly_amount'),
+    monthly_amount: isCourtesyInput ? (formData.get('monthly_amount') || '0') : formData.get('monthly_amount'),
     starts_at: formData.get('starts_at'),
     ends_at: formData.get('ends_at') ?? '',
   }
@@ -437,8 +439,7 @@ export async function createContractAction(
   // Se der erro por ausência da coluna schedules no banco, insere o baseContractData normalmente
   if (
     contractResult.error &&
-    contractResult.error.message.includes('column') &&
-    contractResult.error.message.includes('schedules')
+    contractResult.error.message.toLowerCase().includes('schedules')
   ) {
     contractResult = await supabase
       .from('fixed_contracts')

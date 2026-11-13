@@ -29,7 +29,7 @@ export async function markBookingAsCortesiaAction(bookingId: string) {
       status: 'confirmed',
       deposit_status: 'paid',
       remaining_status: 'paid',
-      remaining_payment_method: 'Cortesia',
+      remaining_payment_method: null,
       notes: updatedNotes,
       updated_at: new Date().toISOString(),
     })
@@ -123,13 +123,21 @@ export async function confirmRemainingPaymentAction(bookingId: string, method: s
     return { error: 'Método de pagamento inválido.' }
   }
 
+  const isCortesia = method === 'cortesia' || method === 'Cortesia'
+
+  const updatePayload: Record<string, any> = {
+    remaining_status: 'paid',
+    remaining_payment_method: isCortesia ? null : method,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (isCortesia) {
+    updatePayload.remaining_amount = 0
+  }
+
   const { error } = await supabase
     .from('bookings')
-    .update({
-      remaining_status: 'paid',
-      remaining_payment_method: method,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', bookingId)
 
   if (error) {

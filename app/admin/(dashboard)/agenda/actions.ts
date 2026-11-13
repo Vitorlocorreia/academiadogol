@@ -200,7 +200,7 @@ export async function createManualBookingAction(
     return { error: 'Erro ao registrar cliente: ' + (custError?.message ?? 'erro desconhecido') }
   }
 
-  // Insere a reserva
+  // Insere a reserva (em cortesia total_amount=0 e notes contendo [CORTESIA], remaining_payment_method nulo para respeitar a constraint do banco)
   const { error: bookingError } = await supabase
     .from('bookings')
     .insert({
@@ -216,7 +216,7 @@ export async function createManualBookingAction(
       status: 'confirmed',
       deposit_status: 'paid',
       remaining_status: 'paid',
-      remaining_payment_method: isCourtesy ? 'Cortesia' : 'manual_admin',
+      remaining_payment_method: null,
       notes: notesCombined,
     })
 

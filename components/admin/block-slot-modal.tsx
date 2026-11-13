@@ -44,21 +44,25 @@ export function BlockSlotModal({
     e.preventDefault()
     setError(null)
     const formData = new FormData(e.currentTarget)
-    formData.append('field_id', fieldId)
-    formData.append('date', date)
-    formData.append('start_time', startTime)
-    formData.append('duration_minutes', String(duration))
+    formData.set('field_id', fieldId)
+    formData.set('date', date)
+    formData.set('start_time', startTime)
+    formData.set('duration_minutes', String(duration))
     if (isCourtesy) {
-      formData.append('is_courtesy', 'true')
+      formData.set('is_courtesy', 'true')
     }
 
     startTransition(async () => {
-      const res = await createManualBookingAction(null, formData)
-      if (res?.error) {
-        setError(res.error)
-      } else {
-        router.refresh()
-        onClose()
+      try {
+        const res = await createManualBookingAction(null, formData)
+        if (res?.error) {
+          setError(res.error)
+        } else {
+          onClose()
+          router.refresh()
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Erro ao processar reserva.')
       }
     })
   }
@@ -67,22 +71,26 @@ export function BlockSlotModal({
     e.preventDefault()
     setError(null)
     const formData = new FormData(e.currentTarget)
-    formData.append('field_id', fieldId)
-    formData.append('date', date)
-    formData.append('start_time', startTime)
-    formData.append('end_time', blockEndTime)
+    formData.set('field_id', fieldId)
+    formData.set('date', date)
+    formData.set('start_time', startTime)
+    formData.set('end_time', blockEndTime)
     if (isRecurring) {
-      formData.append('is_recurring', 'true')
-      formData.append('recur_day_of_week', String(dayOfWeek))
+      formData.set('is_recurring', 'true')
+      formData.set('recur_day_of_week', String(dayOfWeek))
     }
 
     startTransition(async () => {
-      const res = await createBlockedSlotAction(null, formData)
-      if (res?.error) {
-        setError(res.error)
-      } else {
-        router.refresh()
-        onClose()
+      try {
+        const res = await createBlockedSlotAction(null, formData)
+        if (res?.error) {
+          setError(res.error)
+        } else {
+          onClose()
+          router.refresh()
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Erro ao aplicar bloqueio.')
       }
     })
   }

@@ -37,6 +37,17 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
   const [state, formAction, isPending] = useActionState(createContractAction, null)
   const [additionalSlots, setAdditionalSlots] = useState<AdditionalSlot[]>([])
   const [isCourtesy, setIsCourtesy] = useState(false)
+  const [monthlyAmount, setMonthlyAmount] = useState('')
+
+  const handleToggleCourtesy = () => {
+    const next = !isCourtesy
+    setIsCourtesy(next)
+    if (next) {
+      setMonthlyAmount('0')
+    } else {
+      setMonthlyAmount('')
+    }
+  }
 
   const handleAddSlot = () => {
     setAdditionalSlots((prev) => [
@@ -477,7 +488,7 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
 
         {/* Opção de Cortesia */}
         <div
-          onClick={() => setIsCourtesy(!isCourtesy)}
+          onClick={handleToggleCourtesy}
           className={`p-4 rounded-[4px] border cursor-pointer transition-all flex items-center justify-between gap-4 ${
             isCourtesy
               ? 'bg-purple-950/30 border-purple-500/50 text-purple-200'
@@ -509,6 +520,8 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
           </div>
         </div>
 
+        <input type="hidden" name="is_courtesy" value={isCourtesy ? 'true' : 'false'} />
+
         {/* Informações Financeiras e Vigência */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           <div>
@@ -529,7 +542,8 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 name="monthly_amount"
                 required={!isCourtesy}
                 readOnly={isCourtesy}
-                value={isCourtesy ? '0' : undefined}
+                value={isCourtesy ? '0' : monthlyAmount}
+                onChange={(e) => setMonthlyAmount(e.target.value)}
                 min="0"
                 step="0.01"
                 className={`input-admin pl-12 font-mono ${isCourtesy ? 'opacity-70 bg-purple-950/20 text-purple-300 border-purple-500/40 cursor-not-allowed' : ''}`}
