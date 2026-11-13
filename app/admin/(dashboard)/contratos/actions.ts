@@ -83,6 +83,78 @@ function generateFutureDates(
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
+export interface ContractSchedule {
+  field_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  duration_minutes: number
+  field_name?: string
+}
+
+function parseContractSchedules(contract: any): ContractSchedule[] {
+  const primaryDuration =
+    contract.duration_minutes ||
+    (contract.start_time && contract.end_time ? calcDuration(contract.start_time, contract.end_time) : 60)
+
+  const primarySlot: ContractSchedule = {
+    field_id: contract.field_id,
+    day_of_week: Number(contract.day_of_week ?? 0),
+    start_time: contract.start_time || '00:00',
+    end_time: contract.end_time || '00:00',
+    duration_minutes: primaryDuration,
+    field_name: contract.field?.name,
+  }
+
+  // 1. Se schedules já existir no contrato como array válido
+  if (Array.isArray(contract.schedules) && contract.schedules.length > 0) {
+    return contract.schedules.map((s: any) => ({
+      field_id: s.field_id || contract.field_id,
+      day_of_week: Number(s.day_of_week),
+      start_time: s.start_time,
+      end_time: s.end_time,
+      duration_minutes:
+        s.duration_minutes || (s.start_time && s.end_time ? calcDuration(s.start_time, s.end_time) : 60),
+      field_name: s.field_name,
+    }))
+  }
+
+  // 2. Se estiver embutido no secondary_organizer_name
+  if (contract.secondary_organizer_name && typeof contract.secondary_organizer_name === 'string' && contract.secondary_organizer_name.includes('__SCHEDULES__')) {
+    try {
+      const parts = contract.secondary_organizer_name.split('__SCHEDULES__')
+      const extra = JSON.parse(parts[1] || '[]')
+      if (Array.isArray(extra) && extra.length > 0) {
+        return [
+          primarySlot,
+          ...extra.map((s: any) => ({
+            field_id: s.field_id || contract.field_id,
+            day_of_week: Number(s.day_of_week),
+            start_time: s.start_time,
+            end_time: s.end_time,
+            duration_minutes:
+              s.duration_minutes || (s.start_time && s.end_time ? calcDuration(s.start_time, s.end_time) : 60),
+            field_name: s.field_name,
+          })),
+        ]
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return [primarySlot]
+}
+
+function parseCleanSecondaryOrganizer(name: string | null | undefined): string | null {
+  if (!name) return null
+  if (name.includes('__SCHEDULES__')) {
+    const clean = name.split('__SCHEDULES__')[0].trim()
+    return clean || null
+  }
+  return name
+}
+
 export interface FieldContractStat {
   id: string
   name: string
@@ -154,7 +226,12 @@ export async function getContracts(fieldId?: string) {
   const { data, error } = await query
 
   if (error) throw new Error(error.message)
-  return data ?? []
+
+  return (data ?? []).map((c) => ({
+    ...c,
+    secondary_organizer_name: parseCleanSecondaryOrganizer(c.secondary_organizer_name),
+    schedules: parseContractSchedules(c),
+  }))
 }
 
 // Busca um contrato específico por ID com seus pagamentos
@@ -166,8 +243,23 @@ export async function getContractById(id: string) {
     .eq('id', id)
     .single()
 
-  if (error) return null
-  return data
+  if (error || !data) return null
+
+  // Busca os nomes de campos caso algum schedule seja de outro campo
+  const { data: allFields } = await supabase.from('fields').select('id, name')
+  const fieldNameMap = new Map((allFields ?? []).map((f) => [f.id, f.name]))
+
+  const rawSchedules = parseContractSchedules(data)
+  const schedules = rawSchedules.map((s) => ({
+    ...s,
+    field_name: fieldNameMap.get(s.field_id) || s.field_name || data.field?.name,
+  }))
+
+  return {
+    ...data,
+    secondary_organizer_name: parseCleanSecondaryOrganizer(data.secondary_organizer_name),
+    schedules,
+  }
 }
 
 // Busca mensalidades de um contrato
@@ -194,7 +286,7 @@ export async function getActiveFieldsForContract() {
   return data ?? []
 }
 
-// Cria um novo contrato fixo e gera os blocked_slots automáticos
+// Cria um novo contrato fixo e gera os blocked_slots automáticos para todos os dias/horários
 export async function createContractAction(
   _prev: { error: string; success?: boolean } | null,
   formData: FormData
@@ -237,11 +329,57 @@ export async function createContractAction(
   } = parsed.data
 
   if (start_time >= end_time) {
-    return { error: 'O horário de início deve ser menor que o horário de término.' }
+    return { error: 'O horário de início do 1º slot deve ser menor que o horário de término.' }
+  }
+
+  // Processa slots/peladas adicionais caso tenham sido cadastrados
+  const additionalRaw = formData.get('additional_schedules')
+  let additionalSlots: Array<{
+    field_id: string
+    day_of_week: number
+    start_time: string
+    end_time: string
+    duration_minutes: number
+  }> = []
+
+  if (additionalRaw && typeof additionalRaw === 'string') {
+    try {
+      const parsedAdd = JSON.parse(additionalRaw)
+      if (Array.isArray(parsedAdd)) {
+        for (let i = 0; i < parsedAdd.length; i++) {
+          const item = parsedAdd[i]
+          if (!item.field_id || item.day_of_week === undefined || !item.start_time || !item.end_time) {
+            return { error: `Preencha todos os campos da pelada adicional nº ${i + 2}.` }
+          }
+          if (item.start_time >= item.end_time) {
+            return { error: `Na pelada adicional nº ${i + 2}, o início deve ser menor que o término.` }
+          }
+          additionalSlots.push({
+            field_id: String(item.field_id),
+            day_of_week: Number(item.day_of_week),
+            start_time: String(item.start_time),
+            end_time: String(item.end_time),
+            duration_minutes: calcDuration(item.start_time, item.end_time),
+          })
+        }
+      }
+    } catch {
+      return { error: 'Formato inválido de horários adicionais.' }
+    }
   }
 
   const duration_minutes = calcDuration(start_time, end_time)
   const endsAtValue = ends_at || null
+
+  const primarySlot: ContractSchedule = {
+    field_id,
+    day_of_week,
+    start_time,
+    end_time,
+    duration_minutes,
+  }
+
+  const allSchedules: ContractSchedule[] = [primarySlot, ...additionalSlots]
 
   // 1. Upsert do cliente pelo telefone
   const { data: customer, error: custErr } = await supabase
@@ -261,50 +399,95 @@ export async function createContractAction(
     return { error: 'Erro ao registrar cliente: ' + (custErr?.message ?? '') }
   }
 
+  // Prepara os dados de organizador secundário com schedules embutidos para compatibilidade retroativa
+  let secNameCombined = secondary_name ? secondary_name.trim() : ''
+  if (additionalSlots.length > 0) {
+    secNameCombined = `${secNameCombined}__SCHEDULES__${JSON.stringify(additionalSlots)}`
+  }
+
   // 2. Cria o contrato
-  const { data: contract, error: contractErr } = await supabase
+  const baseContractData = {
+    customer_id: customer.id,
+    field_id,
+    day_of_week,
+    start_time,
+    end_time,
+    duration_minutes,
+    monthly_amount,
+    starts_at,
+    ends_at: endsAtValue,
+    secondary_organizer_name: secNameCombined || null,
+    secondary_organizer_phone: secondary_phone ? secondary_phone.trim() : null,
+    is_active: true,
+  }
+
+  // Tenta salvar com o campo schedules (caso a migration já tenha sido aplicada)
+  let contractResult = await supabase
     .from('fixed_contracts')
     .insert({
-      customer_id: customer.id,
-      field_id,
-      day_of_week,
-      start_time,
-      end_time,
-      duration_minutes,
-      monthly_amount,
-      starts_at,
-      ends_at: endsAtValue,
-      secondary_organizer_name: secondary_name ? secondary_name.trim() : null,
-      secondary_organizer_phone: secondary_phone ? secondary_phone.trim() : null,
-      is_active: true,
+      ...baseContractData,
+      schedules: allSchedules,
     })
     .select('id')
     .single()
 
-  if (contractErr || !contract) {
-    return { error: 'Erro ao criar contrato: ' + (contractErr?.message ?? '') }
+  // Se der erro por ausência da coluna schedules no banco, insere o baseContractData normalmente
+  if (
+    contractResult.error &&
+    contractResult.error.message.includes('column') &&
+    contractResult.error.message.includes('schedules')
+  ) {
+    contractResult = await supabase
+      .from('fixed_contracts')
+      .insert(baseContractData)
+      .select('id')
+      .single()
   }
 
-  // 3. Gera bloqueios automáticos na agenda para o próximo 1 ano (ou até ends_at)
-  const dates = generateFutureDates(day_of_week, starts_at, endsAtValue)
-  if (dates.length > 0) {
-    const slots = dates.map((date) => ({
-      field_id,
-      date,
-      start_time,
-      end_time,
-      reason: `Contrato Fixo — cliente ${customer_name}`,
-      is_recurring: false,
-    }))
+  if (contractResult.error || !contractResult.data) {
+    return { error: 'Erro ao criar contrato: ' + (contractResult.error?.message ?? '') }
+  }
 
-    const { error: slotsErr } = await supabase.from('blocked_slots').insert(slots)
-    if (slotsErr) {
-      console.error('Erro ao gerar bloqueios automáticos:', slotsErr.message)
-      // Não retorna erro ao usuário — contrato foi criado, apenas log
+  const contract = contractResult.data
+
+  // 3. Gera bloqueios automáticos na agenda para TODOS os slots/peladas
+  const allBlockedSlots: Array<{
+    field_id: string
+    date: string
+    start_time: string
+    end_time: string
+    reason: string
+    is_recurring: boolean
+  }> = []
+
+  for (let idx = 0; idx < allSchedules.length; idx++) {
+    const slot = allSchedules[idx]
+    const dates = generateFutureDates(slot.day_of_week, starts_at, endsAtValue)
+    const slotLabel = allSchedules.length > 1 ? ` (Pelada ${idx + 1})` : ''
+    for (const d of dates) {
+      allBlockedSlots.push({
+        field_id: slot.field_id,
+        date: d,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        reason: `Contrato Fixo — cliente ${customer_name}${slotLabel}`,
+        is_recurring: false,
+      })
     }
   }
 
-  // 4. Gera a mensalidade do mês corrente (fuso America/Sao_Paulo)
+  if (allBlockedSlots.length > 0) {
+    // Insere em lotes de 100 para evitar limites do payload
+    for (let i = 0; i < allBlockedSlots.length; i += 100) {
+      const batch = allBlockedSlots.slice(i, i + 100)
+      const { error: slotsErr } = await supabase.from('blocked_slots').insert(batch)
+      if (slotsErr) {
+        console.error('Erro ao gerar bloqueios automáticos:', slotsErr.message)
+      }
+    }
+  }
+
+  // 4. Gera uma ÚNICA mensalidade do mês corrente cobrindo todo o contrato
   const nowBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
   const refMonth = `${nowBrt.slice(0, 7)}-01`
 
@@ -338,13 +521,25 @@ export async function deactivateContractAction(id: string) {
 
   if (contract) {
     const todayBrt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
-    await supabase
-      .from('blocked_slots')
-      .delete()
-      .eq('field_id', contract.field_id)
-      .eq('start_time', contract.start_time)
-      .eq('end_time', contract.end_time)
-      .gte('date', todayBrt)
+    const schedules = parseContractSchedules(contract)
+
+    for (const sched of schedules) {
+      await supabase
+        .from('blocked_slots')
+        .delete()
+        .eq('field_id', sched.field_id)
+        .eq('start_time', sched.start_time)
+        .eq('end_time', sched.end_time)
+        .gte('date', todayBrt)
+    }
+
+    if (contract.customer?.name) {
+      await supabase
+        .from('blocked_slots')
+        .delete()
+        .ilike('reason', `%Contrato Fixo%${contract.customer.name}%`)
+        .gte('date', todayBrt)
+    }
   }
 
   revalidatePath('/admin/contratos')
@@ -455,12 +650,26 @@ export async function updateContractOrganizersAction(
     }
   }
 
-  // 3. Atualiza os dados do 2º Organizador no contrato
+  // 3. Atualiza os dados do 2º Organizador no contrato preservando schedules se existirem
+  const { data: existingContract } = await supabase
+    .from('fixed_contracts')
+    .select('secondary_organizer_name')
+    .eq('id', contractId)
+    .single()
+
+  let finalSecName = data.secondary_name?.trim() || ''
+  if (existingContract?.secondary_organizer_name?.includes('__SCHEDULES__')) {
+    const schedSuffix = existingContract.secondary_organizer_name.slice(
+      existingContract.secondary_organizer_name.indexOf('__SCHEDULES__')
+    )
+    finalSecName = `${finalSecName}${schedSuffix}`
+  }
+
   const cleanSecPhone = data.secondary_phone ? data.secondary_phone.replace(/\D/g, '') : null
   const { error: updErr } = await supabase
     .from('fixed_contracts')
     .update({
-      secondary_organizer_name: data.secondary_name?.trim() || null,
+      secondary_organizer_name: finalSecName || null,
       secondary_organizer_phone: cleanSecPhone || null,
     })
     .eq('id', contractId)

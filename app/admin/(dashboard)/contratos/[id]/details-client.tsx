@@ -93,6 +93,14 @@ interface Contract {
   is_active: boolean
   customer: Customer | null
   field: Field | null
+  schedules?: Array<{
+    field_id: string
+    day_of_week: number
+    start_time: string
+    end_time: string
+    duration_minutes: number
+    field_name?: string
+  }>
 }
 
 interface Payment {
@@ -272,7 +280,9 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                 className="text-xl font-bold mt-1"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Toda {DAYS_OF_WEEK[contract.day_of_week]} no {contract.field?.name}
+                {contract.schedules && contract.schedules.length > 1
+                  ? `Contrato com ${contract.schedules.length} Peladas Semanais`
+                  : `Toda ${DAYS_OF_WEEK[contract.day_of_week]} no ${contract.field?.name}`}
               </h2>
             </div>
             {isActive ? (
@@ -308,19 +318,21 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
           >
             <div>
               <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
-                Horário
+                {contract.schedules && contract.schedules.length > 1 ? 'Total de Peladas' : 'Horário'}
               </p>
               <p
                 className="font-medium mt-1 flex items-center gap-1.5 font-mono"
                 style={{ color: 'var(--text-primary)' }}
               >
                 <Clock className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                {contract.start_time.substring(0, 5)} - {contract.end_time.substring(0, 5)}
+                {contract.schedules && contract.schedules.length > 1
+                  ? `${contract.schedules.length} dias por semana`
+                  : `${contract.start_time.substring(0, 5)} - ${contract.end_time.substring(0, 5)}`}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>
-                Mensalidade
+                Mensalidade Total
               </p>
               <p
                 className="font-bold mt-1 flex items-center gap-1 font-mono"
@@ -343,6 +355,48 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
               </p>
             </div>
           </div>
+
+          {/* Grid com todas as peladas e dias deste contrato */}
+          {contract.schedules && contract.schedules.length > 0 && (
+            <div className="pt-4 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--brand)]">
+                  ⚽ Dias e Horários das Peladas no Contrato ({contract.schedules.length} {contract.schedules.length === 1 ? 'dia' : 'dias'}/semana)
+                </p>
+                {contract.schedules.length > 1 && (
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-[2px] bg-[var(--brand)] text-white shadow-2xs">
+                    Contrato Unificado
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {contract.schedules.map((slot, i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-[4px] border space-y-1.5 shadow-2xs"
+                    style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)]">
+                        Pelada {i + 1}
+                      </span>
+                      <span className="text-xs font-bold text-[var(--text-primary)]">
+                        {slot.field_name || contract.field?.name}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold uppercase tracking-wide text-[var(--text-primary)]">
+                      {DAYS_OF_WEEK[slot.day_of_week]}
+                    </div>
+                    <div className="text-xs font-mono flex items-center gap-1.5 text-[var(--text-secondary)]">
+                      <Clock className="w-3.5 h-3.5 text-[var(--brand)]" />
+                      {slot.start_time.substring(0, 5)} às {slot.end_time.substring(0, 5)} ({slot.duration_minutes} min)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Encerramento */}
           {isActive && (

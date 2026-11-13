@@ -28,11 +28,12 @@ const DAYS_OF_WEEK = [
 ]
 
 interface Props {
-  searchParams: Promise<{ campo?: string }>
+  searchParams: Promise<{ campo?: string; status?: string }>
 }
 
 export default async function ContratosPage({ searchParams }: Props) {
-  const { campo: selectedFieldId } = await searchParams
+  const { campo: selectedFieldId, status: rawStatus } = await searchParams
+  const statusFilter = rawStatus === 'encerrados' || rawStatus === 'todos' ? rawStatus : 'ativos'
 
   // Carrega campos com estatísticas consolidadas de contratos
   const fieldsWithStats = await getFieldsWithContractStats()
@@ -53,7 +54,20 @@ export default async function ContratosPage({ searchParams }: Props) {
   const totalFields = fieldsWithStats.length
   const totalMensalistas = fieldsWithStats.reduce((acc, f) => acc + f.total_contracts, 0)
   const totalActiveMensalistas = fieldsWithStats.reduce((acc, f) => acc + f.active_contracts, 0)
+  const totalInactiveMensalistas = totalMensalistas - totalActiveMensalistas
   const totalMonthlyRevenue = fieldsWithStats.reduce((acc, f) => acc + f.total_monthly_amount, 0)
+
+  // Filtros de status para a vista de contratos
+  const activeContracts = contracts.filter((c) => c.is_active)
+  const inactiveContracts = contracts.filter((c) => !c.is_active)
+  const totalContractsCount = contracts.length
+
+  const filteredContracts =
+    statusFilter === 'encerrados'
+      ? inactiveContracts
+      : statusFilter === 'todos'
+      ? contracts
+      : activeContracts
 
   const fmtCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
@@ -164,6 +178,38 @@ export default async function ContratosPage({ searchParams }: Props) {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Filtros Rápidos de Status no Overview */}
+        <div className="flex items-center gap-2 flex-wrap p-3 rounded-[4px] border shadow-xs"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+        >
+          <span className="text-xs font-bold uppercase tracking-wider mr-1" style={{ color: 'var(--text-muted)' }}>
+            Filtrar Listagem:
+          </span>
+          <Link
+            href="/admin/contratos?campo=todos&status=ativos"
+            className="px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider bg-[var(--brand)] text-white shadow-xs flex items-center gap-1.5 hover:opacity-90"
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+            Ver Contratos Ativos ({totalActiveMensalistas})
+          </Link>
+          <Link
+            href="/admin/contratos?campo=todos&status=encerrados"
+            className="px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 hover:opacity-90"
+            style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+          >
+            <Ban className="w-3.5 h-3.5 text-red-500" />
+            Ver Contratos Encerrados ({totalInactiveMensalistas})
+          </Link>
+          <Link
+            href="/admin/contratos?campo=todos&status=todos"
+            className="px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 hover:opacity-90"
+            style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Ver Todos ({totalMensalistas})
+          </Link>
         </div>
 
         {/* Título da Seção de Campos */}
@@ -386,7 +432,7 @@ export default async function ContratosPage({ searchParams }: Props) {
           ◂ Todos os Campos (Cards)
         </Link>
         <Link
-          href="/admin/contratos?campo=todos"
+          href={`/admin/contratos?campo=todos&status=${statusFilter}`}
           className={`px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider whitespace-nowrap border transition-all ${
             isViewingAll
               ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-xs'
@@ -401,7 +447,7 @@ export default async function ContratosPage({ searchParams }: Props) {
           return (
             <Link
               key={f.id}
-              href={`/admin/contratos?campo=${f.id}`}
+              href={`/admin/contratos?campo=${f.id}&status=${statusFilter}`}
               className={`px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider whitespace-nowrap border transition-all ${
                 isSelected
                   ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-xs'
@@ -415,6 +461,59 @@ export default async function ContratosPage({ searchParams }: Props) {
         })}
       </div>
 
+      {/* Barra de Filtro de Status: Ativos | Encerrados | Todos */}
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-[4px] border shadow-xs"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold uppercase tracking-wider mr-1" style={{ color: 'var(--text-muted)' }}>
+            Filtrar:
+          </span>
+          <Link
+            href={`/admin/contratos?campo=${selectedFieldId || 'todos'}&status=ativos`}
+            className={`px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+              statusFilter === 'ativos'
+                ? 'bg-[var(--brand)] text-white border-[var(--brand)] shadow-xs'
+                : 'hover:opacity-80'
+            }`}
+            style={statusFilter !== 'ativos' ? { background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' } : undefined}
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+            Ativos ({activeContracts.length})
+          </Link>
+          <Link
+            href={`/admin/contratos?campo=${selectedFieldId || 'todos'}&status=encerrados`}
+            className={`px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+              statusFilter === 'encerrados'
+                ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                : 'hover:opacity-80'
+            }`}
+            style={statusFilter !== 'encerrados' ? { background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' } : undefined}
+          >
+            <Ban className="w-3.5 h-3.5" />
+            Encerrados ({inactiveContracts.length})
+          </Link>
+          <Link
+            href={`/admin/contratos?campo=${selectedFieldId || 'todos'}&status=todos`}
+            className={`px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+              statusFilter === 'todos'
+                ? 'bg-[var(--text-primary)] text-[var(--bg)] border-[var(--text-primary)] shadow-xs'
+                : 'hover:opacity-80'
+            }`}
+            style={statusFilter !== 'todos' ? { background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-secondary)' } : undefined}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Todos ({totalContractsCount})
+          </Link>
+        </div>
+
+        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+          Exibindo <span className="font-bold text-[var(--text-primary)]">{filteredContracts.length}</span> de{' '}
+          {totalContractsCount} {totalContractsCount === 1 ? 'contrato' : 'contratos'}
+        </span>
+      </div>
+
       {/* Lista / Tabela de Contratos */}
       <div
         className="rounded-[4px] overflow-hidden shadow-xs"
@@ -423,7 +522,7 @@ export default async function ContratosPage({ searchParams }: Props) {
           border: '1px solid var(--border)',
         }}
       >
-        {contracts.length === 0 ? (
+        {filteredContracts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
             <div
               className="w-16 h-16 rounded-[4px] flex items-center justify-center mb-4"
@@ -435,19 +534,25 @@ export default async function ContratosPage({ searchParams }: Props) {
               <Calendar className="w-8 h-8" style={{ color: 'var(--text-muted)' }} />
             </div>
             <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-              Nenhum contrato fixo encontrado
+              {statusFilter === 'encerrados'
+                ? 'Nenhum contrato encerrado encontrado'
+                : statusFilter === 'ativos'
+                ? 'Nenhum contrato ativo encontrado'
+                : 'Nenhum contrato fixo encontrado'}
             </p>
             <p className="text-sm mt-1 max-w-md" style={{ color: 'var(--text-muted)' }}>
-              {selectedField
+              {statusFilter === 'ativos' && totalContractsCount > 0
+                ? 'Todos os contratos deste filtro já foram finalizados. Você pode visualizá-los na aba "Encerrados".'
+                : selectedField
                 ? `Ainda não há mensalistas cadastrados para o campo ${selectedField.name}.`
-                : 'Não há contratos cadastrados com o filtro atual.'}
+                : 'Não há contratos cadastrados para o filtro selecionado.'}
             </p>
             <Link
               href={`/admin/contratos/novo${selectedField?.id ? `?campo=${selectedField.id}` : ''}`}
               className="btn-admin-primary mt-4 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-[2px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              Cadastrar Primeiro Mensalista
+              Cadastrar Novo Mensalista
             </Link>
           </div>
         ) : (
@@ -466,7 +571,7 @@ export default async function ContratosPage({ searchParams }: Props) {
                   >
                     <th className="px-6 py-4">Cliente</th>
                     {isViewingAll && <th className="px-6 py-4">Campo</th>}
-                    <th className="px-6 py-4">Horário Fixo</th>
+                    <th className="px-6 py-4">Horário Fixo / Peladas</th>
                     <th className="px-6 py-4">Valor Mensal</th>
                     <th className="px-6 py-4">Vigência</th>
                     <th className="px-6 py-4">Status</th>
@@ -474,9 +579,11 @@ export default async function ContratosPage({ searchParams }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                  {contracts.map((contract) => {
+                  {filteredContracts.map((contract) => {
                     const dayName = DAYS_OF_WEEK[contract.day_of_week]
                     const formattedValue = fmtCurrency(contract.monthly_amount)
+                    const schedulesList = (contract as any).schedules || []
+                    const hasMultipleSchedules = schedulesList.length > 1
 
                     const startsAtFormatted = new Date(contract.starts_at + 'T12:00:00')
                       .toLocaleDateString('pt-BR')
@@ -554,15 +661,42 @@ export default async function ContratosPage({ searchParams }: Props) {
                         )}
 
                         <td className="px-6 py-4">
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                              {dayName}
+                          {hasMultipleSchedules ? (
+                            <div className="space-y-1.5">
+                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] text-[10px] font-black uppercase tracking-wider bg-[var(--brand)] text-white shadow-xs">
+                                ⚽ {schedulesList.length} Peladas no Contrato
+                              </div>
+                              <div className="space-y-1 pt-0.5">
+                                {schedulesList.map((s: any, idx: number) => {
+                                  const sDay = DAYS_OF_WEEK[s.day_of_week]
+                                  return (
+                                    <div key={idx} className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] shrink-0" />
+                                      <span className="font-semibold">{sDay}:</span>
+                                      <span className="font-mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                                        {s.start_time.substring(0, 5)} - {s.end_time.substring(0, 5)}
+                                      </span>
+                                      {s.field_name && (isViewingAll || s.field_id !== contract.field_id) && (
+                                        <span className="text-[10px] px-1 py-0.2 rounded border font-sans" style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                                          {s.field_name}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
                             </div>
-                            <div className="text-xs flex items-center gap-1 font-mono" style={{ color: 'var(--text-muted)' }}>
-                              <Clock className="w-3 h-3" />
-                              {contract.start_time.substring(0, 5)} às {contract.end_time.substring(0, 5)} ({contract.duration_minutes} min)
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {dayName}
+                              </div>
+                              <div className="text-xs flex items-center gap-1 font-mono" style={{ color: 'var(--text-muted)' }}>
+                                <Clock className="w-3 h-3" />
+                                {contract.start_time.substring(0, 5)} às {contract.end_time.substring(0, 5)} ({contract.duration_minutes} min)
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </td>
 
                         <td className="px-6 py-4">
@@ -628,9 +762,11 @@ export default async function ContratosPage({ searchParams }: Props) {
                 background: 'var(--bg-card)',
               }}
             >
-              {contracts.map((contract) => {
+              {filteredContracts.map((contract) => {
                 const dayName = DAYS_OF_WEEK[contract.day_of_week]
                 const formattedValue = fmtCurrency(contract.monthly_amount)
+                const schedulesList = (contract as any).schedules || []
+                const hasMultipleSchedules = schedulesList.length > 1
 
                 const startsAtFormatted = new Date(contract.starts_at + 'T12:00:00')
                   .toLocaleDateString('pt-BR')
@@ -722,14 +858,29 @@ export default async function ContratosPage({ searchParams }: Props) {
                       </div>
                       <div>
                         <span className="font-medium block" style={{ color: 'var(--text-muted)' }}>
-                          Horário Fixo
+                          {hasMultipleSchedules ? 'Peladas no Contrato' : 'Horário Fixo'}
                         </span>
-                        <span className="font-semibold block" style={{ color: 'var(--text-primary)' }}>
-                          {dayName}
-                        </span>
-                        <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
-                          {contract.start_time.substring(0, 5)} - {contract.end_time.substring(0, 5)}
-                        </span>
+                        {hasMultipleSchedules ? (
+                          <div className="space-y-1 mt-0.5">
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[var(--brand)] text-white inline-block">
+                              {schedulesList.length} Peladas
+                            </span>
+                            {schedulesList.map((s: any, idx: number) => (
+                              <div key={idx} className="text-[10px] font-mono" style={{ color: 'var(--text-secondary)' }}>
+                                {DAYS_OF_WEEK[s.day_of_week].slice(0, 3)}: {s.start_time.substring(0, 5)}-{s.end_time.substring(0, 5)}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <>
+                            <span className="font-semibold block" style={{ color: 'var(--text-primary)' }}>
+                              {dayName}
+                            </span>
+                            <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                              {contract.start_time.substring(0, 5)} - {contract.end_time.substring(0, 5)}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div
                         className="col-span-2 pt-2 mt-1 border-t"

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getActiveFields } from './actions'
 import { CampoCard } from '@/components/public/campo-card'
+import { QuickScheduleSearch } from '@/components/public/quick-schedule-search'
 import { MessageSquare } from 'lucide-react'
 
 function Instagram({ className }: { className?: string }) {
@@ -118,7 +119,7 @@ export default async function HomePage() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4">
             <a
-              href="#campos"
+              href="#busca-rapida"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:opacity-90 hover:-translate-y-px"
               style={{
                 background: 'var(--brand)',
@@ -127,12 +128,10 @@ export default async function HomePage() {
                 boxShadow: '0 8px 32px rgba(26,107,46,0.4)',
               }}
             >
-              ⚽ Ver Campos
+              ⚡ Buscar Horário Rápido
             </a>
             <a
-              href={WHATSAPP_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#campos"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-sm uppercase tracking-widest transition-all duration-200 hover:bg-white/10"
               style={{
                 color: 'white',
@@ -141,7 +140,7 @@ export default async function HomePage() {
                 letterSpacing: '0.1em',
               }}
             >
-              Falar no WhatsApp
+              ⚽ Ver Todos os Campos
             </a>
           </div>
 
@@ -177,6 +176,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ─── BUSCA RÁPIDA DE HORÁRIOS DISPONÍVEIS ─────────────────── */}
+      <QuickScheduleSearch />
 
       {/* ─── CAMPOS ───────────────────────────────────────────────── */}
       <section id="campos" style={{ background: 'var(--bg)', paddingTop: '96px', paddingBottom: '96px' }}>

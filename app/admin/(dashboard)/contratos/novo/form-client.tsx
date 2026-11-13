@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState, startTransition } from 'react'
+import { useActionState, startTransition, useState } from 'react'
 import { createContractAction } from '../actions'
-import { CalendarDays, Clock, DollarSign, Loader2, User, Users } from 'lucide-react'
+import { CalendarDays, Clock, DollarSign, Loader2, User, Users, Plus, Trash2, Layers } from 'lucide-react'
 import Link from 'next/link'
 
 interface FieldOption {
@@ -13,6 +13,14 @@ interface FieldOption {
 interface CreateContractFormProps {
   fields: FieldOption[]
   initialFieldId?: string
+}
+
+interface AdditionalSlot {
+  id: string
+  field_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
 }
 
 const DAYS_OF_WEEK = [
@@ -27,10 +35,37 @@ const DAYS_OF_WEEK = [
 
 export function CreateContractForm({ fields, initialFieldId }: CreateContractFormProps) {
   const [state, formAction, isPending] = useActionState(createContractAction, null)
+  const [additionalSlots, setAdditionalSlots] = useState<AdditionalSlot[]>([])
+
+  const handleAddSlot = () => {
+    setAdditionalSlots((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(2, 9),
+        field_id: initialFieldId || fields[0]?.id || '',
+        day_of_week: 2, // Terça-feira como padrão
+        start_time: '19:00',
+        end_time: '20:00',
+      },
+    ])
+  }
+
+  const handleRemoveSlot = (id: string) => {
+    setAdditionalSlots((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  const handleUpdateSlot = (id: string, field: keyof AdditionalSlot, value: any) => {
+    setAdditionalSlots((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+    if (additionalSlots.length > 0) {
+      formData.set('additional_schedules', JSON.stringify(additionalSlots))
+    }
     startTransition(() => {
       formAction(formData)
     })
@@ -175,112 +210,275 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
 
       <hr style={{ borderColor: 'var(--border)' }} />
 
-      {/* Seção: Detalhes do Contrato */}
-      <div>
-        <h3
-          className="text-sm font-bold uppercase tracking-wider mb-4"
-          style={{ color: 'var(--text-primary)' }}
+      {/* Seção: Detalhes do Contrato & Agendamento de Peladas */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3
+              className="text-sm font-bold uppercase tracking-wider"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Horários & Dias das Peladas no Contrato
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              Configure os dias e horários reservados. Você pode adicionar múltiplos dias e campos em um único contrato (ex: escolinhas).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddSlot}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[2px] text-xs font-bold uppercase tracking-wider bg-[var(--brand-subtle)] text-[var(--brand)] border border-[var(--brand-ring)] hover:bg-[var(--brand)] hover:text-white transition-all cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            + Adicionar Outro Dia / Horário (Outra Pelada)
+          </button>
+        </div>
+
+        {/* 1º Slot / Pelada Principal */}
+        <div
+          className="p-4 rounded-[4px] border space-y-4 shadow-2xs"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
         >
-          Detalhes do Contrato & Agendamento
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="field_id"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Campo Reservado
-            </label>
-            <select
-              id="field_id"
-              name="field_id"
-              required
-              defaultValue={initialFieldId || ''}
-              className="input-admin"
-            >
-              <option value="">Selecione um campo...</option>
-              {fields.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="day_of_week"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Dia Fixo da Semana
-            </label>
-            <select
-              id="day_of_week"
-              name="day_of_week"
-              required
-              className="input-admin"
-            >
-              {DAYS_OF_WEEK.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="start_time"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Horário de Início
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
-                <Clock className="w-4 h-4" />
+          <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-[var(--brand)] text-white">
+                1
               </span>
-              <input
-                type="time"
-                id="start_time"
-                name="start_time"
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                1ª Pelada (Horário Principal)
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[2px] bg-[var(--brand-subtle)] text-[var(--brand)]">
+              Principal
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label
+                htmlFor="field_id"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Campo *
+              </label>
+              <select
+                id="field_id"
+                name="field_id"
                 required
-                className="input-admin pl-12 font-mono"
-              />
+                defaultValue={initialFieldId || ''}
+                className="input-admin"
+              >
+                <option value="">Selecione um campo...</option>
+                {fields.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="day_of_week"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Dia da Semana *
+              </label>
+              <select
+                id="day_of_week"
+                name="day_of_week"
+                required
+                className="input-admin"
+              >
+                {DAYS_OF_WEEK.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="start_time"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Horário de Início *
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
+                  <Clock className="w-4 h-4" />
+                </span>
+                <input
+                  type="time"
+                  id="start_time"
+                  name="start_time"
+                  required
+                  className="input-admin pl-12 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="end_time"
+                className="block text-xs font-semibold uppercase mb-1.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Horário de Término *
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
+                  <Clock className="w-4 h-4" />
+                </span>
+                <input
+                  type="time"
+                  id="end_time"
+                  name="end_time"
+                  required
+                  className="input-admin pl-12 font-mono"
+                />
+              </div>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label
-              htmlFor="end_time"
-              className="block text-xs font-semibold uppercase mb-1.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              Horário de Término
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
-                <Clock className="w-4 h-4" />
-              </span>
-              <input
-                type="time"
-                id="end_time"
-                name="end_time"
-                required
-                className="input-admin pl-12 font-mono"
-              />
+        {/* Peladas Adicionais (2ª, 3ª, etc.) */}
+        {additionalSlots.map((slot, idx) => (
+          <div
+            key={slot.id}
+            className="p-4 rounded-[4px] border space-y-4 shadow-2xs relative transition-all"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+          >
+            <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-neutral-600 text-white">
+                  {idx + 2}
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                  {idx + 2}ª Pelada (Horário Adicional no Contrato)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveSlot(slot.id)}
+                className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-400 font-semibold transition-colors cursor-pointer"
+                title="Remover este horário adicional"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Remover
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Campo *
+                </label>
+                <select
+                  value={slot.field_id}
+                  onChange={(e) => handleUpdateSlot(slot.id, 'field_id', e.target.value)}
+                  required
+                  className="input-admin"
+                >
+                  <option value="">Selecione um campo...</option>
+                  {fields.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Dia da Semana *
+                </label>
+                <select
+                  value={slot.day_of_week}
+                  onChange={(e) => handleUpdateSlot(slot.id, 'day_of_week', Number(e.target.value))}
+                  required
+                  className="input-admin"
+                >
+                  {DAYS_OF_WEEK.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Horário de Início *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
+                    <Clock className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="time"
+                    value={slot.start_time}
+                    onChange={(e) => handleUpdateSlot(slot.id, 'start_time', e.target.value)}
+                    required
+                    className="input-admin pl-12 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Horário de Término *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
+                    <Clock className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="time"
+                    value={slot.end_time}
+                    onChange={(e) => handleUpdateSlot(slot.id, 'end_time', e.target.value)}
+                    required
+                    className="input-admin pl-12 font-mono"
+                  />
+                </div>
+              </div>
             </div>
           </div>
+        ))}
 
+        {/* Resumo Consolidado de Peladas */}
+        <div
+          className="p-3.5 rounded-[4px] border flex items-center justify-between flex-wrap gap-2"
+          style={{ background: 'var(--bg-subtle)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[var(--brand)]" />
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+              Total no Contrato: {1 + additionalSlots.length} {1 + additionalSlots.length === 1 ? 'pelada semanal' : 'peladas semanais'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddSlot}
+            className="text-xs font-bold uppercase tracking-wider text-[var(--brand)] hover:underline cursor-pointer"
+          >
+            + Adicionar Mais Um Dia
+          </button>
+        </div>
+
+        {/* Informações Financeiras e Vigência */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           <div>
             <label
               htmlFor="monthly_amount"
               className="block text-xs font-semibold uppercase mb-1.5"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Valor da Mensalidade (R$)
+              Valor Total da Mensalidade (R$) *
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
@@ -294,9 +492,12 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 min="1"
                 step="0.01"
                 className="input-admin pl-12 font-mono"
-                placeholder="Ex: 450.00"
+                placeholder="Ex: 800.00"
               />
             </div>
+            <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              Valor único consolidado que cobre todos os dias/horários acima.
+            </p>
           </div>
 
           <div>
@@ -305,7 +506,7 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
               className="block text-xs font-semibold uppercase mb-1.5"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Data de Início da Vigência
+              Início da Vigência *
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
@@ -323,13 +524,13 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
             </div>
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label
               htmlFor="ends_at"
               className="block text-xs font-semibold uppercase mb-1.5"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Data de Término da Vigência (Opcional)
+              Término da Vigência (Opcional)
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
@@ -343,9 +544,6 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 className="input-admin pl-12 font-mono"
               />
             </div>
-            <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-              Se deixado em branco, o contrato será considerado por prazo indeterminado e gerará bloqueios contínuos na agenda.
-            </p>
           </div>
         </div>
       </div>

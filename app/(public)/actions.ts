@@ -667,3 +667,107 @@ export async function checkContractPaymentPublicAction(paymentId: string) {
 
   return { isPaid: false }
 }
+
+// ─── Busca Rápida de Horários Disponíveis ───────────────────────────────────
+
+function addMinutesToHHMM(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number)
+  const total = h * 60 + m + minutes
+  const endH = String(Math.floor(total / 60) % 24).padStart(2, '0')
+  const endM = String(total % 60).padStart(2, '0')
+  return `${endH}:${endM}`
+}
+
+function isTimeOverlapping(
+  startA: string,
+  endA: string,
+  startB: string,
+  endB: string
+): boolean {
+  return startA < endB && endA > startB
+}
+
+export interface AvailableFieldResult {
+  id: string
+  name: string
+  description: string | null
+  photo_urls: string[]
+  hourly_rate: number
+  calculated_price: number
+  start_time: string
+  end_time: string
+  booking_url: string
+}
+
+export async function checkTimeAvailabilityAction(
+  date: string,
+  time: string,
+  durationMinutes = 60
+): Promise<{
+  success: boolean
+  error?: string
+  date: string
+  time: string
+  endTime: string
+  availableFields: AvailableFieldResult[]
+}> {
+  try {
+    if (!date || !time) {
+      return { success: false, error: 'Data e horário são obrigatórios.', date, time, endTime: '', availableFields: [] }
+    }
+
+    let normalizedTime = time.trim()
+    if (!/^\d{2}:\d{2}$/.test(normalizedTime)) {
+      if (/^\d{1,2}$/.test(normalizedTime)) {
+        normalizedTime = `${normalizedTime.padStart(2, '0')}:00`
+      } else {
+        return { success: false, error: 'Formato de horário inválido. Use HH:MM.', date, time, endTime: '', availableFields: [] }
+      }
+    }
+
+    const endTime = addMinutesToHHMM(normalizedTime, durationMinutes)
+    const fields = await getActiveFields()
+
+    if (fields.length === 0) {
+      return { success: true, date, time: normalizedTime, endTime, availableFields: [] }
+    }
+
+    // Consulta disponibilidade de todos os campos em paralelo
+    const results = await Promise.all(
+      fields.map(async (field) => {
+        const occupied = await getOccupiedSlots(field.id, date)
+        const hasConflict = occupied.some((slot) =>
+          isTimeOverlapping(normalizedTime, endTime, slot.start_time, slot.end_time)
+        )
+
+        if (hasConflict) return null
+
+        const price = getFieldPrice(field.name, durationMinutes, field.hourly_rate)
+        return {
+          id: field.id,
+          name: field.name,
+          description: field.description,
+          photo_urls: field.photo_urls,
+          hourly_rate: field.hourly_rate,
+          calculated_price: price,
+          start_time: normalizedTime,
+          end_time: endTime,
+          booking_url: `/reservar/${field.id}?date=${date}&start_time=${normalizedTime}&duration=${durationMinutes}`,
+        }
+      })
+    )
+
+    const availableFields = results.filter((r): r is AvailableFieldResult => r !== null)
+
+    return {
+      success: true,
+      date,
+      time: normalizedTime,
+      endTime,
+      availableFields,
+    }
+  } catch (err: any) {
+    console.error('[checkTimeAvailabilityAction] Erro:', err)
+    return { success: false, error: err.message || 'Erro ao consultar horários.', date, time, endTime: '', availableFields: [] }
+  }
+}
