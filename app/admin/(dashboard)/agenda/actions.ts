@@ -171,7 +171,12 @@ export async function createManualBookingAction(
     return { error: 'O horário de término não pode ultrapassar 00:00.' }
   }
   const end_time = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-  const total_amount = getFieldPrice(field.name, duration_minutes, field.hourly_rate)
+
+  const isCourtesy = formData.get('is_courtesy') === 'true' || formData.get('is_courtesy') === 'on'
+  const total_amount = isCourtesy ? 0 : getFieldPrice(field.name, duration_minutes, field.hourly_rate)
+  const notesCombined = isCourtesy
+    ? `[CORTESIA] ${notes || 'Reserva gratuita concedida como cortesia.'}`.trim()
+    : (notes || null)
 
   // Verifica conflito de horário na grade antes de inserir
   const occupied = await getOccupiedSlots(field_id, date)
@@ -206,12 +211,13 @@ export async function createManualBookingAction(
       end_time,
       duration_minutes,
       total_amount,
-      deposit_amount: total_amount, // como é manual do admin, consideramos sinal total pago
+      deposit_amount: total_amount,
       remaining_amount: 0,
       status: 'confirmed',
       deposit_status: 'paid',
       remaining_status: 'paid',
-      notes: notes || null,
+      remaining_payment_method: isCourtesy ? 'Cortesia' : 'manual_admin',
+      notes: notesCombined,
     })
 
   if (bookingError) {

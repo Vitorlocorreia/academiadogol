@@ -3,7 +3,44 @@
 import { requireAdmin } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-const ALLOWED_METHODS = ['pix_manual', 'cash', 'card_machine'] as const
+const ALLOWED_METHODS = ['pix_manual', 'cash', 'card_machine', 'cortesia'] as const
+
+// Marcar reserva como cortesia (100% gratuita)
+export async function markBookingAsCortesiaAction(bookingId: string) {
+  const { supabase } = await requireAdmin()
+
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('notes')
+    .eq('id', bookingId)
+    .single()
+
+  const existingNotes = booking?.notes || ''
+  const updatedNotes = existingNotes.includes('[CORTESIA]')
+    ? existingNotes
+    : `[CORTESIA] ${existingNotes}`.trim()
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      total_amount: 0,
+      deposit_amount: 0,
+      remaining_amount: 0,
+      status: 'confirmed',
+      deposit_status: 'paid',
+      remaining_status: 'paid',
+      remaining_payment_method: 'Cortesia',
+      notes: updatedNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', bookingId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/agenda')
+  return { success: true }
+}
 
 // Busca reservas com busca e filtro
 export async function getBookingsData(search?: string, status?: string) {

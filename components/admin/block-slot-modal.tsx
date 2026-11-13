@@ -30,6 +30,7 @@ export function BlockSlotModal({
     return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   })
   const [isRecurring, setIsRecurring] = useState(false)
+  const [isCourtesy, setIsCourtesy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -47,6 +48,9 @@ export function BlockSlotModal({
     formData.append('date', date)
     formData.append('start_time', startTime)
     formData.append('duration_minutes', String(duration))
+    if (isCourtesy) {
+      formData.append('is_courtesy', 'true')
+    }
 
     startTransition(async () => {
       const res = await createManualBookingAction(null, formData)
@@ -242,13 +246,44 @@ export function BlockSlotModal({
                 />
               </div>
 
+              {/* Opção de Cortesia */}
+              <div
+                className="p-3 rounded-[3px] border flex items-center justify-between cursor-pointer transition-colors"
+                style={{
+                  background: isCourtesy ? 'var(--brand-subtle)' : 'var(--bg-subtle)',
+                  borderColor: isCourtesy ? 'var(--brand-ring)' : 'var(--border)',
+                }}
+                onClick={() => setIsCourtesy(!isCourtesy)}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">🎁</span>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider block" style={{ color: 'var(--text-primary)' }}>
+                      Marcar como Cortesia
+                    </span>
+                    <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                      {isCourtesy ? 'Valor zerado (R$ 0,00) — Cortesia da casa' : 'Isentar pagamento desta reserva'}
+                    </span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  id="is_courtesy"
+                  name="is_courtesy"
+                  checked={isCourtesy}
+                  onChange={(e) => setIsCourtesy(e.target.checked)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-4 h-4 accent-[var(--brand)] cursor-pointer"
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={isPending}
                 className="btn-admin-primary w-full text-base uppercase tracking-widest font-bold mt-2 cursor-pointer"
                 style={{ fontFamily: "'Bebas Neue', Arial Black, sans-serif" }}
               >
-                {isPending ? 'Salvando...' : 'Confirmar Reserva Direta'}
+                {isPending ? 'Salvando...' : isCourtesy ? 'Confirmar Reserva Cortesia (R$ 0,00)' : 'Confirmar Reserva Direta'}
               </button>
             </form>
           ) : (

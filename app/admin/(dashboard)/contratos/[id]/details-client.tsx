@@ -336,10 +336,18 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
               </p>
               <p
                 className="font-bold mt-1 flex items-center gap-1 font-mono"
-                style={{ color: 'var(--brand)' }}
+                style={{ color: contract.monthly_amount === 0 ? '#c084fc' : 'var(--brand)' }}
               >
-                <DollarSign className="w-4 h-4" />
-                {formattedMonthly}
+                {contract.monthly_amount === 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[2px] bg-purple-500/15 text-purple-400 border border-purple-500/30 text-xs font-bold uppercase tracking-wider">
+                    🎁 Contrato Cortesia (R$ 0,00)
+                  </span>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4" />
+                    {formattedMonthly}
+                  </>
+                )}
               </p>
             </div>
             <div>
@@ -728,16 +736,22 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                           </td>
                           <td className="py-4">
                             {p.status === 'paid' ? (
-                              <span
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
-                                style={{
-                                  background: 'var(--brand-subtle)',
-                                  color: 'var(--brand)',
-                                  border: '1px solid var(--brand-ring)',
-                                }}
-                              >
-                                Pago
-                              </span>
+                              p.payment_method === 'Cortesia' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                                  🎁 Cortesia
+                                </span>
+                              ) : (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase"
+                                  style={{
+                                    background: 'var(--brand-subtle)',
+                                    color: 'var(--brand)',
+                                    border: '1px solid var(--brand-ring)',
+                                  }}
+                                >
+                                  Pago
+                                </span>
+                              )
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[10px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                                 Pendente
@@ -835,6 +849,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                   <option value="PIX">PIX</option>
                                   <option value="Dinheiro">Dinheiro</option>
                                   <option value="Cartão">Cartão</option>
+                                  <option value="Cortesia">🎁 Cortesia (Isenção)</option>
                                 </select>
                                 <button
                                   type="button"
@@ -880,16 +895,22 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                           {formatReferenceMonth(p.reference_month)}
                         </span>
                         {p.status === 'paid' ? (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase"
-                            style={{
-                              background: 'var(--brand-subtle)',
-                              color: 'var(--brand)',
-                              border: '1px solid var(--brand-ring)',
-                            }}
-                          >
-                            Pago
-                          </span>
+                          p.payment_method === 'Cortesia' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                              🎁 Cortesia
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase"
+                              style={{
+                                background: 'var(--brand-subtle)',
+                                color: 'var(--brand)',
+                                border: '1px solid var(--brand-ring)',
+                              }}
+                            >
+                              Pago
+                            </span>
+                          )
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[9px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                             Pendente
@@ -993,6 +1014,7 @@ export function ContractDetailsClient({ contract, initialPayments }: Props) {
                                 <option value="PIX">PIX</option>
                                 <option value="Dinheiro">Dinheiro</option>
                                 <option value="Cartão">Cartão</option>
+                                <option value="Cortesia">🎁 Cortesia (Isenção)</option>
                               </select>
                             </div>
                             <button

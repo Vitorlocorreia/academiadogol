@@ -17,7 +17,7 @@ const contractSchema = z.object({
   day_of_week: z.coerce.number().int().min(0).max(6),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
   end_time: z.string().regex(/^\d{2}:\d{2}$/, 'Horário inválido'),
-  monthly_amount: z.coerce.number().positive('Valor mensal obrigatório'),
+  monthly_amount: z.coerce.number().min(0, 'Valor mensal inválido'),
   starts_at: z.string().transform((val) => {
     const parts = val.trim().split('-')
     if (parts.length === 3) {
@@ -405,6 +405,9 @@ export async function createContractAction(
     secNameCombined = `${secNameCombined}__SCHEDULES__${JSON.stringify(additionalSlots)}`
   }
 
+  const isCourtesy = formData.get('is_courtesy') === 'true' || formData.get('is_courtesy') === 'on' || monthly_amount === 0
+  const finalMonthlyAmount = isCourtesy ? 0 : monthly_amount
+
   // 2. Cria o contrato
   const baseContractData = {
     customer_id: customer.id,
@@ -413,7 +416,7 @@ export async function createContractAction(
     start_time,
     end_time,
     duration_minutes,
-    monthly_amount,
+    monthly_amount: finalMonthlyAmount,
     starts_at,
     ends_at: endsAtValue,
     secondary_organizer_name: secNameCombined || null,
@@ -494,8 +497,10 @@ export async function createContractAction(
   await supabase.from('fixed_payments').insert({
     contract_id: contract.id,
     reference_month: refMonth,
-    amount: monthly_amount,
-    status: 'pending',
+    amount: finalMonthlyAmount,
+    status: isCourtesy ? 'paid' : 'pending',
+    payment_method: isCourtesy ? 'Cortesia' : null,
+    paid_at: isCourtesy ? new Date().toISOString() : null,
   })
 
   revalidatePath('/admin/contratos')

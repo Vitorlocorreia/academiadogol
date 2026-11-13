@@ -7,7 +7,8 @@ import {
   confirmRemainingPaymentAction, 
   completeBookingAction, 
   adminCancelBookingAction,
-  refundBookingDepositAction
+  refundBookingDepositAction,
+  markBookingAsCortesiaAction
 } from './actions'
 import { 
   Search, DollarSign, X, CheckSquare, Calendar, Clock, 
@@ -36,7 +37,11 @@ function getWhatsAppMessageUrl(b: any): string {
   const tipoLabel = isFesta ? '🎂 Festa de Aniversário / Evento' : '⚽ Aluguel de Quadra (Jogo)'
 
   let text = ''
-  if (b.status === 'confirmed' || b.deposit_status === 'paid') {
+  const isCortesia = b.remaining_payment_method === 'Cortesia' || b.remaining_payment_method === 'cortesia' || b.notes?.includes('[CORTESIA]') || Number(b.total_amount) === 0
+
+  if (isCortesia && (b.status === 'confirmed' || b.status === 'completed')) {
+    text = `Olá, *${customerName}*! Tudo bem? ⚽🏟️\n\nAqui é da equipe *Academia do Gol*.\nSua reserva de *CORTESIA* está *CONFIRMADA*! 🎁\n\n📋 *Detalhes da Reserva:*\n📍 *Unidade/Campo:* ${fieldName}\n🎟️ *Tipo:* ${tipoLabel}\n📅 *Data:* ${dataFormatada}\n⏰ *Horário:* ${startTime} às ${endTime} (${b.duration_minutes} min)\n🎁 *Valor:* CORTESIA (R$ 0,00 - Isenção Total)\n\nEstamos preparando tudo para receber você e sua turma! Se precisar de algo, só nos chamar por aqui. Nos vemos em campo! 🚀`
+  } else if (b.status === 'confirmed' || b.deposit_status === 'paid') {
     text = `Olá, *${customerName}*! Tudo bem? ⚽🏟️\n\nAqui é da equipe *Academia do Gol*.\nSua reserva está *CONFIRMADA*!\n\n📋 *Detalhes da Reserva:*\n📍 *Unidade/Campo:* ${fieldName}\n🎟️ *Tipo:* ${tipoLabel}\n📅 *Data:* ${dataFormatada}\n⏰ *Horário:* ${startTime} às ${endTime} (${b.duration_minutes} min)\n\n💰 *Sinal PIX Pago:* R$ ${depositAmount}\n💵 *Saldo a Pagar no Balcão:* R$ ${remainingAmount}\n\nEstamos preparando tudo para receber você e sua turma! Se precisar de algo, só nos chamar por aqui. Nos vemos em campo! 🚀`
   } else if (b.status === 'pending') {
     text = `Olá, *${customerName}*! Tudo bem? ⚽🏟️\n\nAqui é da *Academia do Gol*.\nVimos que você iniciou a reserva para o campo *${fieldName}* no dia *${dataFormatada}* às *${startTime}*.\n\nFalta apenas concluir o pagamento do sinal PIX (R$ ${depositAmount}) para garantir seu horário antes que ele expire:\n🔗 https://academiadogol.vercel.app/reserva/pagamento/${b.id}\n\nQualquer dúvida estou à disposição!`
@@ -77,6 +82,19 @@ export function BookingList({ initialBookings }: BookingListProps) {
     if (confirm('Confirmar manualmente o recebimento do sinal desta reserva?')) {
       startTransition(async () => {
         const res = await confirmDepositManuallyAction(bookingId)
+        if (res.success) {
+          router.refresh()
+        } else {
+          alert(res.error)
+        }
+      })
+    }
+  }
+
+  const handleMarkAsCortesia = (bookingId: string) => {
+    if (confirm('Deseja transformar esta reserva em CORTESIA (R$ 0,00)? O valor será zerado e ela ficará confirmada como Cortesia.')) {
+      startTransition(async () => {
+        const res = await markBookingAsCortesiaAction(bookingId)
         if (res.success) {
           router.refresh()
         } else {
@@ -160,7 +178,14 @@ export function BookingList({ initialBookings }: BookingListProps) {
     }
   }
 
-  const getStatusBadge = (status: string, depositStatus?: string) => {
+  const getStatusBadge = (status: string, depositStatus?: string, booking?: any) => {
+    if (booking?.remaining_payment_method === 'Cortesia' || booking?.remaining_payment_method === 'cortesia' || (Number(booking?.total_amount) === 0 && (status === 'confirmed' || status === 'completed'))) {
+      return (
+        <span className="px-2.5 py-1 rounded-[2px] text-[10px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30">
+          🎁 Cortesia
+        </span>
+      )
+    }
     if (depositStatus === 'refunded') {
       return (
         <span
@@ -194,6 +219,9 @@ export function BookingList({ initialBookings }: BookingListProps) {
       case 'pix_manual': return 'Pix Manual'
       case 'cash': return 'Dinheiro'
       case 'card_machine': return 'Cartão'
+      case 'cortesia':
+      case 'Cortesia':
+        return '🎁 Cortesia'
       default: return 'Online/Pix'
     }
   }
@@ -304,7 +332,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                     <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
                       {b.customer?.name}
                     </div>
-                    <div>{getStatusBadge(b.status, b.deposit_status)}</div>
+                    <div>{getStatusBadge(b.status, b.deposit_status, b)}</div>
                   </div>
                   
                   <div className="flex sm:hidden items-center justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -400,7 +428,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                   </div>
 
                   {/* Status */}
-                  <div className="hidden sm:block">{getStatusBadge(b.status, b.deposit_status)}</div>
+                  <div className="hidden sm:block">{getStatusBadge(b.status, b.deposit_status, b)}</div>
 
                   {/* Botão rápido WhatsApp */}
                   <div className="hidden sm:block">
@@ -563,6 +591,17 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             <CheckSquare className="w-3.5 h-3.5" />
                             Concluir Partida
                           </button>
+                          {b.status !== 'cancelled' && b.status !== 'completed' && b.remaining_payment_method !== 'Cortesia' && (
+                            <button
+                              onClick={() => handleMarkAsCortesia(b.id)}
+                              disabled={isPending}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-[2px] bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-600 hover:text-white transition-all text-xs font-bold uppercase tracking-wider cursor-pointer"
+                              title="Zerar valores e marcar como Cortesia"
+                            >
+                              <span>🎁</span>
+                              Marcar Cortesia
+                            </button>
+                          )}
                           {/* Estornar Sinal PIX direto no Asaas */}
                           {(b.deposit_status === 'paid' || b.status === 'confirmed') && b.deposit_status !== 'refunded' && (
                             <button
@@ -626,6 +665,7 @@ export function BookingList({ initialBookings }: BookingListProps) {
                 { value: 'cash', label: 'Dinheiro', icon: '💵' },
                 { value: 'pix_manual', label: 'Pix Manual', icon: '⚡' },
                 { value: 'card_machine', label: 'Cartão (Maquineta)', icon: '💳' },
+                { value: 'cortesia', label: 'Cortesia (Isenção Restante)', icon: '🎁' },
               ].map(opt => (
                 <label
                   key={opt.value}

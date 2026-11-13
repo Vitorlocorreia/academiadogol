@@ -36,6 +36,7 @@ const DAYS_OF_WEEK = [
 export function CreateContractForm({ fields, initialFieldId }: CreateContractFormProps) {
   const [state, formAction, isPending] = useActionState(createContractAction, null)
   const [additionalSlots, setAdditionalSlots] = useState<AdditionalSlot[]>([])
+  const [isCourtesy, setIsCourtesy] = useState(false)
 
   const handleAddSlot = () => {
     setAdditionalSlots((prev) => [
@@ -65,6 +66,10 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
     const formData = new FormData(e.currentTarget)
     if (additionalSlots.length > 0) {
       formData.set('additional_schedules', JSON.stringify(additionalSlots))
+    }
+    formData.set('is_courtesy', String(isCourtesy))
+    if (isCourtesy) {
+      formData.set('monthly_amount', '0')
     }
     startTransition(() => {
       formAction(formData)
@@ -470,6 +475,40 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
           </button>
         </div>
 
+        {/* Opção de Cortesia */}
+        <div
+          onClick={() => setIsCourtesy(!isCourtesy)}
+          className={`p-4 rounded-[4px] border cursor-pointer transition-all flex items-center justify-between gap-4 ${
+            isCourtesy
+              ? 'bg-purple-950/30 border-purple-500/50 text-purple-200'
+              : 'hover:border-purple-500/30'
+          }`}
+          style={{ background: isCourtesy ? undefined : 'var(--bg-card)', borderColor: isCourtesy ? undefined : 'var(--border)' }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎁</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-400">
+                Marcar Contrato como Cortesia (Isenção Total)
+              </p>
+              <p className="text-[11px] text-neutral-400">
+                Ideal para parcerias, projetos sociais, escolinhas parceiras ou contratos sem cobrança de mensalidade (R$ 0,00).
+              </p>
+            </div>
+          </div>
+          <div
+            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out shrink-0 ${
+              isCourtesy ? 'bg-purple-600' : 'bg-neutral-700'
+            }`}
+          >
+            <div
+              className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+                isCourtesy ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </div>
+        </div>
+
         {/* Informações Financeiras e Vigência */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           <div>
@@ -488,15 +527,19 @@ export function CreateContractForm({ fields, initialFieldId }: CreateContractFor
                 type="number"
                 id="monthly_amount"
                 name="monthly_amount"
-                required
-                min="1"
+                required={!isCourtesy}
+                readOnly={isCourtesy}
+                value={isCourtesy ? '0' : undefined}
+                min="0"
                 step="0.01"
-                className="input-admin pl-12 font-mono"
-                placeholder="Ex: 800.00"
+                className={`input-admin pl-12 font-mono ${isCourtesy ? 'opacity-70 bg-purple-950/20 text-purple-300 border-purple-500/40 cursor-not-allowed' : ''}`}
+                placeholder={isCourtesy ? '0.00 (Cortesia)' : 'Ex: 800.00'}
               />
             </div>
             <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
-              Valor único consolidado que cobre todos os dias/horários acima.
+              {isCourtesy
+                ? 'Contrato gratuito / cortesia cadastrado sem cobrança mensal.'
+                : 'Valor único consolidado que cobre todos os dias/horários acima.'}
             </p>
           </div>
 

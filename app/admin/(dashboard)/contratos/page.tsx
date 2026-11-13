@@ -700,9 +700,15 @@ export default async function ContratosPage({ searchParams }: Props) {
                         </td>
 
                         <td className="px-6 py-4">
-                          <div className="text-sm font-bold font-mono" style={{ color: 'var(--brand)' }}>
-                            {formattedValue}
-                          </div>
+                          {contract.monthly_amount === 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[2px] bg-purple-500/15 text-purple-400 border border-purple-500/30 text-xs font-bold uppercase tracking-wider">
+                              🎁 Cortesia
+                            </span>
+                          ) : (
+                            <div className="text-sm font-bold font-mono" style={{ color: 'var(--brand)' }}>
+                              {formattedValue}
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-6 py-4">
@@ -901,9 +907,15 @@ export default async function ContratosPage({ searchParams }: Props) {
                         <span className="text-[10px] block uppercase font-bold tracking-wide" style={{ color: 'var(--text-muted)' }}>
                           Valor Mensal
                         </span>
-                        <span className="text-base font-bold font-mono" style={{ color: 'var(--brand)' }}>
-                          {formattedValue}
-                        </span>
+                        {contract.monthly_amount === 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded-[2px] bg-purple-500/15 text-purple-400 border border-purple-500/30 text-xs font-bold uppercase tracking-wider">
+                            🎁 Cortesia
+                          </span>
+                        ) : (
+                          <span className="text-base font-bold font-mono" style={{ color: 'var(--brand)' }}>
+                            {formattedValue}
+                          </span>
+                        )}
                       </div>
                       <Link
                         href={`/admin/contratos/${contract.id}`}
