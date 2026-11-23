@@ -641,6 +641,7 @@ export async function checkBookingStatusAction(bookingId: string) {
           try {
             const { sendConfirmationEmail, sendAdminNewBookingEmail } = await import('@/lib/resend/emails')
             const { sendBookingConfirmedPush } = await import('@/lib/web-push/push')
+            const { sendMetaCapiEvent } = await import('@/lib/tracking/capi')
 
             data.status = 'confirmed'
             data.deposit_status = 'paid'
@@ -648,6 +649,24 @@ export async function checkBookingStatusAction(bookingId: string) {
             await sendConfirmationEmail(data)
             await sendAdminNewBookingEmail(data)
             await sendBookingConfirmedPush(data)
+
+            await sendMetaCapiEvent({
+              eventName: 'Purchase',
+              eventId: `purchase_${bookingId}`,
+              eventSourceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://academiadogol.vercel.app'}/reserva/confirmacao/${bookingId}`,
+              userData: {
+                email: data.customer?.email,
+                phone: data.customer?.phone,
+                name: data.customer?.name,
+              },
+              customData: {
+                currency: 'BRL',
+                value: Number(data.total_amount) || Number(data.deposit_amount),
+                content_name: data.field?.name || 'Reserva Campo Society',
+                content_ids: [data.field_id],
+                content_type: 'product',
+              },
+            })
           } catch (notifErr) {
             console.error('[checkBookingStatusAction] Erro ao disparar notificações:', notifErr)
           }

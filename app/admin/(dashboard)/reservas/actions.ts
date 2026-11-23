@@ -203,9 +203,28 @@ export async function confirmDepositManuallyAction(bookingId: string) {
   if (booking) {
     try {
       const { sendConfirmationEmail } = await import('@/lib/resend/emails')
+      const { sendMetaCapiEvent } = await import('@/lib/tracking/capi')
       booking.status = 'confirmed'
       booking.deposit_status = 'paid'
       await sendConfirmationEmail(booking)
+
+      await sendMetaCapiEvent({
+        eventName: 'Purchase',
+        eventId: `purchase_${booking.id}`,
+        eventSourceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://academiadogol.vercel.app'}/reserva/confirmacao/${booking.id}`,
+        userData: {
+          email: booking.customer?.email,
+          phone: booking.customer?.phone,
+          name: booking.customer?.name,
+        },
+        customData: {
+          currency: 'BRL',
+          value: Number(booking.total_amount) || Number(booking.deposit_amount),
+          content_name: booking.field?.name || 'Reserva Campo Society',
+          content_ids: [booking.field_id],
+          content_type: 'product',
+        },
+      })
     } catch (emailErr) {
       console.error('Erro ao enviar e-mail de confirmação ao cliente:', emailErr)
     }
