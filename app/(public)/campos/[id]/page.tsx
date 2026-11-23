@@ -5,6 +5,7 @@ import { getFieldById } from '../../actions'
 import { AvailabilityCalendar } from '@/components/public/availability-calendar'
 import { createClient } from '@/lib/supabase/server'
 import { getFieldPackages } from '@/lib/pricing'
+import { ViewContentTracker } from '@/components/tracking/view-content-tracker'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -32,6 +33,7 @@ export default async function CampoDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-10">
+      <ViewContentTracker fieldId={field.id} fieldName={field.name} hourlyRate={field.hourly_rate} />
       {/* Breadcrumb */}
       <nav className="text-xs uppercase tracking-widest mb-8 flex items-center gap-2 font-bold" style={{ color: 'var(--text-muted)' }}>
         <a href="/campos" className="hover:text-white transition-colors">Campos</a>

@@ -15,8 +15,9 @@ import {
 import { 
   Search, DollarSign, X, CheckSquare, Calendar, Clock, 
   ChevronDown, ChevronUp, Phone, Mail, User, Hash, MessageCircle,
-  RotateCcw, AlertTriangle, Edit2, Loader2, Check
+  RotateCcw, AlertTriangle, Edit2, Loader2, Check, Megaphone
 } from 'lucide-react'
+import { parseUtmsFromNotes } from '@/lib/tracking/utms'
 
 interface BookingListProps {
   initialBookings: any[]
@@ -584,6 +585,42 @@ export function BookingList({ initialBookings }: BookingListProps) {
                             <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Obs:</span> {b.notes}
                           </div>
                         )}
+                        {(() => {
+                          const utms = parseUtmsFromNotes(b.notes) || (b.utm_source ? {
+                            utm_source: b.utm_source,
+                            utm_medium: b.utm_medium,
+                            utm_campaign: b.utm_campaign,
+                            utm_content: b.utm_content,
+                            utm_term: b.utm_term,
+                          } : null)
+                          if (!utms) return null
+                          return (
+                            <div className="mt-2.5 p-2.5 rounded-[2px] bg-blue-500/10 border border-blue-500/25 space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-blue-400">
+                                <Megaphone className="w-3.5 h-3.5 shrink-0" />
+                                <span>Origem de Anúncio (UTM)</span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+                                <span className="font-bold text-zinc-200">
+                                  {utms.utm_source || 'Direto / Anúncio'}
+                                </span>
+                                {utms.utm_medium && (
+                                  <span className="text-zinc-400">({utms.utm_medium})</span>
+                                )}
+                                {utms.utm_campaign && (
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-medium">
+                                    Campanha: {utms.utm_campaign}
+                                  </span>
+                                )}
+                                {utms.utm_content && (
+                                  <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                                    Anúncio: {utms.utm_content}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     </div>
 

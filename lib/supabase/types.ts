@@ -69,6 +69,12 @@ export interface Booking {
   pix_copy_paste?: string | null
   booking_type?: BookingCategory | null
   notes: string | null
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  utm_content?: string | null
+  utm_term?: string | null
+  fbclid?: string | null
   created_at: string
   updated_at: string
   // Relacionamentos opcionais (joins)

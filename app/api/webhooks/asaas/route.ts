@@ -156,6 +156,30 @@ export async function POST(request: Request) {
           console.error('[Asaas Webhook] Falha ao enviar notificações de confirmação (e-mail/push):', emailErr)
         }
 
+        // 5. Dispara evento de Purchase na Meta Conversions API (CAPI) para deduplicação com o navegador
+        try {
+          const { sendMetaCapiEvent } = await import('@/lib/tracking/capi')
+          await sendMetaCapiEvent({
+            eventName: 'Purchase',
+            eventId: `purchase_${booking.id}`,
+            eventSourceUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://academiadogol.vercel.app'}/reserva/confirmacao/${booking.id}`,
+            userData: {
+              email: booking.customer?.email,
+              phone: booking.customer?.phone,
+              name: booking.customer?.name,
+            },
+            customData: {
+              currency: 'BRL',
+              value: Number(booking.total_amount) || Number(booking.deposit_amount),
+              content_name: booking.field?.name || 'Reserva Campo Society',
+              content_ids: [booking.field_id],
+              content_type: 'product',
+            },
+          })
+        } catch (capiErr) {
+          console.error('[Asaas Webhook] Falha ao enviar Purchase via Conversions API:', capiErr)
+        }
+
         console.log(`[Asaas Webhook] Reserva ${booking.id} confirmada com sucesso via PIX automático.`)
       }
 

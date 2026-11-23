@@ -3,9 +3,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { z } from 'zod'
 import type { Field, FieldPackage } from '@/lib/supabase/types'
 import { getFieldPrice } from '@/lib/pricing'
+import { formatUtmsForNotes } from '@/lib/tracking/utms'
 
 // ─── Helpers de Normalização e Validação ─────────────────────────────────────
 
@@ -367,34 +369,74 @@ export async function createBookingAction(
     return { error: 'Erro ao registrar cliente.' }
   }
 
+  // Captura UTMs da requisição (do formulário ou dos cookies)
+  const cookieStore = await cookies()
+  const utm_source = (formData.get('utm_source') as string)?.trim() || cookieStore.get('utm_source')?.value || null
+  const utm_medium = (formData.get('utm_medium') as string)?.trim() || cookieStore.get('utm_medium')?.value || null
+  const utm_campaign = (formData.get('utm_campaign') as string)?.trim() || cookieStore.get('utm_campaign')?.value || null
+  const utm_content = (formData.get('utm_content') as string)?.trim() || cookieStore.get('utm_content')?.value || null
+  const utm_term = (formData.get('utm_term') as string)?.trim() || cookieStore.get('utm_term')?.value || null
+  const fbclid = (formData.get('fbclid') as string)?.trim() || cookieStore.get('fbclid')?.value || null
+
+  const utmNotes = formatUtmsForNotes({
+    utm_source: utm_source || undefined,
+    utm_medium: utm_medium || undefined,
+    utm_campaign: utm_campaign || undefined,
+    utm_content: utm_content || undefined,
+    utm_term: utm_term || undefined,
+    fbclid: fbclid || undefined,
+  })
+
   // Notas identificando o tipo de reserva e o pacote
   const notesParts = [
     booking_type === 'festa' ? '🎂 [FESTA DE ANIVERSÁRIO / EVENTO]' : '⚽ [JOGO / HORÁRIO NORMAL]',
     matchedPkg?.name ? `Pacote: ${matchedPkg.name}` : null,
     customer_cpf ? `CPF: ${customer_cpf}` : null,
+    utmNotes || null,
   ].filter(Boolean)
 
-  // Cria a reserva com status pending
-  const { data: booking, error: bookingError } = await supabase
+  const baseInsertPayload = {
+    field_id,
+    customer_id: customer.id,
+    date,
+    start_time,
+    end_time,
+    duration_minutes,
+    total_amount,
+    deposit_amount,
+    remaining_amount,
+    status: 'pending' as const,
+    deposit_status: 'pending' as const,
+    remaining_status: 'pending' as const,
+    booking_type,
+    notes: notesParts.join(' | '),
+  }
+
+  // Tenta inserir incluindo as colunas de UTM caso já existam no schema
+  let { data: booking, error: bookingError } = await supabase
     .from('bookings')
     .insert({
-      field_id,
-      customer_id: customer.id,
-      date,
-      start_time,
-      end_time,
-      duration_minutes,
-      total_amount,
-      deposit_amount,
-      remaining_amount,
-      status: 'pending',
-      deposit_status: 'pending',
-      remaining_status: 'pending',
-      booking_type,
-      notes: notesParts.join(' | '),
-    })
+      ...baseInsertPayload,
+      ...(utm_source ? { utm_source } : {}),
+      ...(utm_medium ? { utm_medium } : {}),
+      ...(utm_campaign ? { utm_campaign } : {}),
+      ...(utm_content ? { utm_content } : {}),
+      ...(utm_term ? { utm_term } : {}),
+      ...(fbclid ? { fbclid } : {}),
+    } as any)
     .select('id')
     .single()
+
+  // Se falhar por ausência de alguma coluna de UTM no banco, insere o payload básico com as UTMs guardadas nas notas
+  if (bookingError && (bookingError.message?.includes('utm_') || bookingError.message?.includes('fbclid'))) {
+    const retry = await supabase
+      .from('bookings')
+      .insert(baseInsertPayload)
+      .select('id')
+      .single()
+    booking = retry.data
+    bookingError = retry.error
+  }
 
   if (bookingError || !booking) {
     if (bookingError?.message?.includes('Conflito de horário')) {

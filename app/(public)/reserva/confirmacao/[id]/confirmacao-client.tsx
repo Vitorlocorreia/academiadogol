@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Calendar, CheckCircle2, Clock, Landmark, MapPin, Receipt, Share2, User, MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { trackMetaEvent } from '@/lib/tracking/pixel'
 
 interface Props {
   booking: any
@@ -46,6 +47,34 @@ export function ConfirmationClient({ booking, businessPhone }: Props) {
   const waMessage = `Olá! Acabei de reservar o campo *${booking.field?.name || 'Academia do Gol'}* pelo site! ⚽🏟️\n\n📋 *Comprovante de Reserva:*\n• *Titular:* ${booking.customer?.name || 'Cliente'}\n• *Data:* ${dateDisplay}\n• *Horário:* ${booking.start_time.substring(0, 5)} às ${endTime} (${booking.duration_minutes} min)\n• *Tipo:* ${tipoLabel}\n• *Sinal PIX Pago:* R$ ${deposit.toFixed(2).replace('.', ',')}\n• *Saldo Restante na Arena:* R$ ${remaining.toFixed(2).replace('.', ',')}\n\n📄 *Link do Comprovante Oficial:*\n${comprovanteUrl}\n\nObrigado e até o jogo!`
 
   const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(waMessage)}`
+
+  // Dispara o evento Purchase no Meta Pixel e na Conversions API
+  useEffect(() => {
+    const storageKey = `meta_purchase_tracked_${booking.id}`
+    if (sessionStorage.getItem(storageKey)) return
+    sessionStorage.setItem(storageKey, 'true')
+
+    const eventId = `purchase_${booking.id}`
+    const purchaseValue = total > 0 ? total : deposit
+
+    trackMetaEvent(
+      'Purchase',
+      {
+        content_name: booking.field?.name || 'Reserva Campo Society',
+        content_ids: [booking.field_id],
+        content_type: 'product',
+        value: purchaseValue,
+        currency: 'BRL',
+        num_items: 1,
+      },
+      eventId,
+      {
+        em: booking.customer?.email,
+        ph: booking.customer?.phone,
+        fn: booking.customer?.name,
+      }
+    )
+  }, [booking.id, booking.field?.name, booking.field_id, booking.customer, total, deposit])
 
   // Redirecionamento automático com fallback
   useEffect(() => {

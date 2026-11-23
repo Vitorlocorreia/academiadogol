@@ -2,9 +2,11 @@
 
 // Formulário de dados do cliente para completar a reserva
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState, useRef } from 'react'
 import { createBookingAction } from '@/app/(public)/actions'
 import { getFieldPrice } from '@/lib/pricing'
+import { getStoredUtms, type UtmParams } from '@/lib/tracking/utms'
+import { trackMetaEvent } from '@/lib/tracking/pixel'
 import type { FieldPackage, BookingCategory } from '@/lib/supabase/types'
 
 interface Props {
@@ -42,6 +44,13 @@ export function BookingForm({
     INIT
   )
 
+  const [utms, setUtms] = useState<UtmParams>({})
+  const hasTrackedCheckout = useRef(false)
+
+  useEffect(() => {
+    setUtms(getStoredUtms())
+  }, [])
+
   const isFesta = initialBookingType === 'festa' || duration >= 180
   const bookingCategory: BookingCategory = isFesta ? 'festa' : 'jogo'
 
@@ -52,6 +61,26 @@ export function BookingForm({
   const total = matchedPkg
     ? Number(matchedPkg.total_price)
     : getFieldPrice(fieldName, duration, hourlyRate, packages)
+
+  // Dispara InitiateCheckout no Meta Pixel e na Conversions API
+  useEffect(() => {
+    if (hasTrackedCheckout.current || !total) return
+    hasTrackedCheckout.current = true
+
+    const eventId = `ic_${fieldId}_${Date.now()}`
+    trackMetaEvent(
+      'InitiateCheckout',
+      {
+        content_name: fieldName,
+        content_ids: [fieldId],
+        content_type: 'product',
+        value: total,
+        currency: 'BRL',
+        num_items: 1,
+      },
+      eventId
+    )
+  }, [fieldId, fieldName, total])
 
   const deposit = matchedPkg && matchedPkg.deposit_price !== undefined
     ? Number(matchedPkg.deposit_price)
@@ -78,6 +107,13 @@ export function BookingForm({
       <input type="hidden" name="start_time" value={startTime} />
       <input type="hidden" name="duration_minutes" value={duration} />
       <input type="hidden" name="booking_type" value={bookingCategory} />
+      {/* UTMs de Campanha e Anúncio */}
+      <input type="hidden" name="utm_source" value={utms.utm_source ?? ''} />
+      <input type="hidden" name="utm_medium" value={utms.utm_medium ?? ''} />
+      <input type="hidden" name="utm_campaign" value={utms.utm_campaign ?? ''} />
+      <input type="hidden" name="utm_content" value={utms.utm_content ?? ''} />
+      <input type="hidden" name="utm_term" value={utms.utm_term ?? ''} />
+      <input type="hidden" name="fbclid" value={utms.fbclid ?? ''} />
 
       {/* Resumo da reserva */}
       <div

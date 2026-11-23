@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
+import { MetaPixel } from '@/components/tracking/meta-pixel'
+import { UtmTracker } from '@/components/tracking/utm-tracker'
 import './globals.css'
 
 // Bebas Neue via link HTML (sem next/font — evita hydration warnings com display font)
@@ -45,6 +47,8 @@ export default function RootLayout({
         className="min-h-full flex flex-col antialiased"
         style={{ fontFamily: "Arial, 'Helvetica Neue', Helvetica, sans-serif" }}
       >
+        <MetaPixel />
+        <UtmTracker />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
