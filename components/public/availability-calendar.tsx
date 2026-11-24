@@ -26,8 +26,13 @@ function generateHalfHourSlots(open: string, close: string): string[] {
   const slots: string[] = []
   const [oh, om] = open.split(':').map(Number)
   const [ch, cm] = close.split(':').map(Number)
-  let cur = oh * 60 + om
-  const end = ch * 60 + cm
+  let cur = (oh || 0) * 60 + (om || 0)
+  let end = (ch || 0) * 60 + (cm || 0)
+  // Se o horário de fechamento for meia-noite ou madrugada (ex: 00:00 ou 00:30),
+  // considera até 24:00 (1440 min) para geração dos horários do dia
+  if (end <= cur) {
+    end = 24 * 60
+  }
   while (cur <= end) {
     const h = String(Math.floor(cur / 60)).padStart(2, '0')
     const m = String(cur % 60).padStart(2, '0')
@@ -35,6 +40,11 @@ function generateHalfHourSlots(open: string, close: string): string[] {
     cur += 30
   }
   return slots
+}
+
+function displayTime(t: string | null | undefined): string {
+  if (!t) return ''
+  return t === '24:00' ? '00:00' : t
 }
 
 function toMins(t: string): number {
@@ -533,7 +543,7 @@ export function AvailabilityCalendar({
             ? `Toque no horário de início desejado (${selectedPackage?.name ?? `${duration} min`})`
             : !endSlot
             ? 'Agora selecione o horário de término'
-            : `Período selecionado: ${startSlot} → ${endSlot} (${duration} min)`}
+            : `Período selecionado: ${displayTime(startSlot)} → ${displayTime(endSlot)} (${duration} min)`}
         </p>
 
         {loadingSlots ? (
@@ -560,7 +570,7 @@ export function AvailabilityCalendar({
                   className={slotStyle.className}
                   style={slotStyle.style}
                 >
-                  {slot}
+                  {displayTime(slot)}
                   {slot === startSlot && (
                     <span className="block text-[8px] opacity-70 font-bold uppercase tracking-wider leading-none mt-0.5">início</span>
                   )}
@@ -635,7 +645,7 @@ export function AvailabilityCalendar({
             </div>
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <span>Horário</span>
-              <span style={{ color: 'var(--text-primary)' }}>{startSlot} → {endSlot}</span>
+              <span style={{ color: 'var(--text-primary)' }}>{displayTime(startSlot)} → {displayTime(endSlot)}</span>
             </div>
             <div className="flex justify-between pb-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
               <span>Duração</span>

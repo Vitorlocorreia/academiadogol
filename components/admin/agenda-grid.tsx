@@ -85,14 +85,21 @@ export function AgendaGrid({
   // Gera array de horários (30 em 30 min) entre open_time e close_time
   const generateTimeSlots = () => {
     const slots: string[] = []
-    const [startH] = settings.open_time.split(':').map(Number)
-    const [endH] = settings.close_time.split(':').map(Number)
+    const [startH, startM] = settings.open_time.split(':').map(Number)
+    const [endH, endM] = settings.close_time.split(':').map(Number)
 
-    for (let h = startH; h <= endH; h++) {
-      slots.push(`${String(h).padStart(2, '0')}:00`)
-      if (h < endH) {
-        slots.push(`${String(h).padStart(2, '0')}:30`)
-      }
+    let cur = (startH || 0) * 60 + (startM || 0)
+    let end = (endH || 0) * 60 + (endM || 0)
+    // Se o fechamento for meia-noite ou madrugada (ex: 00:00 ou 00:30), vai até 23:30
+    if (end <= cur) {
+      end = 23 * 60 + 30
+    }
+
+    while (cur <= end) {
+      const h = String(Math.floor(cur / 60)).padStart(2, '0')
+      const m = String(cur % 60).padStart(2, '0')
+      slots.push(`${h}:${m}`)
+      cur += 30
     }
     return slots
   }
@@ -133,6 +140,11 @@ export function AgendaGrid({
     setModalOpen(true)
   }
 
+  const normalizeEnd = (t: string) => {
+    const s = t.slice(0, 5)
+    return s === '00:00' ? '24:00' : s
+  }
+
   // Identifica o que está ocupando o slot (reserva ou bloqueio)
   const getSlotOccupant = (fieldId: string, time: string) => {
     const booking = bookings.find(
@@ -140,7 +152,7 @@ export function AgendaGrid({
         b.field_id === fieldId &&
         b.status !== 'cancelled' &&
         time >= b.start_time.slice(0, 5) &&
-        time < b.end_time.slice(0, 5)
+        time < normalizeEnd(b.end_time)
     )
     if (booking) return { type: 'booking' as const, data: booking }
 
@@ -148,7 +160,7 @@ export function AgendaGrid({
       (s) =>
         s.field_id === fieldId &&
         time >= s.start_time.slice(0, 5) &&
-        time < s.end_time.slice(0, 5)
+        time < normalizeEnd(s.end_time)
     )
     if (block) return { type: 'block' as const, data: block }
 

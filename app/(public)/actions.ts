@@ -193,7 +193,14 @@ export async function getOccupiedSlots(
       ...pastTodayBlocks,
     ]
 
-    return all.map(({ start_time, end_time }) => ({ start_time, end_time }))
+    return all.map(({ start_time, end_time }) => {
+      const s = start_time.slice(0, 5)
+      const e = end_time.slice(0, 5)
+      return {
+        start_time: s,
+        end_time: e === '00:00' ? '24:00' : e,
+      }
+    })
   } catch (err) {
     console.error('[getOccupiedSlots] Erro ao carregar disponibilidade:', err)
     return []
@@ -745,7 +752,9 @@ function isTimeOverlapping(
   startB: string,
   endB: string
 ): boolean {
-  return startA < endB && endA > startB
+  const normEndA = endA === '00:00' ? '24:00' : endA
+  const normEndB = endB === '00:00' ? '24:00' : endB
+  return startA < normEndB && normEndA > startB
 }
 
 export interface AvailableFieldResult {
