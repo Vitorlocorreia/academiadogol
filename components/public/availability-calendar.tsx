@@ -100,10 +100,8 @@ export function AvailabilityCalendar({
   const [activeCategory, setActiveCategory] = useState<BookingCategory>('jogo')
   const availablePackages = activeCategory === 'festa' ? festaPackages : jogoPackages
 
-  // 2. Pacote selecionado dentro da categoria
-  const [selectedPackage, setSelectedPackage] = useState<FieldPackage | null>(() => {
-    return jogoPackages[0] || null
-  })
+  // 2. Pacote selecionado (apenas pré-selecionado quando for Festa de Aniversário)
+  const [selectedPackage, setSelectedPackage] = useState<FieldPackage | null>(null)
 
   // Estado do calendário e slots
   const today = new Date()
@@ -111,6 +109,7 @@ export function AvailabilityCalendar({
   const [selectedDate, setSelectedDate] = useState<Date>(today)
   const [startSlot, setStartSlot] = useState<string | null>(null)
   const [endSlot, setEndSlot] = useState<string | null>(null)
+  const [missingEndError, setMissingEndError] = useState<boolean>(false)
   const [occupied, setOccupied] = useState<Array<{ start_time: string; end_time: string }>>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
 
@@ -122,6 +121,7 @@ export function AvailabilityCalendar({
     setLoadingSlots(true)
     setStartSlot(null)
     setEndSlot(null)
+    setMissingEndError(false)
     getOccupiedSlots(fieldId, toISO(selectedDate)).then((data) => {
       setOccupied(data)
       setLoadingSlots(false)
@@ -141,18 +141,19 @@ export function AvailabilityCalendar({
     return days
   }
 
-  // Troca de categoria com auto-seleção do primeiro pacote
+  // Troca de categoria (apenas Festa pré-seleciona pacote)
   const handleSelectCategory = (cat: BookingCategory) => {
     setActiveCategory(cat)
-    const pkgs = cat === 'festa' ? festaPackages : jogoPackages
-    setSelectedPackage(pkgs[0] || null)
+    setSelectedPackage(cat === 'festa' ? (festaPackages[0] || null) : null)
     setStartSlot(null)
     setEndSlot(null)
+    setMissingEndError(false)
   }
 
-  // Seleção de pacote específico
+  // Seleção de pacote específico (usado em Festa de Aniversário)
   const handleSelectPackage = (pkg: FieldPackage) => {
     setSelectedPackage(pkg)
+    setMissingEndError(false)
     if (startSlot) {
       const startMins = toMins(startSlot)
       const targetEndMins = startMins + pkg.duration_minutes
@@ -170,13 +171,17 @@ export function AvailabilityCalendar({
   // Cálculos derivados da seleção
   const duration = startSlot && endSlot
     ? toMins(endSlot) - toMins(startSlot)
-    : selectedPackage?.duration_minutes ?? 0
+    : activeCategory === 'festa'
+      ? (selectedPackage?.duration_minutes ?? 0)
+      : 0
 
   const isFesta = activeCategory === 'festa' || duration >= 180
 
-  const matchedPkg = packages?.find(
-    (p) => p.duration_minutes === duration && (p.category === (isFesta ? 'festa' : 'jogo') || !p.category) && p.is_active !== false
-  ) || selectedPackage
+  const matchedPkg = duration > 0
+    ? (packages?.find(
+        (p) => p.duration_minutes === duration && (p.category === (isFesta ? 'festa' : 'jogo') || !p.category) && p.is_active !== false
+      ) || (activeCategory === 'festa' ? selectedPackage : null))
+    : (activeCategory === 'festa' ? selectedPackage : null)
 
   const total = matchedPkg
     ? Number(matchedPkg.total_price)
@@ -192,9 +197,10 @@ export function AvailabilityCalendar({
 
   // Ao clicar em um horário na grade
   const handleSlotClick = (slot: string) => {
-    const pkgMins = selectedPackage?.duration_minutes
+    setMissingEndError(false)
+    const pkgMins = activeCategory === 'festa' ? selectedPackage?.duration_minutes : undefined
 
-    // Se temos pacote pré-selecionado e clicou para iniciar (ou para escolher um novo início):
+    // Se for Festa com pacote pré-selecionado:
     if (pkgMins && (!startSlot || endSlot)) {
       const startMins = toMins(slot)
       const targetEndMins = startMins + pkgMins
@@ -205,15 +211,19 @@ export function AvailabilityCalendar({
         setEndSlot(targetEndSlot)
         return
       } else {
-        // Se a duração completa não cabe sem conflito, marca como início e deixa escolher o fim livremente
         setStartSlot(slot)
         setEndSlot(null)
         return
       }
     }
 
-    // Se já havia início e clicou no segundo slot:
+    // Se já havia início e ainda não escolheu o fim:
     if (startSlot && !endSlot) {
+      if (slot === startSlot) {
+        setStartSlot(null)
+        setEndSlot(null)
+        return
+      }
       const clickedMins = toMins(slot)
       const startMins = toMins(startSlot)
       if (clickedMins > startMins) {
@@ -230,12 +240,16 @@ export function AvailabilityCalendar({
       return
     }
 
-    // Fallback: reinicia seleção a partir deste slot
+    // Caso contrário (nenhum selecionado ou ambos já selecionados): inicia nova seleção a partir deste slot
     setStartSlot(slot)
     setEndSlot(null)
   }
 
   const handleReservar = () => {
+    if (startSlot && !endSlot) {
+      setMissingEndError(true)
+      return
+    }
     if (!startSlot || !endSlot) return
     const params = new URLSearchParams({
       date: toISO(selectedDate),
@@ -249,6 +263,39 @@ export function AvailabilityCalendar({
   }
 
   const getSlotStyle = (slot: string) => {
+    const slotMins = toMins(slot)
+
+    if (slot === startSlot || (endSlot && slot === endSlot)) {
+      return {
+        style: {
+          background: 'var(--brand)',
+          color: 'white',
+          border: '1px solid var(--brand)',
+          borderRadius: '2px',
+          fontWeight: 'bold',
+          transform: 'scale(1.03)',
+        },
+        className: 'py-2 text-xs text-center transition-all shadow-md cursor-pointer'
+      }
+    }
+
+    // Se já escolheu o início e está escolhendo o fim, verifica se este slot pode ser o horário de término
+    if (startSlot && !endSlot && slotMins > toMins(startSlot)) {
+      const wouldBeAvailable = isRangeAvailable(startSlot, slot, occupied)
+      if (wouldBeAvailable) {
+        return {
+          style: {
+            background: 'var(--brand-subtle)',
+            color: 'var(--brand)',
+            border: '1px dashed var(--brand-ring)',
+            borderRadius: '2px',
+            cursor: 'pointer',
+          },
+          className: 'py-2 text-xs text-center hover:opacity-80 transition-colors font-semibold'
+        }
+      }
+    }
+
     const isOccupied = occupied.some(
       (b) => b.start_time <= slot && b.end_time > slot
     )
@@ -267,22 +314,6 @@ export function AvailabilityCalendar({
       }
     }
 
-    const slotMins = toMins(slot)
-
-    if (slot === startSlot || (endSlot && slot === endSlot)) {
-      return {
-        style: {
-          background: 'var(--brand)',
-          color: 'white',
-          border: '1px solid var(--brand)',
-          borderRadius: '2px',
-          fontWeight: 'bold',
-          transform: 'scale(1.03)',
-        },
-        className: 'py-2 text-xs text-center transition-all shadow-md'
-      }
-    }
-
     if (startSlot && endSlot) {
       const startMins = toMins(startSlot)
       const endMins = toMins(endSlot)
@@ -294,26 +325,7 @@ export function AvailabilityCalendar({
             border: '1px solid var(--brand-ring)',
             borderRadius: '2px',
           },
-          className: 'py-2 text-xs text-center'
-        }
-      }
-    }
-
-    if (startSlot && !endSlot) {
-      const startMins = toMins(startSlot)
-      if (slotMins > startMins) {
-        const wouldBeAvailable = isRangeAvailable(startSlot, slot, occupied)
-        if (wouldBeAvailable) {
-          return {
-            style: {
-              background: 'var(--brand-subtle)',
-              color: 'var(--brand)',
-              border: '1px dashed var(--brand-ring)',
-              borderRadius: '2px',
-              cursor: 'pointer',
-            },
-            className: 'py-2 text-xs text-center hover:opacity-80 transition-colors'
-          }
+          className: 'py-2 text-xs text-center cursor-pointer'
         }
       }
     }
@@ -370,14 +382,14 @@ export function AvailabilityCalendar({
           </button>
         </div>
 
-        {/* 2. CHIPS DE DURAÇÃO / PACOTE RÁPIDO */}
-        {availablePackages.length > 0 && (
+        {/* 2. CHIPS DE PACOTE (Exibido apenas para Festa de Aniversário) */}
+        {activeCategory === 'festa' && availablePackages.length > 0 && (
           <div className="space-y-2">
             <div
               className="flex items-center justify-between text-xs font-bold uppercase tracking-wider"
               style={{ color: 'var(--text-secondary)' }}
             >
-              <span>{activeCategory === 'festa' ? '🎂 Escolha o Pacote de Festa:' : '⚽ Escolha o Tempo de Jogo:'}</span>
+              <span>🎂 Escolha o Pacote de Festa:</span>
               {selectedPackage && (
                 <span style={{ color: 'var(--brand)' }}>
                   Sinal PIX: R$ {Number(selectedPackage.deposit_price).toFixed(0)}
@@ -537,12 +549,31 @@ export function AvailabilityCalendar({
           >
             Horários disponíveis
           </h3>
+          {startSlot && (
+            <button
+              type="button"
+              onClick={() => {
+                setStartSlot(null)
+                setEndSlot(null)
+                setMissingEndError(false)
+              }}
+              className="text-[10px] font-bold uppercase tracking-wider underline cursor-pointer"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Limpar horário
+            </button>
+          )}
         </div>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+        <p
+          className="text-xs mb-3 font-semibold"
+          style={{ color: startSlot && !endSlot ? 'var(--brand)' : 'var(--text-secondary)' }}
+        >
           {!startSlot
-            ? `Toque no horário de início desejado (${selectedPackage?.name ?? `${duration} min`})`
+            ? activeCategory === 'festa' && selectedPackage
+              ? `Toque no horário de início desejado (${selectedPackage.name})`
+              : '1º Passo: Toque no horário de INÍCIO desejado'
             : !endSlot
-            ? 'Agora selecione o horário de término'
+            ? `2º Passo: Agora toque no horário de FIM (após ${displayTime(startSlot)})`
             : `Período selecionado: ${displayTime(startSlot)} → ${displayTime(endSlot)} (${duration} min)`}
         </p>
 
@@ -559,7 +590,13 @@ export function AvailabilityCalendar({
               const isOccupied = occupied.some(
                 (b) => b.start_time <= slot && b.end_time > slot
               )
-              const disabled = isOccupied || (isLastSlot && !startSlot)
+              const canBeEndSlot = Boolean(
+                startSlot &&
+                !endSlot &&
+                toMins(slot) > toMins(startSlot) &&
+                isRangeAvailable(startSlot, slot, occupied)
+              )
+              const disabled = (!canBeEndSlot && isOccupied) || (isLastSlot && !startSlot)
               const slotStyle = getSlotStyle(slot)
 
               return (
@@ -590,7 +627,42 @@ export function AvailabilityCalendar({
         )}
       </div>
 
-      {/* Resumo + Botão */}
+      {/* Aviso + Botão quando selecionou início mas ainda não selecionou o fim */}
+      {startSlot && !endSlot && (
+        <div
+          className="p-4 space-y-3 animate-fade-in"
+          style={{
+            background: 'var(--bg-card-alt)',
+            border: missingEndError ? '1px solid #ef4444' : '1px solid var(--border)',
+            borderRadius: '4px',
+          }}
+        >
+          {missingEndError ? (
+            <div className="p-3 rounded-[2px] bg-red-500/15 border border-red-500/40 text-red-500 text-xs font-bold leading-relaxed">
+              ⚠️ Você selecionou o horário de início ({displayTime(startSlot)}), mas ainda falta escolher o horário de FIM! Toque em um horário após as {displayTime(startSlot)} na grade acima para concluir.
+            </div>
+          ) : (
+            <div className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Início escolhido às <strong style={{ color: 'var(--text-primary)' }}>{displayTime(startSlot)}</strong>. Agora toque no horário de <strong>término</strong> na grade acima.
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleReservar}
+            className="w-full py-3.5 text-white font-bold text-xs uppercase tracking-widest transition-all duration-200 hover:opacity-90 cursor-pointer shadow-lg"
+            style={{
+              background: 'var(--brand)',
+              borderRadius: '2px',
+              letterSpacing: '0.15em',
+            }}
+          >
+            Continuar e pagar sinal →
+          </button>
+        </div>
+      )}
+
+      {/* Resumo + Botão quando início e fim estão selecionados */}
       {selectionValid && startSlot && endSlot && (
         <div
           className="p-5 space-y-4"
