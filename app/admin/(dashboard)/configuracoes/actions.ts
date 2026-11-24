@@ -60,5 +60,7 @@ export async function saveSettingsAction(formData: FormData) {
   }
 
   revalidatePath('/admin/configuracoes')
+  revalidatePath('/admin/agenda')
+  revalidatePath('/', 'layout')
   return { success: true, error: '' }
 }

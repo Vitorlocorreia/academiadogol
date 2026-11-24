@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getFieldPackages } from '@/lib/pricing'
 import { ViewContentTracker } from '@/components/tracking/view-content-tracker'
 
+export const dynamic = 'force-dynamic'
+
 interface Props {
   params: Promise<{ id: string }>
 }
@@ -25,7 +27,8 @@ export default async function CampoDetailPage({ params }: Props) {
     .single()
 
   const openTime = settings?.open_time?.slice(0, 5) ?? '08:00'
-  const closeTime = settings?.close_time?.slice(0, 5) ?? '23:00'
+  const rawCloseTime = settings?.close_time?.slice(0, 5) ?? '23:00'
+  const closeTime = rawCloseTime <= openTime ? '24:00' : rawCloseTime
 
   const packages = getFieldPackages(field)
   const jogoPackages = packages.filter((p) => p.category === 'jogo' && p.is_active !== false)
